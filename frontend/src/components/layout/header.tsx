@@ -16,6 +16,7 @@ import {
   Building2,
   ChevronDown,
   Phone,
+  Video,
   HelpCircle,
   User,
 } from 'lucide-react'
@@ -42,73 +43,142 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 
-const messages = [
-  {
-    id: 1,
-    sender: 'Rajesh Kumar',
-    unit: 'A-101',
-    message: 'Hi, can you share the maintenance bill?',
-    time: '2 min ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    sender: 'Priya Sharma',
-    unit: 'B-205',
-    message: 'Thanks for resolving the water issue!',
-    time: '1 hour ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    sender: 'Security Desk',
-    unit: 'Gate 1',
-    message: 'Visitor arrived for A-502',
-    time: '3 hours ago',
-    unread: false,
-  },
-]
-
-const notifications = [
-  {
-    title: 'New Visitor Entry',
-    description: 'John Doe checked in to Unit A-101',
-    time: '2 min ago',
-    unread: true,
-    type: 'visitor',
-  },
-  {
-    title: 'Payment Received',
-    description: 'Rs. 15,000 received from Unit B-205',
-    time: '1 hour ago',
-    unread: true,
-    type: 'payment',
-  },
-  {
-    title: 'Complaint Resolved',
-    description: 'Water leakage in Block C resolved',
-    time: '3 hours ago',
-    unread: false,
-    type: 'complaint',
-  },
-  {
-    title: 'New Amenity Booking',
-    description: 'Clubhouse booked for tomorrow',
-    time: '5 hours ago',
-    unread: false,
-    type: 'booking',
-  },
-]
+function formatNotificationTime(createdAt: string) {
+  const diff = Date.now() - new Date(createdAt).getTime()
+  if (diff < 60000) return 'Just now'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} hour${Math.floor(diff / 3600000) > 1 ? 's' : ''} ago`
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)} day${Math.floor(diff / 86400000) > 1 ? 's' : ''} ago`
+  return new Date(createdAt).toLocaleDateString()
+}
 
 export function Header() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { theme, setTheme } = useTheme()
   const { user } = useAuthStore()
-  const [notificationCount] = useState(5)
   const [messageOpen, setMessageOpen] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
+  const [isNewChatOpen, setIsNewChatOpen] = useState(false)
+  const [userSearchTerm, setUserSearchTerm] = useState('')
+
+  // Fetch Conversations
+  const { data: conversations = [], isLoading: isConversationsLoading, refetch: refetchConversations } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: async () => {
+      const response = await api.get('/chat/conversations')
+      const sorted = response.data.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      return sorted
+    },
+    enabled: messageOpen // Only fetch when dialog is open
+  })
+
+  // Fetch Messages for selected conversation
+  const { data: currentMessages = [], refetch: refetchMessages } = useQuery({
+    queryKey: ['messages', selectedConversationId],
+    queryFn: async () => {
+      if (!selectedConversationId) return []
+      const response = await api.get(`/chat/conversations/${selectedConversationId}/messages`)
+      return response.data
+    },
+    enabled: !!selectedConversationId,
+    refetchInterval: 3000 // Poll every 3 seconds for new messages (simple real-time)
+  })
+
+  // Fetch Users for New Chat
+  const { data: availableUsers = [], isLoading: isUsersLoading } = useQuery({
+    queryKey: ['users-for-chat', userSearchTerm],
+    queryFn: async () => {
+      const response = await api.get('/auth/all') // Optimization: Should ideally be a search API
+      let users = response.data.filter((u: any) => u.id !== user?.id)
+      if (userSearchTerm) {
+        const lowerTerm = userSearchTerm.toLowerCase()
+        users = users.filter((u: any) => 
+            u.name.toLowerCase().includes(lowerTerm) || 
+            u.email.toLowerCase().includes(lowerTerm) ||
+            u.role.toLowerCase().includes(lowerTerm)
+        )
+      }
+      return users.slice(0, 20) // Limit to 20 for performance
+    },
+    enabled: isNewChatOpen
+  })
+
+  // Fetch current user's notifications (user-specific, no hardcoded data)
+  // refetchInterval + refetchOnWindowFocus so new notifications (e.g. second lead assign) show without refresh
+  const { data: notificationRes, refetch: refetchNotifications } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const res = await api.get('/notifications', { params: { limit: 50 } })
+      const body = res.data
+      return {
+        data: Array.isArray(body?.data) ? body.data : (body?.data ? [body.data] : []),
+        unreadCount: body?.unreadCount ?? 0,
+      }
+    },
+    enabled: !!user?.id,
+    refetchInterval: 15000, // Poll every 15 sec so new lead-assign etc. show without refresh
+    refetchOnWindowFocus: true,
+  })
+  const notificationsList = notificationRes?.data ?? []
+  const notificationCount = notificationRes?.unreadCount ?? 0
+
+  const markAllNotificationsRead = useMutation({
+    mutationFn: async () => {
+      await api.patch('/notifications/read-all')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+
+  // Start Conversation Mutation
+  const startConversationMutation = useMutation({
+    mutationFn: async (targetUserId: number) => {
+        console.log('Starting chat with user ID:', targetUserId)
+        try {
+            console.log('Posting to /chat/start...')
+            const response = await api.post('/chat/start', { targetUserId })
+            console.log('Response:', response)
+            return response.data
+        } catch (err: any) {
+            console.error('API Post Failed:', err)
+            throw err
+        }
+    },
+    onSuccess: (conversation) => {
+        setIsNewChatOpen(false)
+        setSelectedConversationId(conversation.id)
+        refetchConversations()
+    },
+    onError: (error: any) => {
+        console.error('Mutation Error:', error)
+        const errorMessage = error.response?.data?.error || error.message || 'Unknown error'
+        const errorStack = error.response?.data?.stack || ''
+        alert(`Failed: ${errorMessage}\n\nBackend Stack:\n${errorStack}\n\nFull Error: ${JSON.stringify(error)}`)
+    }
+  })
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      if (!selectedConversationId) return
+      const response = await api.post('/chat/messages', {
+        conversationId: selectedConversationId,
+        content
+      })
+      return response.data
+    },
+    onSuccess: () => {
+      setNewMessage('')
+      refetchMessages()
+      refetchConversations() // Update last message in list
+    }
+  })
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -120,8 +190,17 @@ export function Header() {
         return 'bg-orange-100 text-orange-600'
       case 'booking':
         return 'bg-purple-100 text-purple-600'
+      case 'lead_assigned':
+        return 'bg-teal-100 text-teal-600'
       default:
         return 'bg-gray-100 text-gray-600'
+    }
+  }
+
+  // Handle sending message
+  const handleSendMessage = () => {
+    if (newMessage.trim() && selectedConversationId) {
+      sendMessageMutation.mutate(newMessage)
     }
   }
 
@@ -149,23 +228,27 @@ export function Header() {
             </div>
           </div>
 
-          {/* Community Selector - Desktop */}
+          {/* Community Selector - Desktop (dynamic from user.society, no hardcoded data) */}
           {user?.role !== 'individual' && user?.role !== 'super_admin' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="hidden md:flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="p-1.5 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg">
+                <button className="hidden md:flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors min-w-0 max-w-[240px] lg:max-w-[280px]">
+                  <div className="p-1.5 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex-shrink-0">
                     <Building2 className="h-4 w-4 text-white" />
                   </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-[#1e3a5f]">Green Valley Apartments</p>
-                    <p className="text-xs text-gray-500">Block A, Tower 1</p>
+                  <div className="text-left min-w-0 overflow-hidden flex-1">
+                    <p className="text-sm font-semibold text-[#1e3a5f] truncate">
+                      {(user as any)?.society?.name ?? (user?.role === 'vendor' ? 'Service Provider' : '—')}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {((user as any)?.society?.address ?? (user as any)?.society?.city ?? ((user as any)?.society?.pincode ? `PIN ${(user as any).society.pincode}` : '')) || (user?.role === 'vendor' ? 'My assigned leads' : '')}
+                    </p>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel>Switch Community</DropdownMenuLabel>
+                <DropdownMenuLabel>Current community</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="py-2.5">
                   <div className="flex items-center space-x-3">
@@ -173,19 +256,10 @@ export function Header() {
                       <Building2 className="h-4 w-4 text-teal-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm">Green Valley Apartments</p>
-                      <p className="text-xs text-gray-500">Block A, Tower 1</p>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="py-2.5">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-1.5 bg-blue-100 rounded-lg">
-                      <Building2 className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">Sunset Heights</p>
-                      <p className="text-xs text-gray-500">Wing B</p>
+                      <p className="font-medium text-sm">{(user as any)?.society?.name ?? (user?.role === 'vendor' ? 'Service Provider' : '—')}</p>
+                      <p className="text-xs text-gray-500">
+                        {((user as any)?.society?.address ?? (user as any)?.society?.city ?? ((user as any)?.society?.pincode ? `PIN ${(user as any).society.pincode}` : '')) || (user?.role === 'vendor' ? 'My assigned leads' : '')}
+                      </p>
                     </div>
                   </div>
                 </DropdownMenuItem>
@@ -245,77 +319,220 @@ export function Header() {
           </Button>
 
           {/* Messages */}
-          <Dialog open={messageOpen} onOpenChange={setMessageOpen}>
+          <Dialog open={messageOpen} onOpenChange={(open) => {
+             setMessageOpen(open)
+             if(!open) {
+                setSelectedConversationId(null)
+                setIsNewChatOpen(false)
+             }
+          }}>
             <DialogTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full relative hover:bg-gray-100">
                 <MessageSquare className="h-5 w-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 border-white" />
+                {/* Show dot if unread - logic to be added */}
+                {/* <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 border-white" /> */}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <div className="p-2 bg-teal-100 rounded-lg">
-                    <MessageSquare className="h-5 w-5 text-teal-600" />
-                  </div>
-                  Messages
-                </DialogTitle>
-                <DialogDescription>
-                  Your recent conversations with residents
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${msg.unread ? 'bg-teal-50 hover:bg-teal-100' : 'hover:bg-gray-50'
-                      }`}
-                    onClick={() => alert(`Opening conversation with ${msg.sender}`)}
-                  >
-                    <Avatar className="h-10 w-10 ring-2 ring-white">
-                      <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-sm font-semibold">
-                        {msg.sender.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-semibold text-sm text-[#1e3a5f]">{msg.sender}</p>
-                        <span className="text-xs text-gray-500">{msg.time}</span>
-                      </div>
-                      <p className="text-xs text-teal-600 font-medium">{msg.unit}</p>
-                      <p className="text-sm text-gray-600 truncate mt-0.5">{msg.message}</p>
+            <DialogContent className="max-w-md h-[500px] flex flex-col p-0 gap-0 overflow-hidden">
+              <DialogHeader className="p-4 border-b flex flex-row items-center justify-between space-y-0">
+                <div className="flex flex-col gap-1">
+                    <DialogTitle className="flex items-center gap-2">
+                    <div className="p-2 bg-teal-100 rounded-lg">
+                        <MessageSquare className="h-5 w-5 text-teal-600" />
                     </div>
-                    {msg.unread && (
-                      <span className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0 mt-2" />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 pt-4 border-t">
-                <Textarea
-                  placeholder="Type a message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  className="flex-1 min-h-[60px] focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                />
-                <Button
-                  size="icon"
-                  className="h-[60px] w-[60px] bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
-                  onClick={() => {
-                    if (newMessage.trim()) {
-                      alert('Message sent: ' + newMessage)
-                      setNewMessage('')
-                    }
-                  }}
-                >
-                  <Send className="h-5 w-5" />
-                </Button>
-              </div>
+                    {isNewChatOpen ? 'New Chat' : selectedConversationId ? 'Chat' : 'Messages'}
+                    </DialogTitle>
+                    <DialogDescription>
+                    {isNewChatOpen ? 'Select a user to message' : selectedConversationId ? 'Conversation' : 'Your recent conversations'}
+                    </DialogDescription>
+                </div>
+                {!selectedConversationId && !isNewChatOpen && (
+                    <Button size="sm" onClick={() => setIsNewChatOpen(true)} className="bg-teal-500 hover:bg-teal-600 text-white rounded-full h-8 w-8 p-0 flex items-center justify-center">
+                        <span className="text-lg font-bold pb-1">+</span>
+                    </Button>
+                )}
+              </DialogHeader>
+
+              {/* View: New Chat User Selection */}
+              {isNewChatOpen && (
+                <div className="flex-1 flex flex-col">
+                    <div className="p-4 border-b">
+                        <Input 
+                            placeholder="Search users..." 
+                            value={userSearchTerm}
+                            onChange={(e) => setUserSearchTerm(e.target.value)}
+                            className="bg-gray-50 border-gray-200"
+                        />
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                        {isUsersLoading ? (
+                             <div className="text-center p-4 text-gray-500">Loading users...</div>
+                        ) : availableUsers.length === 0 ? (
+                            <div className="text-center p-4 text-gray-500">No users found.</div>
+                        ) : (
+                            availableUsers.map((u: any) => (
+                                <div
+                                key={u.id}
+                                className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-gray-50 transition-all"
+                                onClick={() => startConversationMutation.mutate(u.id)}
+                                >
+                                <Avatar className="h-10 w-10 ring-2 ring-white">
+                                    <AvatarImage src={u.profileImg} />
+                                    <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-sm font-semibold">
+                                    {u.name?.charAt(0) || '?'}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-sm text-[#1e3a5f]">{u.name}</p>
+                                    <p className="text-xs text-teal-600 font-medium capitalize">{u.role?.toLowerCase()}</p>
+                                </div>
+                                <Button size="sm" variant="ghost" className="text-teal-600">
+                                    Chat
+                                </Button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                     <div className="p-4 border-t">
+                        <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => setIsNewChatOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </div>
+              )}
+
+              {/* View: Conversation List */}
+              {!selectedConversationId && !isNewChatOpen && (
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {isConversationsLoading ? (
+                       <div className="text-center p-4 text-gray-500">Loading chats...</div>
+                  ) : conversations.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                          <div className="bg-gray-50 p-4 rounded-full mb-3">
+                            <MessageSquare className="h-8 w-8 text-gray-300" />
+                          </div>
+                          <p className="text-gray-900 font-medium">No conversations yet</p>
+                          <p className="text-sm text-gray-500 mt-1 mb-4">Start a new chat to connect with others.</p>
+                          <Button variant="outline" onClick={() => setIsNewChatOpen(true)}>
+                            Start New Chat
+                          </Button>
+                      </div>
+                  ) : (
+                    conversations.map((conv: any) => (
+                    <div
+                      key={conv.id}
+                      className="flex items-start gap-3 p-3 rounded-xl cursor-pointer hover:bg-gray-50 transition-all"
+                      onClick={() => setSelectedConversationId(conv.id)}
+                    >
+                      <Avatar className="h-10 w-10 ring-2 ring-white">
+                        <AvatarImage src={conv.otherUser?.profileImg} />
+                        <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-sm font-semibold">
+                          {conv.otherUser?.name?.charAt(0) || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm text-[#1e3a5f]">{conv.otherUser?.name || 'Unknown User'}</p>
+                          <span className="text-xs text-gray-500">{new Date(conv.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <p className="text-xs text-teal-600 font-medium capitalize">{conv.otherUser?.role?.toLowerCase()}</p>
+                        <p className="text-sm text-gray-600 truncate mt-0.5">
+                            {conv.lastMessage?.content || 'Started a conversation'}
+                        </p>
+                      </div>
+                    </div>
+                  )))}
+                </div>
+              )}
+
+              {/* View: Chat Messages */}
+              {selectedConversationId && (
+                  <>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50">
+                        <div className="flex items-center justify-between mb-2">
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedConversationId(null)} className="-ml-2 text-gray-500">
+                                ← Back
+                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-gray-500 hover:text-teal-600"
+                                title="Voice call"
+                                onClick={() => {
+                                  const conv = (conversations as any[]).find((c: any) => c.id === selectedConversationId)
+                                  const phone = conv?.otherUser?.phone
+                                  if (phone) window.open(`tel:${phone}`, '_self')
+                                }}
+                              >
+                                <Phone className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-gray-500 hover:text-teal-600"
+                                title="Video call"
+                                onClick={() => window.open(`https://meet.jit.si/socity-c${selectedConversationId}`, '_blank', 'noopener,noreferrer')}
+                              >
+                                <Video className="h-4 w-4" />
+                              </Button>
+                            </div>
+                        </div>
+                        {currentMessages.map((msg: any) => {
+                            const isMe = msg.sender?.id === user?.id
+                            const senderLabel = isMe ? 'You' : (msg.sender?.name || 'Unknown')
+                            return (
+                                <div key={msg.id} className={`flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                                    <span className={`text-xs font-medium px-1 ${isMe ? 'text-teal-600' : 'text-gray-500'}`}>
+                                        {senderLabel}
+                                    </span>
+                                    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} max-w-[85%]`}>
+                                        <div className={`p-3 rounded-2xl text-sm ${
+                                            isMe ? 'bg-teal-500 text-white rounded-br-none' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-none shadow-sm'
+                                        }`}>
+                                            <p>{msg.content}</p>
+                                            <p className={`text-[10px] mt-1 ${isMe ? 'text-teal-100' : 'text-gray-400'}`}>
+                                                {new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    <div className="p-3 bg-white border-t flex gap-2">
+                         <Textarea
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            className="flex-1 min-h-[44px] max-h-[80px] focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 resize-none"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage();
+                                }
+                            }}
+                          />
+                          <Button
+                            size="icon"
+                            disabled={sendMessageMutation.isPending || !newMessage.trim()}
+                            className="h-[44px] w-[44px] bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
+                            onClick={handleSendMessage}
+                          >
+                            <Send className="h-5 w-5" />
+                          </Button>
+                    </div>
+                  </>
+              )}
             </DialogContent>
           </Dialog>
 
-          {/* Notifications */}
-          <DropdownMenu>
+          {/* Notifications – user-specific from API, no hardcoded data */}
+          <DropdownMenu onOpenChange={(open) => { if (open) refetchNotifications() }}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full relative hover:bg-gray-100">
                 <Bell className="h-5 w-5 text-gray-600" />
@@ -329,40 +546,51 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-80">
               <DropdownMenuLabel className="flex items-center justify-between">
                 <span className="font-bold text-[#1e3a5f]">Notifications</span>
-                <button className="text-xs text-teal-600 hover:text-teal-700 font-medium">
-                  Mark all read
-                </button>
+                {notificationCount > 0 && (
+                  <button
+                    className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                    onClick={() => markAllNotificationsRead.mutate()}
+                  >
+                    Mark all read
+                  </button>
+                )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <div className="max-h-[400px] overflow-y-auto">
-                {notifications.map((notification, index) => (
-                  <DropdownMenuItem
-                    key={index}
-                    className="flex items-start space-x-3 p-3 cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
-                  >
-                    <div
-                      className={`p-2 rounded-lg flex-shrink-0 ${getNotificationIcon(notification.type)}`}
+                {notificationsList.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-6">No notifications</p>
+                ) : (
+                  notificationsList.map((n: any) => (
+                    <DropdownMenuItem
+                      key={n.id}
+                      className="flex items-start space-x-3 p-3 cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
                     >
-                      <Bell className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-gray-900">
-                          {notification.title}
-                        </p>
-                        {notification.unread && (
-                          <span className="w-2 h-2 bg-teal-500 rounded-full" />
-                        )}
+                      <div
+                        className={`p-2 rounded-lg flex-shrink-0 ${getNotificationIcon(n.type || '')}`}
+                      >
+                        <Bell className="h-4 w-4" />
                       </div>
-                      <p className="text-sm text-gray-600 truncate">
-                        {notification.description}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {notification.time}
-                      </p>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {n.title}
+                          </p>
+                          {!n.read && (
+                            <span className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0" />
+                          )}
+                        </div>
+                        {n.description && (
+                          <p className="text-sm text-gray-600 truncate">
+                            {n.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">
+                          {formatNotificationTime(n.createdAt)}
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                )}
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-center text-sm text-teal-600 hover:text-teal-700 cursor-pointer justify-center font-medium">

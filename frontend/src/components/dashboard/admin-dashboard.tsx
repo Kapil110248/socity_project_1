@@ -41,6 +41,7 @@ import {
   Shield,
   ClipboardCheck,
   Loader2,
+  BookOpen,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -63,6 +64,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { SocietyService } from '@/services/society.service'
 
 // Helpdesk tickets data - matches IGATESECURITY bar chart
 const helpdeskData = [
@@ -110,6 +112,14 @@ export function AdminDashboard() {
     queryKey: ['admin-dashboard-stats'],
     queryFn: DashboardService.getAdminStats,
     refetchInterval: 60000, // Refresh every minute
+  })
+
+  // Guidelines & announcements sent to admins (platform or society)
+  const isAdmin = (user as any)?.role?.toLowerCase() === 'admin'
+  const { data: guidelines = [] } = useQuery<any[]>({
+    queryKey: ['guidelines-for-me'],
+    queryFn: SocietyService.getGuidelinesForMe,
+    enabled: !!user && isAdmin,
   })
 
   const showNotification = (message: string) => {
@@ -329,6 +339,50 @@ export function AdminDashboard() {
           )
         })}
       </motion.div>
+
+      {/* Guidelines & Announcements (from Super Admin / platform) */}
+      {guidelines.length > 0 && (
+        <motion.div variants={itemVariants}>
+          <Card className="border-0 shadow-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-teal-600" />
+                  Guidelines & Announcements
+                </CardTitle>
+                <Badge variant="outline" className="bg-teal-50 text-teal-600 border-teal-200">
+                  {guidelines.length} item{guidelines.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+              <CardDescription>Updates and guidelines shared with you by the platform</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                {(guidelines as any[]).slice(0, 5).map((g: any) => (
+                  <li
+                    key={g.id}
+                    className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-100"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-gray-900">{g.title}</span>
+                      {g.category && (
+                        <Badge variant="secondary" className="text-xs">{g.category}</Badge>
+                      )}
+                      {g.society?.name && (
+                        <span className="text-xs text-gray-500">· {g.society.name}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-2">{g.content}</p>
+                  </li>
+                ))}
+              </ul>
+              {guidelines.length > 5 && (
+                <p className="text-sm text-gray-500 mt-3">+ {guidelines.length - 5} more</p>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Community Overview Section */}
       <motion.div variants={itemVariants}>

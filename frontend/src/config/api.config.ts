@@ -1,6 +1,6 @@
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://socity-backend-production.up.railway.app/api',
-  //BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api',
+  // BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://socity-backend-production.up.railway.app/api',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api',
 
   // Authentication & Users
   AUTH: {
@@ -48,6 +48,7 @@ export const API_CONFIG = {
   COMPLAINT: {
     LIST: '/complaints',
     CREATE: '/complaints',
+    CREATE_AGAINST_VENDOR: '/complaints/against-vendor',
     STATS: '/complaints/stats',
     GET: (id: number | string) => `/complaints/${id}`,
     UPDATE_STATUS: (id: number | string) => `/complaints/${id}/status`,

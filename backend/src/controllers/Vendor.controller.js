@@ -30,7 +30,8 @@ class VendorController {
         contactPerson,
         contact,
         phone,
-        email,
+        email, // Used for login – must be unique
+        password, // Vendor logs in with email + this password
         address,
         gst,
         pan,
@@ -38,7 +39,8 @@ class VendorController {
         contractEnd,
         contractValue,
         paymentTerms,
-        societyId
+        societyId,
+        servicePincodes // Array of strings or comma-separated
       } = req.body;
 
       // If SUPER_ADMIN, we can either take societyId from body (for societal vendor) 
@@ -50,29 +52,74 @@ class VendorController {
       } else {
         socId = req.user.societyId || null;
       }
+      
+      const bcrypt = require('bcryptjs');
 
-      const vendor = await prisma.vendor.create({
-        data: {
-          name,
-          company,
-          serviceType: type || serviceType,
-          contactPerson,
-          contact: phone || contact || '',
-          email,
-          address,
-          gst,
-          pan,
-          contractStart: contractStart ? new Date(contractStart) : null,
-          contractEnd: contractEnd ? new Date(contractEnd) : null,
-          contractValue: contractValue ? parseFloat(contractValue) : 0,
-          paymentTerms,
-          contractValue: contractValue ? parseFloat(contractValue) : 0,
-          paymentTerms,
-          societyId: socId,
-          servicePincodes // Add pincodes
-        }
+      if (!email) {
+        return res.status(400).json({ error: 'Official Email is required. Vendor will log in with this email.' });
+      }
+      const loginPassword = password && String(password).trim().length >= 6
+        ? String(password).trim()
+        : null;
+      if (!loginPassword) {
+        return res.status(400).json({ error: 'Password is required (minimum 6 characters). Vendor will use this with the Official Email to log in.' });
+      }
+
+      // Check for existing user to avoid conflicts
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+           return res.status(400).json({ error: 'User with this email already exists. Please use a different email.' });
+      }
+
+      // Normalise servicePincodes to array
+      const pincodeArr = Array.isArray(servicePincodes)
+        ? servicePincodes
+        : (typeof servicePincodes === 'string' && servicePincodes.trim())
+          ? servicePincodes.split(',').map(s => s.trim()).filter(Boolean)
+          : [];
+
+      // Transaction to ensure both Vendor and User are created
+      const result = await prisma.$transaction(async (tx) => {
+          // 1. Create Vendor Profile
+          const vendor = await tx.vendor.create({
+            data: {
+              name,
+              company,
+              serviceType: type || serviceType,
+              contactPerson,
+              contact: phone || contact || '',
+              email,
+              address,
+              gst,
+              pan,
+              contractStart: contractStart ? new Date(contractStart) : null,
+              contractEnd: contractEnd ? new Date(contractEnd) : null,
+              contractValue: contractValue ? parseFloat(contractValue) : 0,
+              paymentTerms,
+              societyId: socId,
+              status: 'ACTIVE',
+              servicePincodes: pincodeArr.length ? pincodeArr.join(', ') : null
+            }
+          });
+
+          // 2. Create User – vendor logs in with email + password
+          const hashedPassword = await bcrypt.hash(loginPassword, 10);
+          await tx.user.create({
+              data: {
+                  name: name || company || contactPerson,
+                  email,
+                  phone: phone || contact || '',
+                  password: hashedPassword,
+                  role: 'VENDOR',
+                  status: 'ACTIVE',
+                  societyId: socId // Null for Platform Vendor, ID for Societal
+              }
+          });
+          
+          return vendor;
       });
-      res.status(201).json(vendor);
+
+      res.status(201).json(result);
     } catch (error) {
       console.error('Create Vendor Error:', error);
       res.status(500).json({ error: error.message });
@@ -81,7 +128,7 @@ class VendorController {
 
   static async listAllVendors(req, res) {
     try {
-      let { page = 1, limit = 10, search, status } = req.query;
+      let { page = 1, limit = 10, search, status, pincode } = req.query;
       page = parseInt(page);
       limit = parseInt(limit);
       const skip = (page - 1) * limit;
@@ -96,7 +143,26 @@ class VendorController {
       }
       if (status && status !== 'all') {
         where.status = status;
+      }
+      if (pincode && String(pincode).trim()) {
+        const pin = String(pincode).trim();
+        const pinCond = {
+          OR: [
+            { servicePincodes: { equals: pin } },
+            { servicePincodes: { startsWith: pin + ',' } },
+            { servicePincodes: { endsWith: ',' + pin } },
+            { servicePincodes: { contains: ',' + pin + ',' } }
+          ]
+        };
+        if (Object.keys(where).length > 0) {
+          where = { AND: [ { ...where }, pinCond ] };
+        } else {
+          Object.assign(where, pinCond);
         }
+      }
+
+      console.log('listAllVendors Params:', { page, limit, search, status, pincode });
+      console.log('Constructed Where:', JSON.stringify(where, null, 2));
 
       const [total, vendors] = await Promise.all([
         prisma.vendor.count({ where }),
@@ -107,6 +173,7 @@ class VendorController {
           include: { society: { select: { name: true } } }
         })
       ]);
+      console.log('Query Result:', { total, count: vendors.length });
       res.json({
         data: vendors,
         meta: {

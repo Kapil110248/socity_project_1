@@ -97,10 +97,16 @@ export default function SuperAdminLeadTrackingPage() {
         )
 
         // 2. Sort/Prioritize by PIN code match if query has pincode
+        // 2. Sort/Prioritize by PIN code match if query has pincode
         if (inquiryPincode) {
             return serviceMatches.sort((a: any, b: any) => {
-                const aHasPin = a.servicePincodes?.includes(inquiryPincode)
-                const bHasPin = b.servicePincodes?.includes(inquiryPincode)
+                // Determine matches by splitting the CSV string
+                // Safety check for null/undefined servicePincodes
+                const aPins = (a.servicePincodes || '').split(',').map((p:string) => p.trim());
+                const bPins = (b.servicePincodes || '').split(',').map((p:string) => p.trim());
+                
+                const aHasPin = aPins.includes(inquiryPincode);
+                const bHasPin = bPins.includes(inquiryPincode);
                 
                 if (aHasPin && !bHasPin) return -1
                 if (!aHasPin && bHasPin) return 1
@@ -128,6 +134,13 @@ export default function SuperAdminLeadTrackingPage() {
         booked: 'bg-blue-100 text-blue-700',
         completed: 'bg-green-100 text-green-700',
         cancelled: 'bg-red-100 text-red-700',
+    }
+
+    /** Lead source: Society / Resident / Individual for display */
+    const getLeadSource = (inquiry: any): string => {
+        if (inquiry.residentId && inquiry.societyId) return 'Resident'
+        if (inquiry.societyId) return 'Society'
+        return 'Individual'
     }
 
     return (
@@ -216,6 +229,7 @@ export default function SuperAdminLeadTrackingPage() {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50/50">
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Source</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Resident / Unit</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Society</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Service Requested</th>
@@ -233,6 +247,11 @@ export default function SuperAdminLeadTrackingPage() {
                                     transition={{ delay: index * 0.05 }}
                                     className="hover:bg-gray-50/50 transition-colors"
                                 >
+                                    <td className="px-8 py-6">
+                                        <Badge variant="outline" className="font-semibold text-[10px] uppercase w-fit">
+                                            {getLeadSource(inquiry)}
+                                        </Badge>
+                                    </td>
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col">
                                             <span className="font-bold text-gray-900">{inquiry.residentName}</span>
@@ -379,8 +398,10 @@ export default function SuperAdminLeadTrackingPage() {
                                     <SelectValue placeholder="Choose a vendor..." />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl border-0 shadow-2xl ring-1 ring-black/5">
-                                    {selectedInquiry && getMatchingVendors(selectedInquiry.serviceName, selectedInquiry.society?.pincode).map((vendor: any) => {
-                                        const isLocationMatch = selectedInquiry.society?.pincode && vendor.servicePincodes?.includes(selectedInquiry.society.pincode)
+                                    {selectedInquiry && getMatchingVendors(selectedInquiry.serviceName, selectedInquiry.pincode || selectedInquiry.society?.pincode).map((vendor: any) => {
+                                        const inquiryPin = selectedInquiry.pincode || selectedInquiry.society?.pincode;
+                                        const vendorPins = (vendor.servicePincodes || '').split(',').map((p:string) => p.trim());
+                                        const isLocationMatch = inquiryPin && vendorPins.includes(inquiryPin);
                                         
                                         return (
                                         <SelectItem key={vendor.id} value={String(vendor.id)} className="rounded-xl p-3 font-bold">

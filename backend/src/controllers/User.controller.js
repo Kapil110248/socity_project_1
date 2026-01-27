@@ -192,7 +192,12 @@ class UserController {
 
   static async getAllUsers(req, res) {
     try {
+      // ADMIN sees only users from their society; SUPER_ADMIN sees all
+      const where = req.user.role === 'ADMIN' && req.user.societyId
+        ? { societyId: req.user.societyId }
+        : {};
       const users = await prisma.user.findMany({
+        where,
         include: { society: true },
         orderBy: { createdAt: 'desc' }
       });

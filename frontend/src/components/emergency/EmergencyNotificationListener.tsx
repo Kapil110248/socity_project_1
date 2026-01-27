@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface AlertPayload {
   id: number
@@ -29,6 +30,7 @@ interface AlertPayload {
 
 export default function EmergencyNotificationListener() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { user, isAuthenticated } = useAuthStore()
   const [activeAlert, setActiveAlert] = useState<AlertPayload | null>(null)
   
@@ -44,6 +46,8 @@ export default function EmergencyNotificationListener() {
       if (socket) {
         socket.on('new_emergency_alert', (alert: AlertPayload) => {
           console.log('Received emergency alert:', alert)
+          // Refresh bell notifications so new emergency notification shows
+          queryClient.invalidateQueries({ queryKey: ['notifications'] })
           
           if (user?.role === 'super_admin') {
             // Logical for Super Admin: Non-disruptive Toast with Society Info

@@ -33,7 +33,11 @@ export const SocietyService = {
         const response = await api.get('/society/guidelines', { params });
         return response.data;
     },
-    createGuideline: async (data: { societyId: number; title: string; content: string; category: string }) => {
+    getGuidelinesForMe: async () => {
+        const response = await api.get('/society/guidelines/for-me');
+        return response.data;
+    },
+    createGuideline: async (data: { societyId?: number | null; title: string; content: string; category: string; targetAudience?: string }) => {
         const response = await api.post('/society/guidelines', data);
         return response.data;
     },

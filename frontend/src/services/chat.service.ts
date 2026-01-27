@@ -46,5 +46,11 @@ export const chatService = {
   startConversation: async (type: string) => {
     const response = await api.post<Conversation>('/chat/start', { type })
     return response.data
+  },
+
+  /** Start direct 1:1 chat with another user (used by admin, super_admin, etc.) */
+  startDirectConversation: async (targetUserId: number) => {
+    const response = await api.post('/chat/start', { targetUserId })
+    return response.data
   }
 }

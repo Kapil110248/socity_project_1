@@ -656,8 +656,21 @@ class SocietyController {
   static async getGuidelines(req, res) {
     try {
       const { societyId } = req.query;
-      const where = societyId ? { societyId: parseInt(societyId) } : {};
-
+      
+      // If societyId is provided, fetch specific + global.
+      // If not provided (Super Admin view all), fetch all (or we could default to global only, but usually Super Admin wants all).
+      // However, for Society Admin (who sends their ID), we want THEIR guidelines + GLOBAL guidelines.
+      
+      let where = {};
+      if (societyId) {
+          where = {
+            OR: [
+                { societyId: parseInt(societyId) },
+                { societyId: null }
+            ]
+          };
+      }
+      
       const guidelines = await prisma.communityGuideline.findMany({
         where,
         include: {
@@ -674,20 +687,77 @@ class SocietyController {
     }
   }
 
+  static async getGuidelinesForMe(req, res) {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const role = (user.role || '').toUpperCase();
+      const societyId = user.societyId ? parseInt(user.societyId) : null;
+
+      const audienceForRole = {
+        ADMIN: ['ALL', 'ADMINS'],
+        RESIDENT: ['ALL', 'RESIDENTS'],
+        INDIVIDUAL: ['ALL', 'INDIVIDUALS'],
+        VENDOR: ['ALL', 'VENDORS'],
+        SUPER_ADMIN: ['ALL', 'ADMINS', 'RESIDENTS', 'INDIVIDUALS', 'VENDORS'],
+      };
+      const allowedAudiences = audienceForRole[role] || ['ALL'];
+
+      // Include null targetAudience (legacy rows) as "ALL"
+      const audienceOrNull = [...allowedAudiences.map((a) => ({ targetAudience: a })), { targetAudience: null }];
+
+      let where = { OR: audienceOrNull };
+
+      if (role === 'ADMIN' || role === 'RESIDENT') {
+        where = {
+          AND: [
+            { OR: societyId != null ? [{ societyId }, { societyId: null }] : [{ societyId: null }] },
+            { OR: audienceOrNull }
+          ]
+        };
+      } else if (role === 'INDIVIDUAL') {
+        where = {
+          AND: [
+            { societyId: null },
+            { OR: audienceOrNull }
+          ]
+        };
+      }
+      // VENDOR, SUPER_ADMIN: any society or global, filtered by audience
+
+      const guidelines = await prisma.communityGuideline.findMany({
+        where,
+        include: {
+          society: { select: { id: true, name: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      res.json(guidelines);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   static async createGuideline(req, res) {
     try {
-      const { societyId, title, content, category } = req.body;
+      const { societyId, title, content, category, targetAudience } = req.body;
 
-      if (!societyId || !title || !content || !category) {
+      // Allow null societyId for global guidelines (only if Super Admin presumably, but enforcing data validity here)
+      // If societyId is NOT provided or is null, it's global.
+      if (!title || !content || !category) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
+      const audience = (targetAudience || 'ALL').toUpperCase();
       const guideline = await prisma.communityGuideline.create({
         data: {
-          societyId: parseInt(societyId),
+          societyId: societyId ? parseInt(societyId) : null,
           title,
           content,
-          category: category.toUpperCase()
+          category: category.toUpperCase(),
+          targetAudience: ['ALL', 'RESIDENTS', 'ADMINS', 'INDIVIDUALS', 'VENDORS'].includes(audience) ? audience : 'ALL'
         },
         include: {
           society: {
@@ -705,15 +775,17 @@ class SocietyController {
   static async updateGuideline(req, res) {
     try {
       const { id } = req.params;
-      const { title, content, category } = req.body;
+      const { title, content, category, targetAudience } = req.body;
+
+      const data = { title, content, category: (category || '').toUpperCase() };
+      if (targetAudience != null) {
+        const a = (targetAudience || 'ALL').toUpperCase();
+        data.targetAudience = ['ALL', 'RESIDENTS', 'ADMINS', 'INDIVIDUALS', 'VENDORS'].includes(a) ? a : 'ALL';
+      }
 
       const guideline = await prisma.communityGuideline.update({
         where: { id: parseInt(id) },
-        data: {
-          title,
-          content,
-          category: category.toUpperCase()
-        },
+        data,
         include: {
           society: {
             select: { id: true, name: true }

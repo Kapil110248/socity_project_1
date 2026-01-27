@@ -20,9 +20,11 @@ interface UserRaiseComplaintDialogProps {
     trigger?: React.ReactNode
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    /** When true, label indicates this complaint is escalated to Super Admin (admin dashboard flow). */
+    escalateToSuperAdmin?: boolean
 }
 
-export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServiceName, trigger, open: externalOpen, onOpenChange: externalOnOpenChange }: UserRaiseComplaintDialogProps) {
+export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServiceName, trigger, open: externalOpen, onOpenChange: externalOnOpenChange, escalateToSuperAdmin }: UserRaiseComplaintDialogProps) {
     const queryClient = useQueryClient()
     const [internalOpen, setInternalOpen] = useState(false)
 
@@ -71,7 +73,7 @@ export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServ
             queryClient.invalidateQueries({ queryKey: ['complaints'] })
             queryClient.invalidateQueries({ queryKey: ['complaint-stats'] })
             queryClient.invalidateQueries({ queryKey: ['tickets'] })
-            toast.success(selectedVendorId ? 'Complaint raised and assigned to vendor!' : 'Complaint submitted successfully!')
+            toast.success(escalateToSuperAdmin ? 'Complaint escalated to Super Admin.' : (selectedVendorId ? 'Complaint raised and assigned to vendor!' : 'Complaint submitted successfully!'))
             setOpen(false)
             setSubject('')
             setDescription('')
@@ -112,7 +114,7 @@ export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServ
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-xl">
                         <AlertCircle className="h-5 w-5 text-red-600" />
-                        Raise Complaint
+                        {escalateToSuperAdmin ? 'Raise to Super Admin (Platform Escalation)' : 'Raise Complaint'}
                     </DialogTitle>
                 </DialogHeader>
 

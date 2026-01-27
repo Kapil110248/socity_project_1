@@ -377,22 +377,22 @@ export default function SocietyAdminsPage() {
                       <TableCell className="text-sm text-gray-500">{admin.joinedDate}</TableCell>
                       <TableCell className="text-sm text-gray-500">{admin.lastLogin}</TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem onClick={() => setViewAdmin(admin)}>
+                            <DropdownMenuItem onSelect={() => setTimeout(() => setViewAdmin(admin), 0)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setEditAdmin(admin)}>
+                            <DropdownMenuItem onSelect={() => setTimeout(() => setEditAdmin(admin), 0)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Admin
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => setDeleteAdminId(admin.id)}>
+                            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onSelect={() => setTimeout(() => setDeleteAdminId(admin.id), 0)}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete Admin
                             </DropdownMenuItem>

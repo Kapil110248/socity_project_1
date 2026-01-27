@@ -23,7 +23,6 @@ export default function NewPlatformVendorPage() {
         email: '',
         contact: '',
         serviceType: '',
-        username: '',
         password: '',
         servicePincodes: '' 
     })
@@ -175,38 +174,27 @@ export default function NewPlatformVendorPage() {
                                 </div>
                                 <div>
                                     <CardTitle>Vendor Login Credentials</CardTitle>
-                                    <CardDescription>Account access for the vendor dashboard</CardDescription>
+                                    <CardDescription>Vendor will log in with the Official Email above and the password below</CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="username">Username *</Label>
+                            <div className="space-y-2 max-w-md">
+                                <Label htmlFor="password">Password *</Label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                     <Input
-                                        id="username"
-                                        placeholder="vendor_username"
-                                        className="rounded-xl border-gray-200"
-                                        value={formData.username}
-                                        onChange={(e) => handleChange('username', e.target.value)}
+                                        id="password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        minLength={6}
+                                        className="pl-10 rounded-xl border-gray-200"
+                                        value={formData.password}
+                                        onChange={(e) => handleChange('password', e.target.value)}
                                         required
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">Password *</Label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            placeholder="••••••••"
-                                            className="pl-10 rounded-xl border-gray-200"
-                                            value={formData.password}
-                                            onChange={(e) => handleChange('password', e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                                <p className="text-xs text-gray-500">Minimum 6 characters. Vendor uses this with their Official Email to sign in.</p>
                             </div>
                         </CardContent>
                     </Card>

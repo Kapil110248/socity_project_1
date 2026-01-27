@@ -37,6 +37,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { RoleGuard } from '@/components/auth/role-guard'
 
 // Mock data removed
@@ -44,6 +50,12 @@ import { RoleGuard } from '@/components/auth/role-guard'
 export default function PlatformUsersPage() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
+  
+  // Action States
+  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false) // reused for Suspend confirmation
+  const [actionType, setActionType] = useState<'suspend' | 'activate'>('suspend')
 
   const { data: users = [], isLoading } = useQuery<any[]>({
     queryKey: ['platform-users'],
@@ -94,7 +106,7 @@ export default function PlatformUsersPage() {
   )
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'active':
         return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
       case 'pending':
@@ -222,22 +234,19 @@ export default function PlatformUsersPage() {
                     <TableCell>{getStatusBadge(user.status)}</TableCell>
                     <TableCell className="text-sm text-gray-500">{user.lastLogin}</TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => { setSelectedUser(user); setTimeout(() => setIsViewOpen(true), 0); }}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit User
-                          </DropdownMenuItem>
-                          {user.status === 'suspended' ? (
+                          
+                          {user.status?.toLowerCase() === 'suspended' ? (
                             <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: user.id, status: 'ACTIVE' })}>
                               <UserCheck className="h-4 w-4 mr-2" />
                               Activate User
@@ -258,6 +267,46 @@ export default function PlatformUsersPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* View Dialog */}
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>User Profile</DialogTitle>
+            </DialogHeader>
+            {selectedUser && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-16 w-16">
+                            <AvatarFallback>{selectedUser.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h3 className="font-bold">{selectedUser.name}</h3>
+                            <p className="text-gray-500 text-sm">{selectedUser.email}</p>
+                            <Badge className="mt-2">{selectedUser.role}</Badge>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-xs text-gray-500">Society</p>
+                            <p className="font-medium">{selectedUser.societyName || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500">Status</p>
+                            <p className="font-medium capitalize">{selectedUser.status}</p>
+                        </div>
+                         <div>
+                            <p className="text-xs text-gray-500">Phone</p>
+                            <p className="font-medium">{selectedUser.phone || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+          </DialogContent>
+        </Dialog>
+        
+
+
       </motion.div>
     </RoleGuard>
   )

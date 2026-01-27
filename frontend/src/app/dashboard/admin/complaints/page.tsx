@@ -78,7 +78,7 @@ export default function AdminComplaintsPage() {
                     className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-lg shadow-indigo-100"
                 >
                     <Plus className="h-4 w-4" />
-                    Raise New Complaint
+                    Raise to Super Admin
                 </Button>
             </div>
 
@@ -180,6 +180,7 @@ export default function AdminComplaintsPage() {
             <UserRaiseComplaintDialog
                 open={isCreateOpen}
                 onOpenChange={setIsCreateOpen}
+                escalateToSuperAdmin
             />
         </div>
     )

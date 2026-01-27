@@ -31,6 +31,7 @@ import {
   MoreHorizontal,
   RefreshCw,
   X,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -68,6 +69,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { VendorService } from '@/services/vendor.service'
+import { RaiseComplaintAgainstVendorDialog } from '@/components/complaints/raise-complaint-against-vendor-dialog'
 
 const stats = [
   {
@@ -321,6 +323,7 @@ export default function VendorsPage() {
   const [ratingVendor, setRatingVendor] = useState<Vendor | null>(null)
   const [renewingVendor, setRenewingVendor] = useState<Vendor | null>(null)
   const [paymentHistoryVendor, setPaymentHistoryVendor] = useState<any | null>(null)
+  const [complaintVendor, setComplaintVendor] = useState<any | null>(null)
   const [selectedRating, setSelectedRating] = useState(0)
   const queryClient = useQueryClient()
 
@@ -1023,6 +1026,10 @@ export default function VendorsPage() {
                               <History className="h-4 w-4 mr-2" />
                               Payment History
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setComplaintVendor(vendor)}>
+                              <AlertCircle className="h-4 w-4 mr-2" />
+                              Raise Complaint Against Vendor
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setRatingVendor(vendor)}>
                               <Star className="h-4 w-4 mr-2" />
                               Rate Vendor
@@ -1587,6 +1594,13 @@ export default function VendorsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Raise Complaint Against Vendor */}
+        <RaiseComplaintAgainstVendorDialog
+          vendor={complaintVendor}
+          open={complaintVendor !== null}
+          onOpenChange={(o) => !o && setComplaintVendor(null)}
+        />
 
         {/* Payment History Dialog */}
         <Dialog open={paymentHistoryVendor !== null} onOpenChange={() => setPaymentHistoryVendor(null)}>

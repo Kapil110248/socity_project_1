@@ -1,42 +1,79 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, CheckCircle2, Clock, ClipboardList, Calendar, Phone, User } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { useAuthStore } from '@/lib/stores/auth-store'
-import { useServiceStore } from '@/lib/stores/service-store'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { cn } from '@/lib/utils/cn'
 
 export default function VendorLeadsPage() {
-    const { user } = useAuthStore()
-    const { inquiries, updateInquiryStatus } = useServiceStore()
+    const queryClient = useQueryClient()
     const [searchQuery, setSearchQuery] = useState('')
 
-    const leads = inquiries.filter(inq => {
-        const matchesVendor = inq.vendorId === user?.id
-        // Matches vendor and shows various stages of lead lifecycle
-        const relevantStatuses = ['pending', 'booked', 'confirmed', 'done', 'completed']
-        const isAssigned = relevantStatuses.includes(inq.status)
-        const matchesSearch = inq.residentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inq.serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inq.unit.toLowerCase().includes(searchQuery.toLowerCase())
-
-        return matchesVendor && isAssigned && matchesSearch
+    const { data: inquiriesRaw, isLoading } = useQuery({
+        queryKey: ['vendor-my-leads'],
+        queryFn: async () => {
+            const res = await api.get('/services/inquiries', { params: { limit: 200 } })
+            const body = res.data
+            return Array.isArray(body) ? body : (body?.data ?? [])
+        },
     })
 
-    const handleStatusUpdate = (id: string, status: any) => {
-        updateInquiryStatus(id, status)
-        const labels: Record<string, string> = {
-            confirmed: 'marked as contacted',
-            booked: 'marked as pending',
-            done: 'completed'
-        }
-        toast.success(`Service ${labels[status] || 'updated'}!`)
+    const inquiries = Array.isArray(inquiriesRaw) ? inquiriesRaw : []
+    const leads = useMemo(() => {
+        const q = searchQuery.toLowerCase().trim()
+        if (!q) return inquiries
+        return inquiries.filter((inq: any) => {
+            const name = (inq.residentName || '').toLowerCase()
+            const service = (inq.serviceName || '').toLowerCase()
+            const unit = (inq.unit || '').toLowerCase()
+            return name.includes(q) || service.includes(q) || unit.includes(q)
+        })
+    }, [inquiries, searchQuery])
+
+    const statusMutation = useMutation({
+        mutationFn: async ({ id, status }: { id: number | string; status: string }) => {
+            const res = await api.patch(`/services/inquiries/${id}/status`, { status })
+            return res.data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vendor-my-leads'] })
+        },
+    })
+
+    const handleStatusUpdate = (id: string | number, status: string) => {
+        statusMutation.mutate(
+            { id, status },
+            {
+                onSuccess: () => {
+                    const labels: Record<string, string> = {
+                        confirmed: 'marked as contacted',
+                        booked: 'marked as pending',
+                        done: 'completed',
+                    }
+                    toast.success(`Service ${labels[status] || 'updated'}!`)
+                },
+                onError: (err: any) => {
+                    toast.error(err?.response?.data?.error || 'Failed to update status')
+                },
+            }
+        )
+    }
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-center py-24">
+                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-500 border-t-transparent" />
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -86,7 +123,7 @@ export default function VendorLeadsPage() {
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-bold text-lg text-gray-900">{lead.residentName}</h3>
                                                 <Badge variant="outline" className="rounded-full text-[10px] font-black uppercase tracking-tighter">
-                                                    {lead.unit}
+                                                    {lead.unit ?? '—'}
                                                 </Badge>
                                                 {lead.status === 'done' && (
                                                     <Badge className="bg-green-100 text-green-700 border-green-200">Done</Badge>

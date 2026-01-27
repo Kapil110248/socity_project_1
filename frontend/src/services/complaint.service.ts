@@ -55,6 +55,19 @@ export const ComplaintService = {
     return response.data;
   },
 
+  createAgainstVendor: async (data: {
+    vendorId: number | string;
+    title: string;
+    description: string;
+    category: string;
+    priority?: string;
+    isPrivate?: boolean;
+    images?: string[];
+  }) => {
+    const response = await api.post(API_CONFIG.COMPLAINT.CREATE_AGAINST_VENDOR, data);
+    return response.data;
+  },
+
   updateStatus: async (id: number | string, status: string) => {
     const response = await api.patch(API_CONFIG.COMPLAINT.UPDATE_STATUS(id), { status });
     return response.data;

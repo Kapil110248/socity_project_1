@@ -49,7 +49,8 @@ export default function GuidelinesManagementPage() {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    category: 'SOCIETY'
+    category: 'SOCIETY',
+    targetAudience: 'ALL'
   })
 
   // Fetch societies
@@ -71,7 +72,7 @@ export default function GuidelinesManagementPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['super-admin-guidelines'] })
       setIsCreateOpen(false)
-      setFormData({ title: '', content: '', category: 'SOCIETY' })
+      setFormData({ title: '', content: '', category: 'SOCIETY', targetAudience: 'ALL' })
       toast.success('Guideline created successfully')
     },
     onError: () => toast.error('Failed to create guideline')
@@ -100,13 +101,16 @@ export default function GuidelinesManagementPage() {
   })
 
   const handleCreate = () => {
-    if (!selectedSociety) {
-      toast.error('Please select a society first')
-      return
-    }
+    // Determine target society: explicit selection or null for "All" (if user intends global)
+    // Current UI forces selection. We need to allow "All".
+    // If selectedSociety is null, we treat it as Global.
+    
     createMutation.mutate({
-      societyId: selectedSociety,
-      ...formData
+      societyId: selectedSociety ?? undefined,
+      title: formData.title,
+      content: formData.content,
+      category: formData.category,
+      targetAudience: formData.targetAudience || 'ALL'
     })
   }
 
@@ -115,7 +119,8 @@ export default function GuidelinesManagementPage() {
     setFormData({
       title: guideline.title,
       content: guideline.content,
-      category: guideline.category
+      category: guideline.category,
+      targetAudience: guideline.targetAudience || 'ALL'
     })
     setIsEditOpen(true)
   }
@@ -124,7 +129,12 @@ export default function GuidelinesManagementPage() {
     if (!editingGuideline) return
     updateMutation.mutate({
       id: editingGuideline.id,
-      data: formData
+      data: {
+        title: formData.title,
+        content: formData.content,
+        category: formData.category,
+        targetAudience: formData.targetAudience || 'ALL'
+      }
     })
   }
 
@@ -163,18 +173,37 @@ export default function GuidelinesManagementPage() {
               <div>
                 <Label>Society *</Label>
                 <Select
-                  value={selectedSociety?.toString()}
-                  onValueChange={(v) => setSelectedSociety(parseInt(v))}
+                  value={selectedSociety === null ? 'null' : selectedSociety?.toString()}
+                  onValueChange={(v) => setSelectedSociety(v === 'null' ? null : parseInt(v))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select society" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="null">All Societies (Global)</SelectItem>
                     {societies.map((s: any) => (
                       <SelectItem key={s.id} value={s.id.toString()}>
                         {s.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Target Audience *</Label>
+                <Select
+                  value={formData.targetAudience}
+                  onValueChange={(v) => setFormData({ ...formData, targetAudience: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Who should see this" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All (Residents, Admins, Individuals, Vendors)</SelectItem>
+                    <SelectItem value="RESIDENTS">Residents only</SelectItem>
+                    <SelectItem value="ADMINS">Society Admins only</SelectItem>
+                    <SelectItem value="INDIVIDUALS">Individual clients only</SelectItem>
+                    <SelectItem value="VENDORS">Vendors only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -274,9 +303,14 @@ export default function GuidelinesManagementPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <CardTitle className="text-lg">{guideline.title}</CardTitle>
                       <Badge variant="outline">{guideline.category}</Badge>
+                      {guideline.targetAudience && (
+                        <Badge variant="secondary" className="text-xs">
+                          For: {guideline.targetAudience === 'ALL' ? 'All' : guideline.targetAudience}
+                        </Badge>
+                      )}
                     </div>
                     {guideline.society && (
                       <p className="text-sm text-gray-500">
@@ -346,6 +380,24 @@ export default function GuidelinesManagementPage() {
             <DialogTitle>Edit Guideline</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label>Target Audience *</Label>
+              <Select
+                value={formData.targetAudience}
+                onValueChange={(v) => setFormData({ ...formData, targetAudience: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All</SelectItem>
+                  <SelectItem value="RESIDENTS">Residents only</SelectItem>
+                  <SelectItem value="ADMINS">Society Admins only</SelectItem>
+                  <SelectItem value="INDIVIDUALS">Individual clients only</SelectItem>
+                  <SelectItem value="VENDORS">Vendors only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label>Title *</Label>
               <Input

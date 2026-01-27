@@ -1,42 +1,74 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, User, Wrench, Clock, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react'
+import { Search, User, Wrench, Clock, CheckCircle2, AlertCircle, ChevronDown, MapPin } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog'
 import { toast } from 'react-hot-toast'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
+
+/** Derive lead source from inquiry (society/resident/individual) for filter tabs */
+function leadSource(inq: any): string {
+    if (inq.residentId && inq.societyId) return 'resident'
+    if (inq.societyId) return 'society'
+    return 'individual'
+}
 
 export default function SuperAdminLeadsPage() {
     const queryClient = useQueryClient()
     const [searchQuery, setSearchQuery] = useState('')
     const [leadType, setLeadType] = useState<string>('all')
+    const [assignInquiry, setAssignInquiry] = useState<any | null>(null)
+    const [vendorSearch, setVendorSearch] = useState('')
 
-    const { data: inquiries = [], isLoading } = useQuery<any[]>({
-        queryKey: ['platform-inquiries'],
+    const { data: inquiriesRaw, isLoading } = useQuery<any>({
+        queryKey: ['platform-inquiries', 'all'],
         queryFn: async () => {
-            const response = await api.get('/services/inquiries')
-            return response.data
+            const res = await api.get('/services/inquiries', { params: { limit: 200 } })
+            const body = res.data
+            return Array.isArray(body) ? body : (body?.data ?? [])
         }
     })
+    const inquiries = Array.isArray(inquiriesRaw) ? inquiriesRaw : []
 
-    const { data: vendors = [] } = useQuery<any[]>({
-        queryKey: ['super-admin-vendors'],
+    const leadPincode = assignInquiry
+        ? (assignInquiry.pincode || assignInquiry.society?.pincode || '').trim()
+        : ''
+
+    const { data: vendorsByPincode = [], isLoading: vendorsLoading } = useQuery<any[]>({
+        queryKey: ['vendors-by-pincode', leadPincode],
         queryFn: async () => {
-            const response = await api.get('/vendors/all')
-            return response.data
-        }
+            const res = await api.get('/vendors/all', {
+                params: leadPincode ? { pincode: leadPincode, limit: 100 } : { limit: 100 }
+            })
+            const body = res.data
+            const list = Array.isArray(body) ? body : (body?.data ?? [])
+            return list
+        },
+        enabled: !!assignInquiry
     })
+
+    const filteredVendorsInDialog = useMemo(() => {
+        if (!vendorSearch.trim()) return vendorsByPincode
+        const q = vendorSearch.toLowerCase()
+        return vendorsByPincode.filter(
+            (v: any) =>
+                (v.name || '').toLowerCase().includes(q) ||
+                (v.serviceType || '').toLowerCase().includes(q) ||
+                (v.contact || '').toLowerCase().includes(q)
+        )
+    }, [vendorsByPincode, vendorSearch])
 
     const assignVendorMutation = useMutation({
         mutationFn: async ({ inquiryId, vendorId, vendorName }: { inquiryId: string; vendorId: string; vendorName: string }) => {
@@ -45,6 +77,8 @@ export default function SuperAdminLeadsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['platform-inquiries'] })
+            setAssignInquiry(null)
+            setVendorSearch('')
             toast.success(`Vendor assigned successfully!`)
         },
         onError: (error: any) => {
@@ -57,13 +91,19 @@ export default function SuperAdminLeadsPage() {
             (inq.serviceName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (inq.unit || '').toLowerCase().includes(searchQuery.toLowerCase())
 
-        const matchesType = leadType === 'all' || inq.source === leadType
+        const source = leadSource(inq)
+        const matchesType = leadType === 'all' || source === leadType
 
         return matchesSearch && matchesType
     })
 
     const handleAssignVendor = (inquiryId: string, vendorId: string, vendorName: string) => {
         assignVendorMutation.mutate({ inquiryId, vendorId, vendorName })
+    }
+
+    const openAssignDialog = (inq: any) => {
+        setAssignInquiry(inq)
+        setVendorSearch('')
     }
 
     const getStatusBadge = (status: string) => {
@@ -164,14 +204,12 @@ export default function SuperAdminLeadsPage() {
                                                 {inq.serviceName}
                                                 <span className="text-gray-300 mx-1">|</span>
                                                 <span className="text-gray-400 lowercase italic">{inq.type}</span>
-                                                {inq.source && (
-                                                    <>
-                                                        <span className="text-gray-300 mx-1">|</span>
-                                                        <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600">
-                                                            {inq.source}
-                                                        </Badge>
-                                                    </>
-                                                )}
+                                                <>
+                                                    <span className="text-gray-300 mx-1">|</span>
+                                                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600">
+                                                        {leadSource(inq)}
+                                                    </Badge>
+                                                </>
                                             </p>
                                             <div className="flex items-center gap-4 pt-2 text-xs text-gray-500 font-medium">
                                                 <span className="flex items-center gap-1.5">
@@ -189,32 +227,15 @@ export default function SuperAdminLeadsPage() {
                                     </div>
 
                                     <div className="shrink-0">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    className="h-11 px-4 rounded-xl gap-2 font-bold ring-1 ring-black/5 border-0 hover:bg-gray-50"
-                                                    disabled={inq.status === 'done'}
-                                                >
-                                                    {inq.vendorId ? 'Reassign Vendor' : 'Assign Vendor'}
-                                                    <ChevronDown className="h-4 w-4 opacity-50" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border-0 shadow-2xl ring-1 ring-black/5">
-                                                {vendors.map((vendor: any) => (
-                                                    <DropdownMenuItem
-                                                        key={vendor.id}
-                                                        className="rounded-xl px-4 py-2.5 font-medium cursor-pointer focus:bg-blue-50 focus:text-blue-700"
-                                                        onClick={() => handleAssignVendor(inq.id, vendor.id.toString(), vendor.name)}
-                                                    >
-                                                        {vendor.name}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                                {vendors.length === 0 && (
-                                                    <div className="p-4 text-center text-xs text-gray-400 font-medium">No vendors found</div>
-                                                )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <Button
+                                            variant="outline"
+                                            className="h-11 px-4 rounded-xl gap-2 font-bold ring-1 ring-black/5 border-0 hover:bg-gray-50"
+                                            disabled={inq.status === 'done'}
+                                            onClick={() => openAssignDialog(inq)}
+                                        >
+                                            {inq.vendorId ? 'Reassign Vendor' : 'Assign Vendor'}
+                                            <ChevronDown className="h-4 w-4 opacity-50" />
+                                        </Button>
                                     </div>
                                 </div>
 
@@ -228,6 +249,68 @@ export default function SuperAdminLeadsPage() {
                     ))
                 )}
             </div>
+
+            {/* Assign Vendor by PIN code – vendors serving customer area */}
+            <Dialog open={!!assignInquiry} onOpenChange={(open) => !open && setAssignInquiry(null)}>
+                <DialogContent className="max-w-lg rounded-3xl shadow-2xl border-0 ring-1 ring-black/5">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-gray-900">Assign vendor to lead</DialogTitle>
+                        <DialogDescription>
+                            {assignInquiry && (
+                                <span className="flex items-center gap-2 mt-2 text-sm">
+                                    <MapPin className="h-4 w-4 text-gray-500" />
+                                    Customer PIN code: <strong>{leadPincode || 'Not set'}</strong>
+                                    {!leadPincode && (
+                                        <span className="text-gray-400"> (All vendors shown. Add PIN on lead or society to filter by area.)</span>
+                                    )}
+                                </span>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {leadPincode && (
+                        <p className="text-sm text-gray-600">Vendors registered for this area (PIN {leadPincode}) are listed below. You can search by name.</p>
+                    )}
+                    <div className="space-y-3 pt-2">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                                placeholder="Search vendors by name or service..."
+                                className="pl-10 rounded-xl"
+                                value={vendorSearch}
+                                onChange={(e) => setVendorSearch(e.target.value)}
+                            />
+                        </div>
+                        <div className="max-h-[280px] overflow-y-auto space-y-2 pr-1">
+                            {vendorsLoading ? (
+                                <div className="py-8 text-center text-gray-500 text-sm">Loading vendors...</div>
+                            ) : filteredVendorsInDialog.length === 0 ? (
+                                <div className="py-8 text-center text-gray-500 text-sm">
+                                    {leadPincode ? `No vendors registered for PIN ${leadPincode}. Try different PIN or assign from All Vendors.` : 'No vendors found.'}
+                                </div>
+                            ) : (
+                                filteredVendorsInDialog.map((v: any) => (
+                                    <button
+                                        key={v.id}
+                                        type="button"
+                                        onClick={() => assignInquiry && handleAssignVendor(assignInquiry.id, String(v.id), v.name)}
+                                        disabled={assignVendorMutation.isPending}
+                                        className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-blue-50 hover:border-blue-200 text-left transition-colors"
+                                    >
+                                        <div className="p-2 rounded-lg bg-gray-100">
+                                            <Wrench className="h-4 w-4 text-gray-500" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-gray-900 truncate">{v.name}</p>
+                                            <p className="text-xs text-gray-500 truncate">{v.serviceType} {v.servicePincodes ? `• PIN: ${v.servicePincodes}` : ''}</p>
+                                        </div>
+                                        <span className="text-xs text-blue-600 font-medium">Assign</span>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
