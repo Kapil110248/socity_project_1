@@ -367,6 +367,9 @@ model Complaint {
   assignedToId Int?
   assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
   
+  vendorId    Int?
+  vendor      Vendor?  @relation(fields: [vendorId], references: [id])
+  
   comments    ComplaintComment[]
   timeline    Json?    // Array of {action, time, user} objects
   
@@ -503,6 +506,10 @@ model Vendor {
   invoices    VendorInvoice[]
   purchaseOrders PurchaseOrder[]
   goodsReceipts GoodsReceipt[]
+  complaints  Complaint[]
+  
+  servicePincodes String?  @db.Text // Comma-separated list of pincodes
+  
   createdAt   DateTime @default(now())
 
    @@map("vendor")

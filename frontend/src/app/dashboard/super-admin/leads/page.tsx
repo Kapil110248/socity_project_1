@@ -34,13 +34,26 @@ export default function SuperAdminLeadTrackingPage() {
     const [selectedVendorId, setSelectedVendorId] = useState<string>('')
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
 
-    const { data: inquiries = [], isLoading: isInqLoading } = useQuery<any[]>({
-        queryKey: ['service-inquiries'],
+    const [page, setPage] = useState(1)
+    const [limit] = useState(10)
+
+    const { data: response, isLoading: isInqLoading } = useQuery<any>({
+        queryKey: ['service-inquiries', page, limit, searchTerm, selectedSociety],
         queryFn: async () => {
-            const response = await api.get('/services/inquiries')
+             const response = await api.get('/services/inquiries', {
+                params: {
+                    page,
+                    limit,
+                    search: searchTerm,
+                    societyId: selectedSociety
+                }
+            })
             return response.data
         }
     })
+
+    const inquiries = response?.data || []
+    const meta = response?.meta || { total: 0, totalPages: 0 }
 
     const { data: societies = [] } = useQuery<any[]>({
         queryKey: ['all-societies'],
@@ -72,23 +85,30 @@ export default function SuperAdminLeadTrackingPage() {
         }
     })
 
-    const filteredInquiries = inquiries.filter((inq: any) => {
-        const matchesSearch = 
-            inq.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            inq.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            inq.unit.toLowerCase().includes(searchTerm.toLowerCase())
-        
-        const matchesSociety = selectedSociety === 'all' || String(inq.societyId) === selectedSociety
-        
-        return matchesSearch && matchesSociety
-    })
+    const filteredInquiries = inquiries
 
-    const getMatchingVendors = (serviceName: string) => {
+    const getMatchingVendors = (serviceName: string, inquiryPincode?: string) => {
         if (!serviceName) return vendors
-        return vendors.filter((v: any) => 
+        
+        // 1. Filter by service type first
+        const serviceMatches = vendors.filter((v: any) => 
             v.serviceType?.toLowerCase().includes(serviceName.toLowerCase()) || 
             v.vendorType === 'platform'
         )
+
+        // 2. Sort/Prioritize by PIN code match if query has pincode
+        if (inquiryPincode) {
+            return serviceMatches.sort((a: any, b: any) => {
+                const aHasPin = a.servicePincodes?.includes(inquiryPincode)
+                const bHasPin = b.servicePincodes?.includes(inquiryPincode)
+                
+                if (aHasPin && !bHasPin) return -1
+                if (!aHasPin && bHasPin) return 1
+                return 0
+            })
+        }
+
+        return serviceMatches
     }
 
     const handleAssign = () => {
@@ -127,7 +147,7 @@ export default function SuperAdminLeadTrackingPage() {
                         </div>
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Enquiries</p>
-                            <p className="text-3xl font-black text-gray-900">{inquiries.length}</p>
+                            <p className="text-3xl font-black text-gray-900">{meta?.total || inquiries.length}</p>
                         </div>
                     </div>
                 </Card>
@@ -138,7 +158,7 @@ export default function SuperAdminLeadTrackingPage() {
                         </div>
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Pending</p>
-                            <p className="text-3xl font-black text-gray-900">{inquiries.filter(i => i.status === 'pending').length}</p>
+                            <p className="text-3xl font-black text-gray-900">{inquiries.filter((i: any) => i.status === 'pending').length}</p>
                         </div>
                     </div>
                 </Card>
@@ -149,7 +169,7 @@ export default function SuperAdminLeadTrackingPage() {
                         </div>
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Booked</p>
-                            <p className="text-3xl font-black text-gray-900">{inquiries.filter(i => i.status === 'booked').length}</p>
+                            <p className="text-3xl font-black text-gray-900">{inquiries.filter((i: any) => i.status === 'booked').length}</p>
                         </div>
                     </div>
                 </Card>
@@ -160,7 +180,7 @@ export default function SuperAdminLeadTrackingPage() {
                         </div>
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Completed</p>
-                            <p className="text-3xl font-black text-gray-900">{inquiries.filter(i => i.status === 'completed').length}</p>
+                            <p className="text-3xl font-black text-gray-900">{inquiries.filter((i: any) => i.status === 'completed').length}</p>
                         </div>
                     </div>
                 </Card>
@@ -205,7 +225,7 @@ export default function SuperAdminLeadTrackingPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {filteredInquiries.map((inquiry, index) => (
+                            {filteredInquiries.map((inquiry: any, index: number) => (
                                 <motion.tr
                                     key={inquiry.id}
                                     initial={{ opacity: 0, x: -20 }}
@@ -240,7 +260,7 @@ export default function SuperAdminLeadTrackingPage() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <Badge className={statusColors[inquiry.status]}>
+                                        <Badge className={statusColors[inquiry.status] || 'bg-gray-100 text-gray-700'}>
                                             {inquiry.status.toUpperCase()}
                                         </Badge>
                                     </td>
@@ -279,6 +299,55 @@ export default function SuperAdminLeadTrackingPage() {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                <div className="p-6 border-t border-gray-50 flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                        Showing <span className="font-bold">{(page - 1) * limit + 1}</span> to <span className="font-bold">{Math.min(page * limit, meta.total)}</span> of <span className="font-bold">{meta.total}</span> entries
+                    </p>
+                    <div className="flex gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="rounded-xl"
+                        >
+                            Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
+                                let p = i + 1;
+                                if (meta.totalPages > 5 && page > 3) {
+                                  p = page - 2 + i;
+                                }
+                                if (p <= meta.totalPages) {
+                                return (
+                                <Button
+                                    key={p}
+                                    variant={page === p ? 'default' : 'outline'}
+                                    size="sm"
+                                    className={`w-8 rounded-lg ${page === p ? 'bg-purple-600 text-white' : ''}`}
+                                    onClick={() => setPage(p)}
+                                >
+                                    {p}
+                                </Button>
+                                )
+                                }
+                                return null;
+                            })}
+                        </div>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                            disabled={page === meta.totalPages}
+                            className="rounded-xl"
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
             </Card>
 
             {/* Assign Vendor Dialog */}
@@ -310,19 +379,29 @@ export default function SuperAdminLeadTrackingPage() {
                                     <SelectValue placeholder="Choose a vendor..." />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl border-0 shadow-2xl ring-1 ring-black/5">
-                                    {selectedInquiry && getMatchingVendors(selectedInquiry.serviceName).map((vendor: any) => (
+                                    {selectedInquiry && getMatchingVendors(selectedInquiry.serviceName, selectedInquiry.society?.pincode).map((vendor: any) => {
+                                        const isLocationMatch = selectedInquiry.society?.pincode && vendor.servicePincodes?.includes(selectedInquiry.society.pincode)
+                                        
+                                        return (
                                         <SelectItem key={vendor.id} value={String(vendor.id)} className="rounded-xl p-3 font-bold">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 text-[10px]">
+                                                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] ${isLocationMatch ? 'bg-green-100 text-green-700 ring-2 ring-green-500' : 'bg-teal-50 text-teal-600'}`}>
                                                     {vendor.name.substring(0, 2)}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span>{vendor.name}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{vendor.name}</span>
+                                                        {isLocationMatch && (
+                                                            <Badge className="bg-green-100 text-green-700 text-[9px] h-4 px-1.5 hover:bg-green-100">
+                                                                LOCATION MATCH
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                     <span className="text-[10px] text-gray-400 capitalize">{vendor.category}</span>
                                                 </div>
                                             </div>
                                         </SelectItem>
-                                    ))}
+                                    )})}
                                 </SelectContent>
                             </Select>
                         </div>

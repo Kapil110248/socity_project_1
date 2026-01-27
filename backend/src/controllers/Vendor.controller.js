@@ -66,7 +66,10 @@ class VendorController {
           contractEnd: contractEnd ? new Date(contractEnd) : null,
           contractValue: contractValue ? parseFloat(contractValue) : 0,
           paymentTerms,
-          societyId: socId
+          contractValue: contractValue ? parseFloat(contractValue) : 0,
+          paymentTerms,
+          societyId: socId,
+          servicePincodes // Add pincodes
         }
       });
       res.status(201).json(vendor);
@@ -78,11 +81,43 @@ class VendorController {
 
   static async listAllVendors(req, res) {
     try {
-      const vendors = await prisma.vendor.findMany({
-        include: { society: { select: { name: true } } }
+      let { page = 1, limit = 10, search, status } = req.query;
+      page = parseInt(page);
+      limit = parseInt(limit);
+      const skip = (page - 1) * limit;
+
+      const where = {};
+      if (search) {
+        where.OR = [
+            { name: { contains: search } },
+            { serviceType: { contains: search } },
+            { contact: { contains: search } }
+        ];
+      }
+      if (status && status !== 'all') {
+        where.status = status;
+        }
+
+      const [total, vendors] = await Promise.all([
+        prisma.vendor.count({ where }),
+        prisma.vendor.findMany({
+            where,
+            skip,
+            take: limit,
+          include: { society: { select: { name: true } } }
+        })
+      ]);
+      res.json({
+        data: vendors,
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        }
       });
-      res.json(vendors);
     } catch (error) {
+      console.error('List All Vendors Error:', error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -191,6 +226,7 @@ class VendorController {
       if (contactPerson !== undefined) updateData.contactPerson = contactPerson;
       if (gst !== undefined) updateData.gst = gst;
       if (pan !== undefined) updateData.pan = pan;
+      if (req.body.servicePincodes !== undefined) updateData.servicePincodes = req.body.servicePincodes;
 
       const vendor = await prisma.vendor.update({
         where: { id: parseInt(id) },

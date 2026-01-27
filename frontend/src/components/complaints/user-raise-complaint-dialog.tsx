@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertCircle, Send, Loader2 } from 'lucide-react'
 import { residentService } from '@/services/resident.service'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import api from '@/lib/api'
+import { CheckCircle2 } from 'lucide-react'
 
 interface UserRaiseComplaintDialogProps {
     preSelectedServiceId?: string
@@ -29,6 +31,16 @@ export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServ
     const [category, setCategory] = useState(preSelectedServiceId || '')
     const [subject, setSubject] = useState('')
     const [description, setDescription] = useState('')
+    const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null)
+
+    // Fetch active vendors for the society
+    const { data: vendors = [] } = useQuery({
+        queryKey: ['society-vendors'],
+        queryFn: async () => {
+            const response = await api.get('/vendors/societal')
+            return response.data
+        }
+    })
 
     useEffect(() => {
         if (preSelectedServiceId) {
@@ -36,16 +48,34 @@ export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServ
         }
     }, [preSelectedServiceId])
 
+    // Auto-select vendor based on category
+    useEffect(() => {
+        if (!category || !vendors.length) return
+        
+        // Find vendor matching the category
+        // Assuming category value matches serviceType or we need a mapping
+        const matchingVendor = vendors.find((v: any) => 
+            v.serviceType?.toLowerCase() === category.toLowerCase() && v.status === 'ACTIVE'
+        )
+        
+        if (matchingVendor) {
+            setSelectedVendorId(matchingVendor.id)
+        } else {
+            setSelectedVendorId(null)
+        }
+    }, [category, vendors])
+
     const mutation = useMutation({
         mutationFn: (data: any) => residentService.createTicket(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['complaints'] })
             queryClient.invalidateQueries({ queryKey: ['complaint-stats'] })
             queryClient.invalidateQueries({ queryKey: ['tickets'] })
-            toast.success('Complaint submitted successfully!')
+            toast.success(selectedVendorId ? 'Complaint raised and assigned to vendor!' : 'Complaint submitted successfully!')
             setOpen(false)
             setSubject('')
             setDescription('')
+            setSelectedVendorId(null)
         },
         onError: (error: any) => {
             toast.error('Failed to submit complaint: ' + error.message)
@@ -63,7 +93,8 @@ export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServ
             description,
             category,
             priority: 'MEDIUM',
-            isPrivate: false
+            isPrivate: false,
+            vendorId: selectedVendorId
         })
     }
 
@@ -101,6 +132,12 @@ export function UserRaiseComplaintDialog({ preSelectedServiceId, preSelectedServ
                                 <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                         </Select>
+                        {selectedVendorId && (
+                            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                will be assigned to {vendors.find((v:any) => v.id === selectedVendorId)?.name}
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">

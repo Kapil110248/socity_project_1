@@ -25,6 +25,7 @@ export default function NewPlatformVendorPage() {
         serviceType: '',
         username: '',
         password: '',
+        servicePincodes: '' 
     })
 
     const createVendorMutation = useMutation({
@@ -120,6 +121,17 @@ export default function NewPlatformVendorPage() {
                                             <SelectItem value="other">Other</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                    <Label htmlFor="servicePincodes">Service PIN Codes</Label>
+                                    <Input
+                                        id="servicePincodes"
+                                        placeholder="e.g. 110001, 110002 (Comma separated)"
+                                        value={formData.servicePincodes}
+                                        onChange={(e) => handleChange('servicePincodes', e.target.value)}
+                                        className="rounded-xl border-gray-200"
+                                    />
+                                    <p className="text-xs text-gray-500">Leave empty to serve all locations</p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Official Email *</Label>

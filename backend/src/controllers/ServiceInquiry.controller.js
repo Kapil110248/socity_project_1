@@ -3,22 +3,58 @@ const prisma = require('../lib/prisma');
 class ServiceInquiryController {
   static async listInquiries(req, res) {
     try {
-      console.log('List Inquiries Request:', { role: req.user.role, societyId: req.user.societyId });
+      let { page = 1, limit = 10, search, status, societyId } = req.query;
+      page = parseInt(page);
+      limit = parseInt(limit);
+      const skip = (page - 1) * limit;
+
       const where = {};
+      
+      // Role based filtering
       if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'super_admin') {
         where.societyId = req.user.societyId;
+      } else if (societyId && societyId !== 'all') {
+        where.societyId = parseInt(societyId);
       }
 
-      const inquiries = await prisma.serviceInquiry.findMany({
-        where,
-        include: {
-          society: {
-            select: { name: true }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
+      // Filter by status
+      if (status && status !== 'all') {
+        where.status = status;
+      }
+
+      // Search
+      if (search) {
+        where.OR = [
+          { residentName: { contains: search } },
+          { serviceName: { contains: search } },
+          { unit: { contains: search } }
+        ];
+      }
+
+      const [total, inquiries] = await Promise.all([
+        prisma.serviceInquiry.count({ where }),
+        prisma.serviceInquiry.findMany({
+          where,
+          skip,
+          take: limit,
+          include: {
+            society: {
+              select: { name: true, pincode: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+      ]);
+
+      res.json({
+        data: inquiries,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit)
+        }
       });
-      res.json(inquiries);
     } catch (error) {
       console.error('List Inquiries Error:', error);
       res.status(500).json({ error: error.message });

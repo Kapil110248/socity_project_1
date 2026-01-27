@@ -25,6 +25,11 @@ class ComplaintController {
       } else if (req.user.role === 'SUPER_ADMIN') {
         // Super Admins only see public tickets (unless specifically assigned, but usually they don't handle local tickets)
         where.isPrivate = false;
+      } else if (req.user.role === 'VENDOR') {
+        const vendor = await prisma.vendor.findFirst({ where: { email: req.user.email } });
+        if (vendor) {
+            where.vendorId = vendor.id;
+        }
       }
 
       if (status) where.status = status;
@@ -56,6 +61,7 @@ class ComplaintController {
             },
             assignedTo: { select: { name: true } },
             society: { select: { name: true } },
+            vendor: { select: { name: true } },
             comments: { select: { id: true } }
           },
           orderBy: { createdAt: 'desc' }
@@ -94,7 +100,7 @@ class ComplaintController {
 
   static async create(req, res) {
     try {
-      const { title, description, category, priority, images, isPrivate } = req.body;
+      const { title, description, category, priority, images, isPrivate, vendorId } = req.body;
       const complaint = await prisma.complaint.create({
         data: {
           title,
@@ -104,7 +110,8 @@ class ComplaintController {
           isPrivate: isPrivate || false,
           images,
           societyId: req.user.societyId,
-          reportedById: req.user.id
+          reportedById: req.user.id,
+          vendorId: vendorId ? parseInt(vendorId) : null
         }
       });
       res.status(201).json(complaint);

@@ -29,13 +29,21 @@ export default function SuperAdminVendorsPage() {
     const queryClient = useQueryClient()
     const [selectedVendor, setSelectedVendor] = useState<any>(null)
     const [isDetailsOpen, setIsDetailsOpen] = useState(false)
-    const { data: vendors = [], isLoading } = useQuery<any[]>({
-        queryKey: ['super-admin-vendors'],
+    const [page, setPage] = useState(1)
+    const [limit] = useState(10)
+
+    const { data: response, isLoading } = useQuery<any>({
+        queryKey: ['super-admin-vendors', page, limit],
         queryFn: async () => {
-            const response = await api.get('/vendors/all')
+            const response = await api.get('/vendors/all', {
+                params: { page, limit }
+            })
             return response.data
         }
     })
+
+    const vendors = response?.data || []
+    const meta = response?.meta || { total: 0, totalPages: 0 }
 
     const { data: stats } = useQuery({
         queryKey: ['vendor-stats'],
@@ -244,6 +252,55 @@ export default function SuperAdminVendorsPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+                
+                {/* Pagination Controls */}
+                 <div className="p-6 border-t border-gray-50 flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                        Showing <span className="font-bold">{(page - 1) * limit + 1}</span> to <span className="font-bold">{Math.min(page * limit, meta.total)}</span> of <span className="font-bold">{meta.total}</span> vendors
+                    </p>
+                    <div className="flex gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="rounded-xl"
+                        >
+                            Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
+                                let p = i + 1;
+                                if (meta.totalPages > 5 && page > 3) {
+                                  p = page - 2 + i;
+                                }
+                                if (p <= meta.totalPages) {
+                                return (
+                                <Button
+                                    key={p}
+                                    variant={page === p ? 'default' : 'outline'}
+                                    size="sm"
+                                    className={`w-8 rounded-lg ${page === p ? 'bg-purple-600 text-white' : ''}`}
+                                    onClick={() => setPage(p)}
+                                >
+                                    {p}
+                                </Button>
+                                )
+                                }
+                                return null;
+                            })}
+                        </div>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setPage(p => Math.min(meta.totalPages, p + 1))}
+                            disabled={page === meta.totalPages}
+                            className="rounded-xl"
+                        >
+                            Next
+                        </Button>
+                    </div>
                 </div>
             </Card>
 
