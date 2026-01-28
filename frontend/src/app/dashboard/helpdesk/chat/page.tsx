@@ -13,12 +13,8 @@ import {
   Image as ImageIcon,
   Smile,
   CheckCheck,
-  Building,
   ChevronLeft,
-  Wrench,
-  ShieldCheck,
   Users,
-  CreditCard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -34,14 +30,14 @@ import { getSocket } from '@/lib/socket'
 import { format } from 'date-fns'
 import { useSearchParams } from 'next/navigation'
 import { ShoppingBag } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { getDisplayConversations, SUPPORT_CHANNELS as SUPPORT_CHANNELS_CONFIG } from '@/lib/chat-display'
 
-const SUPPORT_CHANNELS = [
-  { type: 'SUPPORT_ADMIN', name: 'Admin Support', avatar: 'AS', icon: Building },
-  { type: 'SUPPORT_MAINTENANCE', name: 'Maintenance Team', avatar: 'MT', icon: Wrench },
-  { type: 'SUPPORT_SECURITY', name: 'Security Desk', avatar: 'SD', icon: ShieldCheck },
-  { type: 'SUPPORT_COMMITTEE', name: 'Committee President', avatar: 'CP', icon: Users },
-  { type: 'SUPPORT_ACCOUNTS', name: 'Accounts Department', avatar: 'AD', icon: CreditCard },
-]
+const EMOJI_LIST = ['😀', '😊', '👍', '❤️', '😂', '😍', '🙏', '👋', '😅', '🔥', '✨', '💯', '😢', '😡', '🤔', '👏', '🎉', '✅', '❌', '💬']
 
 export default function HelpdeskChatPage() {
   const { user } = useAuthStore()
@@ -56,7 +52,12 @@ export default function HelpdeskChatPage() {
     sellerId: number | null;
     itemId: number | null;
     itemTitle: string | null;
-  }>({ sellerId: null, itemId: null, itemTitle: null })
+    itemPrice: string | null;
+    itemImage: string | null;
+  }>({ sellerId: null, itemId: null, itemTitle: null, itemPrice: null, itemImage: null })
+  const [pendingAttachments, setPendingAttachments] = useState<{ url: string; type?: string; name?: string }[]>([])
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollEndRef = useRef<HTMLDivElement>(null)
 
   // Fetch Conversations (same API as header – returns { id, otherUser, lastMessage, updatedAt }[])
@@ -100,6 +101,7 @@ export default function HelpdeskChatPage() {
     mutationFn: chatService.sendMessage,
     onSuccess: () => {
       setNewMessage('')
+      setPendingAttachments([])
       queryClient.invalidateQueries({ queryKey: ['messages', selectedChatId] })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
     },
@@ -122,7 +124,10 @@ export default function HelpdeskChatPage() {
   })
 
   const startDirectMutation = useMutation({
-    mutationFn: (targetUserId: number) => chatService.startDirectConversation(targetUserId),
+    mutationFn: (arg: number | { targetUserId: number; listingItem?: { itemId: number; itemTitle: string; itemPrice?: string; itemImage?: string } }) => {
+      if (typeof arg === 'number') return chatService.startDirectConversation(arg)
+      return chatService.startDirectConversation(arg.targetUserId, arg.listingItem)
+    },
     onSuccess: (newConv: any) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
       setSelectedChatId(newConv?.id ?? null)
@@ -152,8 +157,27 @@ export default function HelpdeskChatPage() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || !selectedChatId) return
-    sendMutation.mutate({ conversationId: selectedChatId, content: newMessage })
+    if ((!newMessage.trim() && pendingAttachments.length === 0) || !selectedChatId) return
+    sendMutation.mutate({
+      conversationId: selectedChatId,
+      content: newMessage.trim() || '(attachment)',
+      attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined
+    })
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setUploadingFile(true)
+    try {
+      const result = await chatService.uploadAttachment(file)
+      setPendingAttachments(prev => [...prev, { url: result.url, type: result.type, name: result.name }])
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Failed to upload file')
+    } finally {
+      setUploadingFile(false)
+    }
   }
 
   // Handle marketplace context from URL – start direct chat with seller
@@ -161,56 +185,46 @@ export default function HelpdeskChatPage() {
     const userId = searchParams.get('userId')
     const itemId = searchParams.get('itemId')
     const itemTitle = searchParams.get('itemTitle')
+    const itemPrice = searchParams.get('itemPrice')
+    const itemImage = searchParams.get('itemImage')
     if (userId && itemId && itemTitle) {
+      const decodedTitle = decodeURIComponent(itemTitle)
+      const decodedImage = itemImage ? decodeURIComponent(itemImage) : undefined
       setMarketplaceContext({
         sellerId: parseInt(userId),
         itemId: parseInt(itemId),
-        itemTitle: decodeURIComponent(itemTitle)
+        itemTitle: decodedTitle,
+        itemPrice: itemPrice || null,
+        itemImage: decodedImage || null
       })
-      setNewMessage(`Hi! I'm interested in your listing: "${decodeURIComponent(itemTitle)}"`)
-      startDirectMutation.mutate(parseInt(userId))
+      // Pre-fill message only – not sent until user clicks Send
+      setNewMessage(`Hi! I'm interested in your listing: "${decodedTitle}"`)
+      // Start chat and send listing to backend so product appears in chat for both buyer and seller
+      startDirectMutation.mutate({
+        targetUserId: parseInt(userId),
+        listingItem: {
+          itemId: parseInt(itemId),
+          itemTitle: decodedTitle,
+          itemPrice: itemPrice || undefined,
+          itemImage: decodedImage
+        }
+      })
       setShowMobileChat(true)
     }
   }, [searchParams])
 
-  // Combined list for UI – API returns { id, otherUser, lastMessage, updatedAt } for direct chats
-  const displayConversations = useMemo(() => {
-    const userRole = (user?.role || '').toUpperCase()
-    if (userRole === 'RESIDENT') {
-      return SUPPORT_CHANNELS.map(channel => {
-        const existing = (conversations as any[]).find((c: any) => c.type === channel.type)
-        const lastMsg = existing?.lastMessage || existing?.messages?.[0]
-        return {
-          ...channel,
-          id: existing?.id ?? -1,
-          lastMessage: (typeof lastMsg === 'string' ? lastMsg : lastMsg?.content) || 'Start a conversation',
-          time: existing?.updatedAt ? format(new Date(existing.updatedAt), 'hh:mm a') : '',
-          unread: 0,
-          online: true,
-          existingId: existing?.id
-        }
-      })
-    }
-    // Admin / non-resident: use otherUser, lastMessage, updatedAt from API
-    return (conversations as any[]).map((c: any) => ({
-      id: c.id,
-      name: c.otherUser?.name || 'Unknown',
-      lastMessage: c.lastMessage?.content ?? 'No messages yet',
-      time: c.updatedAt ? format(new Date(c.updatedAt), 'hh:mm a') : '',
-      unread: 0,
-      avatar: (c.otherUser?.name || '?').substring(0, 2).toUpperCase(),
-      online: true,
-      type: 'DIRECT',
-      existingId: c.id
-    }))
-  }, [conversations, user])
+  // Same list as Header – support channels + direct chats for resident; all for admin
+  const displayConversations = useMemo(
+    () => getDisplayConversations(conversations, user).map((c) => ({ ...c, unread: 0, online: true })),
+    [conversations, user]
+  )
 
   return (
     <div className="h-[calc(100vh-100px)] bg-gray-50">
       <div className="h-full flex">
         {/* Conversations List */}
-        <div className={`w-full md:w-80 bg-white border-r flex flex-col ${showMobileChat ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 border-b">
+        <div className={`w-full md:w-80 bg-white border-r flex flex-col min-h-0 ${showMobileChat ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 border-b shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <MessageSquare className="h-6 w-6 text-blue-600" />
@@ -247,7 +261,7 @@ export default function HelpdeskChatPage() {
             )}
           </div>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             {isAdminFlow && isNewChatOpen ? (
               <>
                 {usersLoading ? (
@@ -282,9 +296,16 @@ export default function HelpdeskChatPage() {
                 ) : (
                   displayConversations.map((conv) => (
                     <motion.div
-                      key={conv.type || conv.id}
+                      key={conv.type && conv.type !== 'DIRECT' ? conv.type : `direct-${conv.id}`}
                       whileHover={{ backgroundColor: '#f3f4f6' }}
-                      onClick={() => handleChannelClick(conv.type, (conv as any).existingId)}
+                      onClick={() => {
+                        if (conv.type && conv.type !== 'DIRECT' && SUPPORT_CHANNELS_CONFIG.some((ch) => ch.type === conv.type)) {
+                          handleChannelClick(conv.type, (conv as any).existingId)
+                        } else {
+                          setSelectedChatId(conv.id)
+                          setShowMobileChat(true)
+                        }
+                      }}
                       className={`p-4 border-b cursor-pointer transition-colors ${selectedChatId === conv.id ? 'bg-blue-50' : ''}`}
                     >
                       <div className="flex items-start gap-3">
@@ -381,6 +402,24 @@ export default function HelpdeskChatPage() {
               </div>
 
               {/* Messages – sender label so it’s clear who sent what */}
+              {marketplaceContext.itemId && marketplaceContext.sellerId && (selectedChat as any)?.otherUser?.id === marketplaceContext.sellerId && (
+                <div className="mx-4 mt-2 p-3 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                    {marketplaceContext.itemImage ? (
+                      <img src={marketplaceContext.itemImage} alt={marketplaceContext.itemTitle || 'Listing'} className="w-full h-full object-cover" />
+                    ) : (
+                      <ShoppingBag className="h-6 w-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">About this listing</p>
+                    <p className="font-semibold text-gray-900 truncate">{marketplaceContext.itemTitle}</p>
+                    {marketplaceContext.itemPrice && (
+                      <p className="text-sm font-bold text-indigo-600">₹{Number(marketplaceContext.itemPrice).toLocaleString()}</p>
+                    )}
+                  </div>
+                </div>
+              )}
               <ScrollArea className="flex-1 p-4 bg-gray-50/50">
                 <div className="space-y-6">
                   {messages.map((msg: any) => {
@@ -405,7 +444,45 @@ export default function HelpdeskChatPage() {
                                   : 'bg-white text-gray-900 border border-gray-100 rounded-bl-none'
                               }`}
                             >
-                              <p className="leading-relaxed">{msg.content}</p>
+                              {msg.content?.startsWith('📎 Listing:') ? (
+                                <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
+                                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0 flex items-center justify-center">
+                                    {msg.attachments?.[0]?.url ? (
+                                      <img src={msg.attachments[0].url} alt="Listing" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <ShoppingBag className={`h-6 w-6 ${isMe ? 'text-blue-200' : 'text-gray-400'}`} />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className={`text-xs font-medium uppercase tracking-wide ${isMe ? 'text-blue-200' : 'text-gray-500'}`}>Listing</p>
+                                    <p className="font-semibold truncate">{msg.content.replace(/^📎 Listing:\s*/, '').split(/\s*-\s*₹?/)[0]?.trim() || msg.content.replace('📎 Listing: ', '')}</p>
+                                    {msg.content.match(/₹[\d,]+/) && (
+                                      <p className={`font-bold text-sm mt-0.5 ${isMe ? 'text-blue-100' : 'text-indigo-600'}`}>{msg.content.match(/₹[\d,]+/)?.[0]}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="leading-relaxed">{msg.content}</p>
+                                  {msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {(msg.attachments as { url?: string; type?: string; name?: string }[])
+                                    .filter(att => att?.url)
+                                    .map((att, idx) =>
+                                      (att.url!.match(/\.(jpg|jpeg|png|gif|webp)/i) || att.type === 'image') ? (
+                                        <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block">
+                                          <img src={att.url} alt={att.name || 'Image'} className="max-w-[200px] max-h-[150px] rounded-lg object-cover" />
+                                        </a>
+                                      ) : (
+                                        <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className={`text-sm underline ${isMe ? 'text-blue-200' : 'text-indigo-600'}`}>
+                                          {att.name || 'File'}
+                                        </a>
+                                      )
+                                    )}
+                                </div>
+                              )}
+                                </>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 mt-1 px-1">
                               <span className="text-[10px] text-gray-400 font-medium">
@@ -424,8 +501,44 @@ export default function HelpdeskChatPage() {
 
               {/* Input Area */}
               <div className="p-4 bg-white border-t">
+                {pendingAttachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {pendingAttachments.map((att, i) => (
+                      <div key={i} className="flex items-center gap-1 bg-gray-100 rounded-lg px-2 py-1 text-xs">
+                        {att.url.match(/\.(jpg|jpeg|png|gif|webp)/i) || (att.type === 'image') ? (
+                          <img src={att.url} alt="" className="h-8 w-8 rounded object-cover" />
+                        ) : (
+                          <Paperclip className="h-4 w-4 text-gray-500" />
+                        )}
+                        <span className="max-w-[120px] truncate">{att.name || 'File'}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPendingAttachments(prev => prev.filter((_, j) => j !== i))}
+                          className="text-red-500 hover:text-red-700 ml-1"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                  <Button type="button" variant="ghost" size="icon" className="h-10 w-10 text-gray-400">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-gray-400 hover:text-blue-600"
+                    title="Attach file"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFile}
+                  >
                     <Paperclip className="h-5 w-5" />
                   </Button>
                   <div className="flex-1 relative">
@@ -435,15 +548,33 @@ export default function HelpdeskChatPage() {
                       onChange={(e) => setNewMessage(e.target.value)}
                       className="h-11 pl-4 pr-10 rounded-2xl bg-gray-50 border-transparent focus:bg-white focus:border-blue-200 transition-all font-medium"
                     />
-                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 hover:text-blue-500">
-                      <Smile className="h-5 w-5" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-gray-400 hover:text-blue-500" title="Emoji">
+                          <Smile className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64 p-2">
+                        <div className="grid grid-cols-5 gap-1">
+                          {EMOJI_LIST.map((emoji, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              className="text-xl p-1.5 rounded hover:bg-gray-100"
+                              onClick={() => setNewMessage(prev => prev + emoji)}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <Button 
-                    type="submit" 
-                    size="icon" 
+                  <Button
+                    type="submit"
+                    size="icon"
                     className="h-11 w-11 rounded-2xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200"
-                    disabled={!newMessage.trim() || sendMutation.isPending}
+                    disabled={(!newMessage.trim() && pendingAttachments.length === 0) || sendMutation.isPending}
                   >
                     <Send className={`h-5 w-5 ${sendMutation.isPending ? 'animate-pulse' : ''}`} />
                   </Button>

@@ -8,6 +8,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { AuthInitializer } from "@/components/auth-initializer";
 import EmergencyNotificationListener from "@/components/emergency/EmergencyNotificationListener";
 import ComplaintNotificationListener from "@/components/complaints/ComplaintNotificationListener";
+import ChatNotificationListener from "@/components/chat/ChatNotificationListener";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
             <AuthInitializer />
             <EmergencyNotificationListener />
             <ComplaintNotificationListener />
+            <ChatNotificationListener />
             {children}
             <Toaster position="top-right" />
             <SonnerToaster position="top-right" richColors />

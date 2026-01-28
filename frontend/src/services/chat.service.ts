@@ -38,8 +38,17 @@ export const chatService = {
     return response.data
   },
 
-  sendMessage: async (data: { conversationId: number; content: string; attachments?: any[] }) => {
+  sendMessage: async (data: { conversationId: number; content: string; attachments?: { url: string; type?: string; name?: string }[] }) => {
     const response = await api.post<ChatMessage>('/chat/messages', data)
+    return response.data
+  },
+
+  uploadAttachment: async (file: File): Promise<{ url: string; type: string; name: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await api.post<{ url: string; type: string; name: string }>('/chat/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     return response.data
   },
 
@@ -48,9 +57,14 @@ export const chatService = {
     return response.data
   },
 
-  /** Start direct 1:1 chat with another user (used by admin, super_admin, etc.) */
-  startDirectConversation: async (targetUserId: number) => {
-    const response = await api.post('/chat/start', { targetUserId })
+  /** Start direct 1:1 chat with another user; optional listingItem from marketplace so product appears in chat for both */
+  startDirectConversation: async (
+    targetUserId: number,
+    listingItem?: { itemId: number; itemTitle: string; itemPrice?: string; itemImage?: string }
+  ) => {
+    const body: { targetUserId: number; listingItem?: typeof listingItem } = { targetUserId }
+    if (listingItem?.itemTitle) body.listingItem = listingItem
+    const response = await api.post('/chat/start', body)
     return response.data
   }
 }

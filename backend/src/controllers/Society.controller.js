@@ -3,8 +3,10 @@ const prisma = require('../lib/prisma');
 class SocietyController {
   static async getUnits(req, res) {
     try {
+      const societyId = req.user.societyId;
+      if (!societyId) return res.json([]);
       const units = await prisma.unit.findMany({
-        where: { societyId: req.user.societyId },
+        where: { societyId },
         include: { owner: true, tenant: true }
       });
       res.json(units);
@@ -17,6 +19,11 @@ class SocietyController {
     try {
       const { id } = req.params;
       const { ownerId, tenantId } = req.body;
+      const existing = await prisma.unit.findUnique({ where: { id: parseInt(id) } });
+      if (!existing) return res.status(404).json({ error: 'Unit not found' });
+      if (req.user.role !== 'SUPER_ADMIN' && existing.societyId !== req.user.societyId) {
+        return res.status(403).json({ error: 'Access denied: unit belongs to another society' });
+      }
       const unit = await prisma.unit.update({
         where: { id: parseInt(id) },
         data: { ownerId, tenantId }
@@ -122,7 +129,7 @@ class SocietyController {
 
   static async addMember(req, res) {
     try {
-      const { name, email, phone, role, unitId, status } = req.body;
+      const { name, email, phone, role, unitId, status, password: plainPassword } = req.body;
       const societyId = req.user.societyId;
       const bcrypt = require('bcryptjs');
 
@@ -134,14 +141,16 @@ class SocietyController {
 
       const result = await prisma.$transaction(async (tx) => {
         // 1. Create User
-        // Map 'owner'/'tenant' to 'RESIDENT' for role enum compliance if needed, 
-        // OR use the role as is if we update the enum. 
-        // For now, let's keep it flexible but ensure it's a valid enum value.
         const validRoles = ['RESIDENT', 'ADMIN', 'SUPER_ADMIN', 'GUARD', 'VENDOR', 'ACCOUNTANT'];
         let userRole = role?.toUpperCase() || 'RESIDENT';
         if (!validRoles.includes(userRole)) {
-          userRole = 'RESIDENT'; // Default to RESIDENT if it's 'OWNER' or 'TENANT' which are relations
+          userRole = 'RESIDENT';
         }
+
+        const passwordToUse = (typeof plainPassword === 'string' && plainPassword.trim().length >= 6)
+          ? plainPassword.trim()
+          : 'password123';
+        const hashedPassword = await bcrypt.hash(passwordToUse, 10);
 
         const user = await tx.user.create({
           data: {
@@ -150,7 +159,7 @@ class SocietyController {
             phone,
             role: userRole,
             status: status?.toUpperCase() || 'ACTIVE',
-            password: await bcrypt.hash('password123', 10), // Default password
+            password: hashedPassword,
             societyId
           }
         });
@@ -173,6 +182,43 @@ class SocietyController {
       res.status(201).json(result);
     } catch (error) {
       console.error('Add Member Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async removeMember(req, res) {
+    try {
+      const { id } = req.params;
+      const memberId = parseInt(id);
+      const societyId = req.user.societyId;
+
+      const member = await prisma.user.findUnique({ where: { id: memberId } });
+      if (!member) {
+        return res.status(404).json({ error: 'Member not found' });
+      }
+      if (member.societyId !== societyId) {
+        return res.status(403).json({ error: 'You can only remove members of your society' });
+      }
+      if (member.role !== 'RESIDENT') {
+        return res.status(403).json({ error: 'Only residents can be removed from this screen' });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.userSession.deleteMany({ where: { userId: memberId } });
+        await tx.unit.updateMany({
+          where: { OR: [{ ownerId: memberId }, { tenantId: memberId }] },
+          data: {
+            ownerId: null,
+            tenantId: null,
+            status: 'VACANT'
+          }
+        });
+        await tx.user.delete({ where: { id: memberId } });
+      });
+
+      res.json({ message: 'Resident removed successfully' });
+    } catch (error) {
+      console.error('Remove Member Error:', error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -399,12 +445,19 @@ class SocietyController {
 
   /**
    * Get Admin Dashboard Statistics
-   * Aggregated data for the main Admin Dashboard overview
+   * Aggregated data for the main Admin Dashboard overview.
+   * Only for society-scoped users (ADMIN/COMMITTEE). SUPER_ADMIN must use super-admin dashboard.
    */
   static async getAdminDashboardStats(req, res) {
     try {
-      const societyId = req.user.societyId;
+      const societyId = req.user.societyId ?? (req.query.societyId ? parseInt(req.query.societyId) : null);
+      if (!societyId) {
+        return res.status(400).json({ error: 'Society context required. This dashboard is for society admins only.' });
+      }
       const society = await prisma.society.findUnique({ where: { id: societyId } });
+      if (!society && req.user.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ error: 'Society not found or access denied' });
+      }
 
       // ========== USER COUNTS ==========
       const [totalUsers, activeUsers, inactiveUsers, pendingUsers, owners, tenants, staff, totalResidentUsers, totalFamilyMembers] = await Promise.all([

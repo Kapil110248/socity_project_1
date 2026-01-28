@@ -222,6 +222,7 @@ export default function GeneralLedgerPage() {
                     value={newAccount.code}
                     onChange={(e) => setNewAccount({ ...newAccount, code: e.target.value })}
                   />
+                  <p className="text-xs text-gray-500">Must be unique within this society (e.g. 1001, 1002 are already used by system accounts).</p>
                 </div>
                 <div className="space-y-2">
                   <Label>Type</Label>

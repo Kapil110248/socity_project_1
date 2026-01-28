@@ -3,16 +3,11 @@ const prisma = require('../lib/prisma');
 class VendorController {
   static async listSocietalVendors(req, res) {
     try {
-      console.log('Listing vendors for user:', req.user.id, 'Role:', req.user.role, 'Society:', req.user.societyId);
-      const vendors = await prisma.vendor.findMany({
-        where: {
-          OR: [
-            { societyId: req.user.societyId },
-            { societyId: null }
-          ]
-        }
-      });
-      console.log('Found vendors:', vendors.length);
+      const sid = req.user.societyId;
+      const where = sid
+        ? { OR: [{ societyId: sid }, { societyId: null }] }
+        : { societyId: null };
+      const vendors = await prisma.vendor.findMany({ where });
       res.json(vendors);
     } catch (error) {
       console.error('List Vendors Error:', error);
@@ -192,10 +187,14 @@ class VendorController {
   static async updateVendorStatus(req, res) {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const existing = await prisma.vendor.findUnique({ where: { id: parseInt(id) } });
+      if (!existing) return res.status(404).json({ error: 'Vendor not found' });
+      if (req.user.role !== 'SUPER_ADMIN' && existing.societyId !== req.user.societyId) {
+        return res.status(403).json({ error: 'Access denied: vendor belongs to another society' });
+      }
       const vendor = await prisma.vendor.update({
         where: { id: parseInt(id) },
-        data: { status: status.toUpperCase() }
+        data: { status: (req.body.status || '').toUpperCase() }
       });
       res.json(vendor);
     } catch (error) {
@@ -206,9 +205,12 @@ class VendorController {
   static async deleteVendor(req, res) {
     try {
       const { id } = req.params;
-      await prisma.vendor.delete({
-        where: { id: parseInt(id) }
-      });
+      const existing = await prisma.vendor.findUnique({ where: { id: parseInt(id) } });
+      if (!existing) return res.status(404).json({ error: 'Vendor not found' });
+      if (req.user.role !== 'SUPER_ADMIN' && existing.societyId !== req.user.societyId) {
+        return res.status(403).json({ error: 'Access denied: vendor belongs to another society' });
+      }
+      await prisma.vendor.delete({ where: { id: parseInt(id) } });
       res.json({ message: 'Vendor deleted successfully' });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -258,6 +260,11 @@ class VendorController {
   static async updateVendor(req, res) {
     try {
       const { id } = req.params;
+      const existing = await prisma.vendor.findUnique({ where: { id: parseInt(id) } });
+      if (!existing) return res.status(404).json({ error: 'Vendor not found' });
+      if (req.user.role !== 'SUPER_ADMIN' && existing.societyId !== req.user.societyId) {
+        return res.status(403).json({ error: 'Access denied: vendor belongs to another society' });
+      }
       const {
         name,
         company,
@@ -330,6 +337,11 @@ class VendorController {
   static async getPaymentHistory(req, res) {
     try {
       const { id } = req.params;
+      const vendor = await prisma.vendor.findUnique({ where: { id: parseInt(id) } });
+      if (!vendor) return res.status(404).json({ error: 'Vendor not found' });
+      if (req.user.role !== 'SUPER_ADMIN' && vendor.societyId !== req.user.societyId) {
+        return res.status(403).json({ error: 'Access denied: vendor belongs to another society' });
+      }
       const payments = await prisma.vendorInvoice.findMany({
         where: { vendorId: parseInt(id) },
         orderBy: { createdAt: 'desc' }

@@ -158,11 +158,20 @@ export default function IncomeExpensePage() {
       toast.error('Please fill required fields (Category, Amount, Received From)')
       return
     }
+    const amount = parseFloat(formData.amount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
     createMutation.mutate({
-      ...formData,
       type: 'INCOME',
-      amount: parseFloat(formData.amount),
+      category: formData.category,
+      amount,
       date: new Date(formData.date).toISOString(),
+      receivedFrom: formData.receivedFrom,
+      paymentMethod: formData.paymentMethod || 'ONLINE',
+      description: formData.description || undefined,
+      invoiceNo: formData.invoiceNo || undefined,
       status: 'PAID'
     })
   }
@@ -172,11 +181,20 @@ export default function IncomeExpensePage() {
       toast.error('Please fill required fields (Category, Amount, Paid To)')
       return
     }
+    const amount = parseFloat(formData.amount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
     createMutation.mutate({
-      ...formData,
       type: 'EXPENSE',
-      amount: parseFloat(formData.amount),
+      category: formData.category,
+      amount,
       date: new Date(formData.date).toISOString(),
+      paidTo: formData.paidTo,
+      paymentMethod: formData.paymentMethod || 'ONLINE',
+      description: formData.description || undefined,
+      invoiceNo: formData.invoiceNo || undefined,
       status: 'PAID'
     })
   }
@@ -356,10 +374,18 @@ export default function IncomeExpensePage() {
                   <p className="font-medium">{selectedTransaction.description || '-'}</p>
                 </div>
                 {selectedTransaction.type === 'INCOME' ? (
-                  <div>
-                    <Label className="text-gray-500">Received From</Label>
-                    <p className="font-medium">{selectedTransaction.receivedFrom}</p>
-                  </div>
+                  <>
+                    <div>
+                      <Label className="text-gray-500">Received From</Label>
+                      <p className="font-medium">{selectedTransaction.receivedFrom}</p>
+                    </div>
+                    {selectedTransaction.invoiceNo && (
+                      <div>
+                        <Label className="text-gray-500">Invoice / Receipt No</Label>
+                        <p className="font-medium">{selectedTransaction.invoiceNo}</p>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <>
                     <div>
@@ -423,17 +449,17 @@ export default function IncomeExpensePage() {
                       <DialogDescription>Add a new income entry</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      {/* ... Income Fields ... */}
                       <div className="space-y-2">
                         <Label>Category *</Label>
-                        <Select onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Maintenance">Maintenance</SelectItem>
                             <SelectItem value="Parking">Parking</SelectItem>
                             <SelectItem value="Amenity">Amenity</SelectItem>
                             <SelectItem value="Penalty">Penalty</SelectItem>
                             <SelectItem value="Deposit">Deposit</SelectItem>
+                            <SelectItem value="Event">Event</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
@@ -441,20 +467,70 @@ export default function IncomeExpensePage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Amount (\u20B9) *</Label>
-                          <Input type="number" onChange={(e) => setFormData({ ...formData, amount: e.target.value })} />
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            placeholder="0"
+                            value={formData.amount}
+                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>Date</Label>
-                          <Input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
+                          <Input
+                            type="date"
+                            value={formData.date}
+                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                          />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Received From *</Label>
-                        <Input placeholder="Resident Name / Unit" onChange={(e) => setFormData({ ...formData, receivedFrom: e.target.value })} />
+                        <Input
+                          placeholder="Resident Name / Unit"
+                          value={formData.receivedFrom}
+                          onChange={(e) => setFormData({ ...formData, receivedFrom: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Payment Method</Label>
+                          <Select value={formData.paymentMethod} onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ONLINE">Online</SelectItem>
+                              <SelectItem value="UPI">UPI</SelectItem>
+                              <SelectItem value="CHEQUE">Cheque</SelectItem>
+                              <SelectItem value="CASH">Cash</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Invoice / Receipt No.</Label>
+                          <Input
+                            placeholder="Optional"
+                            value={formData.invoiceNo}
+                            onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })}
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Description</Label>
-                        <Input onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                        <Input
+                          placeholder="Optional"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Notes</Label>
+                        <Textarea
+                          placeholder="Optional"
+                          rows={2}
+                          value={formData.notes}
+                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        />
                       </div>
 
                       <div className="flex justify-end space-x-2 pt-4">
@@ -484,16 +560,16 @@ export default function IncomeExpensePage() {
                       <DialogDescription>Add a new expense entry</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      {/* Expense Fields */}
                       <div className="space-y-2">
                         <Label>Category *</Label>
-                        <Select onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Salary">Salary</SelectItem>
                             <SelectItem value="Security">Security</SelectItem>
                             <SelectItem value="Housekeeping">Housekeeping</SelectItem>
                             <SelectItem value="Utilities">Utilities</SelectItem>
+                            <SelectItem value="Maintenance">Maintenance</SelectItem>
                             <SelectItem value="Repairs">Repairs</SelectItem>
                             <SelectItem value="Vendor">Vendor</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
@@ -503,28 +579,48 @@ export default function IncomeExpensePage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Amount (\u20B9) *</Label>
-                          <Input type="number" onChange={(e) => setFormData({ ...formData, amount: e.target.value })} />
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            placeholder="0"
+                            value={formData.amount}
+                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>Date</Label>
-                          <Input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} />
+                          <Input
+                            type="date"
+                            value={formData.date}
+                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                          />
                         </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Paid To *</Label>
-                        <Input placeholder="Vendor / Service Name" onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })} />
+                        <Input
+                          placeholder="Vendor / Service Name"
+                          value={formData.paidTo}
+                          onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })}
+                        />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label>Invoice No.</Label>
-                          <Input onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })} />
+                          <Input
+                            placeholder="Optional"
+                            value={formData.invoiceNo}
+                            onChange={(e) => setFormData({ ...formData, invoiceNo: e.target.value })}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label>Payment Method</Label>
-                          <Select onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })} defaultValue="ONLINE">
+                          <Select value={formData.paymentMethod} onValueChange={(v) => setFormData({ ...formData, paymentMethod: v })}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="ONLINE">Online</SelectItem>
+                              <SelectItem value="UPI">UPI</SelectItem>
                               <SelectItem value="CHEQUE">Cheque</SelectItem>
                               <SelectItem value="CASH">Cash</SelectItem>
                             </SelectContent>
@@ -533,7 +629,20 @@ export default function IncomeExpensePage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Description</Label>
-                        <Input onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                        <Input
+                          placeholder="Optional"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Notes</Label>
+                        <Textarea
+                          placeholder="Optional"
+                          rows={2}
+                          value={formData.notes}
+                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        />
                       </div>
 
                       <div className="flex justify-end space-x-2 pt-4">

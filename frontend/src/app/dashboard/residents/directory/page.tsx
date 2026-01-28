@@ -15,6 +15,7 @@ import {
   UserCheck,
   UserX,
   Eye,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,6 +44,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AdminResidentService } from '@/services/admin-resident.service'
+import { UnitService } from '@/services/unit.service'
 import { toast } from 'sonner'
 
 const stats = [
@@ -144,6 +146,7 @@ export default function DirectoryPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [blockFilter, setBlockFilter] = useState('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isCreateUnitDialogOpen, setIsCreateUnitDialogOpen] = useState(false)
   const queryClient = useQueryClient()
 
   const [formData, setFormData] = useState({
@@ -152,7 +155,17 @@ export default function DirectoryPage() {
     phone: '',
     role: 'owner',
     unitId: '',
-    familyMembers: ''
+    familyMembers: '',
+    password: '',
+    confirmPassword: ''
+  })
+
+  const [unitFormData, setUnitFormData] = useState({
+    block: '',
+    number: '',
+    floor: '',
+    type: 'APARTMENT',
+    areaSqFt: ''
   })
 
   // Queries
@@ -169,12 +182,34 @@ export default function DirectoryPage() {
     queryFn: () => AdminResidentService.getStats()
   })
 
-  const { data: units = [] } = useQuery({
+  const { data: units = [], isLoading: unitsLoading, error: unitsError } = useQuery({
     queryKey: ['available-units'],
-    queryFn: () => AdminResidentService.getUnits()
+    queryFn: () => AdminResidentService.getUnits(),
+    onError: (error: any) => {
+      console.error('Failed to load units:', error)
+    }
   })
 
   // Mutations
+  const createUnitMutation = useMutation({
+    mutationFn: UnitService.createUnit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['available-units'] })
+      setIsCreateUnitDialogOpen(false)
+      toast.success('Unit created successfully')
+      setUnitFormData({
+        block: '',
+        number: '',
+        floor: '',
+        type: 'APARTMENT',
+        areaSqFt: ''
+      })
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || error.message || 'Failed to create unit')
+    }
+  })
+
   const addResidentMutation = useMutation({
     mutationFn: AdminResidentService.addResident,
     onSuccess: () => {
@@ -188,13 +223,32 @@ export default function DirectoryPage() {
         phone: '',
         role: 'owner',
         unitId: '',
-        familyMembers: ''
+        familyMembers: '',
+        password: '',
+        confirmPassword: ''
       })
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to add resident')
     }
   })
+
+  const deleteResidentMutation = useMutation({
+    mutationFn: AdminResidentService.deleteResident,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-residents'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-resident-stats'] })
+      toast.success('Resident deleted successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || error.message || 'Failed to delete resident')
+    }
+  })
+
+  const handleDeleteResident = (resident: { id: number | string; name: string }) => {
+    if (!confirm(`Are you sure you want to remove "${resident.name}" from the directory? This action cannot be undone.`)) return
+    deleteResidentMutation.mutate(resident.id)
+  }
 
   const filteredResidents = (apiResidents as any[]).filter((resident) => {
     const nameMatch = resident.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -213,7 +267,32 @@ export default function DirectoryPage() {
       toast.error('Please fill in all required fields')
       return
     }
-    addResidentMutation.mutate(formData)
+    if (formData.password) {
+      if (formData.password.length < 6) {
+        toast.error('Password must be at least 6 characters')
+        return
+      }
+      if (formData.password !== formData.confirmPassword) {
+        toast.error('Password and Confirm Password do not match')
+        return
+      }
+    }
+    const { confirmPassword, ...payload } = formData
+    addResidentMutation.mutate(payload)
+  }
+
+  const handleCreateUnit = () => {
+    if (!unitFormData.block || !unitFormData.number) {
+      toast.error('Block and Unit Number are required')
+      return
+    }
+    createUnitMutation.mutate({
+      block: unitFormData.block,
+      number: unitFormData.number,
+      floor: unitFormData.floor ? parseInt(unitFormData.floor) : undefined,
+      type: unitFormData.type,
+      areaSqFt: unitFormData.areaSqFt ? parseFloat(unitFormData.areaSqFt) : undefined
+    })
   }
 
   const handleExportCSV = () => {
@@ -323,19 +402,78 @@ export default function DirectoryPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Unit Number *</Label>
-                      <Select value={formData.unitId} onValueChange={(val) => setFormData({ ...formData, unitId: val })}>
+                      <div className="flex items-center justify-between">
+                        <Label>Unit Number *</Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setIsCreateUnitDialogOpen(true)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Create Unit
+                        </Button>
+                      </div>
+                      <Select value={formData.unitId} onValueChange={(val) => setFormData({ ...formData, unitId: val })} disabled={unitsLoading || units.length === 0}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select unit" />
+                          <SelectValue placeholder={
+                            unitsLoading ? "Loading units..." : 
+                            units.length === 0 ? "No units - Click 'Create Unit'" : 
+                            "Select unit"
+                          } />
                         </SelectTrigger>
                         <SelectContent>
-                          {(units as any[]).map((unit) => (
-                            <SelectItem key={unit.id} value={unit.id.toString()}>
-                              {unit.block}-{unit.number}
-                            </SelectItem>
-                          ))}
+                          {unitsLoading ? (
+                            <div className="p-4 text-center text-sm text-gray-500">
+                              Loading units...
+                            </div>
+                          ) : unitsError ? (
+                            <div className="p-4 text-center text-sm text-red-500">
+                              <p className="mb-2">Failed to load units</p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => queryClient.invalidateQueries({ queryKey: ['available-units'] })}
+                                className="mt-2"
+                              >
+                                Retry
+                              </Button>
+                            </div>
+                          ) : units.length === 0 ? (
+                            <div className="p-4 text-center text-sm text-gray-500">
+                              <p className="mb-2">No units found</p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsCreateUnitDialogOpen(true)}
+                                className="mt-2"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Create First Unit
+                              </Button>
+                            </div>
+                          ) : (
+                            (units as any[]).map((unit) => (
+                              <SelectItem key={unit.id} value={unit.id.toString()}>
+                                {unit.block}-{unit.number}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
+                      {units.length === 0 && !unitsLoading && !unitsError && (
+                        <p className="text-xs text-amber-600 mt-1">
+                          ⚠️ Create at least one unit before adding residents
+                        </p>
+                      )}
+                      {unitsError && (
+                        <p className="text-xs text-red-600 mt-1">
+                          ⚠️ Error loading units. Please refresh or create unit manually.
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -381,6 +519,29 @@ export default function DirectoryPage() {
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Login Password (optional)</Label>
+                      <Input
+                        type="password"
+                        placeholder="Min 6 characters – resident can login with email + this"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        autoComplete="new-password"
+                      />
+                      <p className="text-xs text-gray-500">Leave blank to use default; resident can change later.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Confirm Password</Label>
+                      <Input
+                        type="password"
+                        placeholder="Re-enter password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        autoComplete="new-password"
+                      />
+                    </div>
+                  </div>
                   <DialogFooter>
                     <DialogClose asChild>
                       <Button variant="outline">Cancel</Button>
@@ -394,6 +555,83 @@ export default function DirectoryPage() {
                     </Button>
                   </DialogFooter>
                 </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Create Unit Dialog */}
+            <Dialog open={isCreateUnitDialogOpen} onOpenChange={setIsCreateUnitDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Unit</DialogTitle>
+                  <DialogDescription>
+                    Add a new unit to your society before adding residents
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Block *</Label>
+                      <Input
+                        placeholder="A, B, C, etc."
+                        value={unitFormData.block}
+                        onChange={(e) => setUnitFormData({ ...unitFormData, block: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Unit Number *</Label>
+                      <Input
+                        placeholder="101, 102, etc."
+                        value={unitFormData.number}
+                        onChange={(e) => setUnitFormData({ ...unitFormData, number: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Floor</Label>
+                      <Input
+                        type="number"
+                        placeholder="1, 2, 3..."
+                        value={unitFormData.floor}
+                        onChange={(e) => setUnitFormData({ ...unitFormData, floor: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Type</Label>
+                      <Select value={unitFormData.type} onValueChange={(val) => setUnitFormData({ ...unitFormData, type: val })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="APARTMENT">Apartment</SelectItem>
+                          <SelectItem value="VILLA">Villa</SelectItem>
+                          <SelectItem value="SHOP">Shop</SelectItem>
+                          <SelectItem value="OFFICE">Office</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Area (Sq Ft)</Label>
+                    <Input
+                      type="number"
+                      placeholder="1200"
+                      value={unitFormData.areaSqFt}
+                      onChange={(e) => setUnitFormData({ ...unitFormData, areaSqFt: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button
+                    onClick={handleCreateUnit}
+                    disabled={createUnitMutation.isPending || !unitFormData.block || !unitFormData.number}
+                  >
+                    {createUnitMutation.isPending ? 'Creating...' : 'Create Unit'}
+                  </Button>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
@@ -585,6 +823,16 @@ export default function DirectoryPage() {
                           onClick={() => window.location.href = `mailto:${resident.email}?subject=Message from Society Management`}
                         >
                           <Mail className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Delete Resident"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteResident(resident)}
+                          disabled={deleteResidentMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>

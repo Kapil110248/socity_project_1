@@ -45,6 +45,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
+import { getDisplayConversations, SUPPORT_CHANNELS as SUPPORT_CHANNELS_CONFIG } from '@/lib/chat-display'
 
 function formatNotificationTime(createdAt: string) {
   const diff = Date.now() - new Date(createdAt).getTime()
@@ -67,16 +68,18 @@ export function Header() {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false)
   const [userSearchTerm, setUserSearchTerm] = useState('')
 
-  // Fetch Conversations
+  // Fetch Conversations – same API as Live Chat so list is identical
   const { data: conversations = [], isLoading: isConversationsLoading, refetch: refetchConversations } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
       const response = await api.get('/chat/conversations')
-      const sorted = response.data.sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      return sorted
+      return response.data
     },
-    enabled: messageOpen // Only fetch when dialog is open
+    enabled: messageOpen
   })
+
+  // Same display list as Live Chat (support channels + direct for resident; all for admin)
+  const displayConversations = getDisplayConversations(conversations, user)
 
   // Fetch Messages for selected conversation
   const { data: currentMessages = [], refetch: refetchMessages } = useQuery({
@@ -137,30 +140,36 @@ export function Header() {
     },
   })
 
-  // Start Conversation Mutation
+  // Start direct conversation (New Chat with user)
   const startConversationMutation = useMutation({
     mutationFn: async (targetUserId: number) => {
-        console.log('Starting chat with user ID:', targetUserId)
-        try {
-            console.log('Posting to /chat/start...')
-            const response = await api.post('/chat/start', { targetUserId })
-            console.log('Response:', response)
-            return response.data
-        } catch (err: any) {
-            console.error('API Post Failed:', err)
-            throw err
-        }
+      const response = await api.post('/chat/start', { targetUserId })
+      return response.data
     },
-    onSuccess: (conversation) => {
-        setIsNewChatOpen(false)
-        setSelectedConversationId(conversation.id)
-        refetchConversations()
+    onSuccess: (conversation: any) => {
+      setIsNewChatOpen(false)
+      setSelectedConversationId(conversation?.id ?? null)
+      refetchConversations()
     },
     onError: (error: any) => {
-        console.error('Mutation Error:', error)
-        const errorMessage = error.response?.data?.error || error.message || 'Unknown error'
-        const errorStack = error.response?.data?.stack || ''
-        alert(`Failed: ${errorMessage}\n\nBackend Stack:\n${errorStack}\n\nFull Error: ${JSON.stringify(error)}`)
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error'
+      alert(`Failed to start chat: ${errorMessage}`)
+    }
+  })
+
+  // Start support channel (resident: Admin Support, Maintenance, etc.)
+  const startSupportChannelMutation = useMutation({
+    mutationFn: async (type: string) => {
+      const response = await api.post('/chat/start', { type })
+      return response.data
+    },
+    onSuccess: (conversation: any) => {
+      setSelectedConversationId(conversation?.id ?? null)
+      refetchConversations()
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error'
+      alert(`Failed to start chat: ${errorMessage}`)
     }
   })
 
@@ -192,6 +201,8 @@ export function Header() {
         return 'bg-purple-100 text-purple-600'
       case 'lead_assigned':
         return 'bg-teal-100 text-teal-600'
+      case 'chat_message':
+        return 'bg-indigo-100 text-indigo-600'
       default:
         return 'bg-gray-100 text-gray-600'
     }
@@ -355,8 +366,8 @@ export function Header() {
 
               {/* View: New Chat User Selection */}
               {isNewChatOpen && (
-                <div className="flex-1 flex flex-col">
-                    <div className="p-4 border-b">
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="p-4 border-b shrink-0">
                         <Input 
                             placeholder="Search users..." 
                             value={userSearchTerm}
@@ -364,7 +375,7 @@ export function Header() {
                             className="bg-gray-50 border-gray-200"
                         />
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                    <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
                         {isUsersLoading ? (
                              <div className="text-center p-4 text-gray-500">Loading users...</div>
                         ) : availableUsers.length === 0 ? (
@@ -409,43 +420,56 @@ export function Header() {
               {!selectedConversationId && !isNewChatOpen && (
                 <div className="flex-1 overflow-y-auto p-2 space-y-2">
                   {isConversationsLoading ? (
-                       <div className="text-center p-4 text-gray-500">Loading chats...</div>
-                  ) : conversations.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                          <div className="bg-gray-50 p-4 rounded-full mb-3">
-                            <MessageSquare className="h-8 w-8 text-gray-300" />
-                          </div>
-                          <p className="text-gray-900 font-medium">No conversations yet</p>
-                          <p className="text-sm text-gray-500 mt-1 mb-4">Start a new chat to connect with others.</p>
-                          <Button variant="outline" onClick={() => setIsNewChatOpen(true)}>
-                            Start New Chat
-                          </Button>
+                    <div className="text-center p-4 text-gray-500">Loading chats...</div>
+                  ) : displayConversations.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                      <div className="bg-gray-50 p-4 rounded-full mb-3">
+                        <MessageSquare className="h-8 w-8 text-gray-300" />
                       </div>
-                  ) : (
-                    conversations.map((conv: any) => (
-                    <div
-                      key={conv.id}
-                      className="flex items-start gap-3 p-3 rounded-xl cursor-pointer hover:bg-gray-50 transition-all"
-                      onClick={() => setSelectedConversationId(conv.id)}
-                    >
-                      <Avatar className="h-10 w-10 ring-2 ring-white">
-                        <AvatarImage src={conv.otherUser?.profileImg} />
-                        <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-sm font-semibold">
-                          {conv.otherUser?.name?.charAt(0) || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="font-semibold text-sm text-[#1e3a5f]">{conv.otherUser?.name || 'Unknown User'}</p>
-                          <span className="text-xs text-gray-500">{new Date(conv.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        <p className="text-xs text-teal-600 font-medium capitalize">{conv.otherUser?.role?.toLowerCase()}</p>
-                        <p className="text-sm text-gray-600 truncate mt-0.5">
-                            {conv.lastMessage?.content || 'Started a conversation'}
-                        </p>
-                      </div>
+                      <p className="text-gray-900 font-medium">No conversations yet</p>
+                      <p className="text-sm text-gray-500 mt-1 mb-4">Start a new chat to connect with others.</p>
+                      <Button variant="outline" onClick={() => setIsNewChatOpen(true)}>
+                        Start New Chat
+                      </Button>
                     </div>
-                  )))}
+                  ) : (
+                    displayConversations.map((conv: any) => (
+                      <div
+                        key={conv.type && conv.type !== 'DIRECT' ? conv.type : `direct-${conv.id}`}
+                        className="flex items-start gap-3 p-3 rounded-xl cursor-pointer hover:bg-gray-50 transition-all"
+                        onClick={() => {
+                          if (conv.type && conv.type !== 'DIRECT' && SUPPORT_CHANNELS_CONFIG.some((ch: any) => ch.type === conv.type)) {
+                            if (conv.existingId != null && conv.existingId > 0) {
+                              setSelectedConversationId(conv.existingId)
+                            } else {
+                              startSupportChannelMutation.mutate(conv.type)
+                            }
+                          } else {
+                            setSelectedConversationId(conv.id)
+                          }
+                        }}
+                      >
+                        <Avatar className="h-10 w-10 ring-2 ring-white">
+                          <AvatarImage src={conv.otherUser?.profileImg} />
+                          <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-sm font-semibold">
+                            {conv.avatar || conv.otherUser?.name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-sm text-[#1e3a5f]">{conv.name}</p>
+                            <span className="text-xs text-gray-500">{conv.time || (conv.updatedAt ? new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')}</span>
+                          </div>
+                          {conv.otherUser?.role && (
+                            <p className="text-xs text-teal-600 font-medium capitalize">{conv.otherUser.role.toLowerCase()}</p>
+                          )}
+                          <p className="text-sm text-gray-600 truncate mt-0.5">
+                            {conv.lastMessage || 'Started a conversation'}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
 

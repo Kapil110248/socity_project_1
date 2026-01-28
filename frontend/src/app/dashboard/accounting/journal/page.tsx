@@ -109,6 +109,21 @@ export default function JournalEntriesPage() {
   }
 
   const handleCreate = () => {
+    if (!isBalanced) {
+      toast.error('Debit and Credit must be equal')
+      return
+    }
+    if (totalDebit <= 0) {
+      toast.error('Enter at least one line with amount')
+      return
+    }
+    const hasValidLines = newEntryLines.some(
+      (l) => l.accountId && ((parseFloat(String(l.debit)) || 0) > 0 || (parseFloat(String(l.credit)) || 0) > 0)
+    )
+    if (!hasValidLines) {
+      toast.error('Select account and enter debit or credit for at least one line')
+      return
+    }
     createMutation.mutate({
       date: newEntryDate,
       narration: newEntryNarration,

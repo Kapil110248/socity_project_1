@@ -10,6 +10,7 @@ router.post('/notices', authenticate, authorize(['ADMIN']), SocietyController.po
 router.get('/admin-dashboard-stats', authenticate, authorize(['ADMIN', 'SUPER_ADMIN']), SocietyController.getAdminDashboardStats);
 router.get('/members', authenticate, SocietyController.getMembers);
 router.post('/members', authenticate, authorize(['ADMIN']), SocietyController.addMember);
+router.delete('/members/:id', authenticate, authorize(['ADMIN']), SocietyController.removeMember);
 
 // Super Admin
 router.get('/stats', authenticate, authorize(['SUPER_ADMIN']), SocietyController.getStats);

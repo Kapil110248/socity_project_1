@@ -93,11 +93,11 @@ export default function SocietyAdminsPage() {
     }
   })
 
-  // Fetch Societies
+  // Fetch Societies (backend route is /api/society/all)
   const { data: realSocieties = [] } = useQuery({
     queryKey: ['societies'],
     queryFn: async () => {
-      const response = await api.get('/societies/all')
+      const response = await api.get('/society/all')
       return response.data
     }
   })

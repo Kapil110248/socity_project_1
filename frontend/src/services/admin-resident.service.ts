@@ -24,13 +24,19 @@ export const AdminResidentService = {
         role: string;
         unitId?: string | number;
         status?: string;
+        familyMembers?: string;
+        password?: string;
     }) => {
-        const response = await api.post(API_CONFIG.RESIDENT.LIST, data);
+        const { familyMembers, password, ...rest } = data;
+        const payload: Record<string, unknown> = { ...rest };
+        if (familyMembers !== undefined && familyMembers !== '') payload.familyMembers = familyMembers;
+        if (password !== undefined && password !== '') payload.password = password;
+        const response = await api.post(API_CONFIG.RESIDENT.LIST, payload);
         return response.data;
     },
 
     deleteResident: async (id: number | string) => {
-        const response = await api.delete(API_CONFIG.AUTH.DELETE_USER(id));
+        const response = await api.delete(API_CONFIG.RESIDENT.DELETE(id));
         return response.data;
     }
 };

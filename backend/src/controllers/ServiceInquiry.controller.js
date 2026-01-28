@@ -25,7 +25,11 @@ class ServiceInquiryController {
         where.vendorId = vendor.id;
       }
       // Role based filtering (non-vendor)
-      else if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'super_admin') {
+      else if (role === 'INDIVIDUAL') {
+        // Individual users: only see their own inquiries (by residentId, no societyId)
+        where.residentId = req.user.id;
+        where.societyId = null; // Individual users have no society
+      } else if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'super_admin') {
         where.societyId = req.user.societyId;
       } else if (societyId && societyId !== 'all') {
         where.societyId = parseInt(societyId);
@@ -97,10 +101,11 @@ class ServiceInquiryController {
         notes 
       } = req.body;
 
+      const role = (req.user.role || '').toUpperCase();
       const inquiry = await prisma.serviceInquiry.create({
         data: {
           residentName,
-          unit,
+          unit: unit || 'N/A',
           phone,
           serviceName,
           serviceId,
@@ -108,7 +113,7 @@ class ServiceInquiryController {
           preferredDate,
           preferredTime,
           notes,
-          societyId: req.user.societyId,
+          societyId: role === 'INDIVIDUAL' ? null : req.user.societyId,
           residentId: req.user.id
         }
       });

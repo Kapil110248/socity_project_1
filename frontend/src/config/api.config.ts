@@ -42,6 +42,7 @@ export const API_CONFIG = {
   RESIDENT: {
     LIST: '/society/members',
     DIRECTORY: '/society/members?type=directory',
+    DELETE: (id: number | string) => `/society/members/${id}`,
   },
 
   // Complaints / Helpdesk

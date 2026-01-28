@@ -62,21 +62,23 @@ export default function VendorPaymentsPage() {
         }
     })
 
-    const { data: vendors = [] } = useQuery<any[]>({
+    const { data: vendorsRaw } = useQuery({
         queryKey: ['super-admin-vendors'],
         queryFn: async () => {
             const response = await api.get('/vendors/all')
             return response.data
         }
     })
+    const vendors = Array.isArray(vendorsRaw) ? vendorsRaw : (vendorsRaw?.data ?? [])
 
-    const { data: societies = [] } = useQuery<any[]>({
+    const { data: societiesRaw } = useQuery({
         queryKey: ['societies'],
         queryFn: async () => {
             const response = await api.get('/society/all')
             return response.data
         }
     })
+    const societies = Array.isArray(societiesRaw) ? societiesRaw : (societiesRaw?.data ?? [])
 
     const recordPayoutMutation = useMutation({
         mutationFn: async (data: any) => {

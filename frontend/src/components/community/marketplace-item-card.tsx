@@ -50,7 +50,14 @@ export function MarketplaceItemCard({ item }: any) {
 
     const handleChatClick = () => {
         if (owner.id) {
-            router.push(`/dashboard/helpdesk/chat?userId=${owner.id}&itemId=${item.id}&itemTitle=${encodeURIComponent(item.title)}`)
+            const params = new URLSearchParams({
+                userId: String(owner.id),
+                itemId: String(item.id),
+                itemTitle: item.title || '',
+                itemPrice: String(item.price ?? ''),
+                itemImage: (item.images && item.images[0]) ? item.images[0] : '',
+            })
+            router.push(`/dashboard/helpdesk/chat?${params.toString()}`)
         } else {
             toast.error('Unable to start chat. Seller information not available.')
         }
@@ -126,13 +133,19 @@ export function MarketplaceItemCard({ item }: any) {
             </CardContent>
 
             <CardFooter className="p-4 bg-gray-50">
-                <Button 
-                    className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700"
-                    onClick={handleChatClick}
-                >
-                    <MessageCircle className="h-4 w-4" />
-                    Chat with {isSell ? 'Seller' : 'Buyer'}
-                </Button>
+                {isOwner ? (
+                    <div className="w-full py-2.5 text-center text-sm font-medium text-gray-500 rounded-lg bg-gray-100">
+                        Your listing
+                    </div>
+                ) : (
+                    <Button 
+                        className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700"
+                        onClick={handleChatClick}
+                    >
+                        <MessageCircle className="h-4 w-4" />
+                        Chat with {isSell ? 'Seller' : 'Buyer'}
+                    </Button>
+                )}
             </CardFooter>
         </Card>
     )
