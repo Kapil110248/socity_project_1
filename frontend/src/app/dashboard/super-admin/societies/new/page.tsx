@@ -5,12 +5,10 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
   Building2,
-  MapPin,
-  Users,
-  Mail,
-  Phone,
   ArrowLeft,
   Save,
+  CreditCard,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,10 +24,12 @@ import {
 import { RoleGuard } from '@/components/auth/role-guard'
 import Link from 'next/link'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { INDIAN_STATES, STATE_CITY_MAPPING } from '@/lib/constants'
+
+type BillingPlan = { id: number; name: string; type: string; price: string; description?: string; status: string }
 
 export default function AddSocietyPage() {
   const router = useRouter()
@@ -42,15 +42,40 @@ export default function AddSocietyPage() {
     pincode: '',
     units: '',
     plan: 'basic',
+    billingPlanId: '' as string,
     adminName: '',
     adminEmail: '',
     adminPassword: '',
     adminPhone: '',
   })
 
+  const { data: plans = [], isLoading: plansLoading } = useQuery<BillingPlan[]>({
+    queryKey: ['billing-plans'],
+    queryFn: async () => {
+      const response = await api.get('/billing-plans')
+      return Array.isArray(response.data) ? response.data : (response.data?.data ?? [])
+    },
+  })
+
+  const activePlans = plans.filter((p) => (p.status || '').toLowerCase() === 'active')
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await api.post('/society', data)
+      const payload: Record<string, unknown> = {
+        name: data.name,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        units: data.units,
+        plan: data.billingPlanId ? (plans.find((p) => p.id === Number(data.billingPlanId))?.name?.toLowerCase() || 'basic') : data.plan,
+      }
+      if (data.billingPlanId) payload.billingPlanId = Number(data.billingPlanId)
+      if (data.adminName) payload.adminName = data.adminName
+      if (data.adminEmail) payload.adminEmail = data.adminEmail
+      if (data.adminPassword) payload.adminPassword = data.adminPassword
+      if (data.adminPhone) payload.adminPhone = data.adminPhone
+      const response = await api.post('/society', payload)
       return response.data
     },
     onSuccess: () => {
@@ -72,12 +97,13 @@ export default function AddSocietyPage() {
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
-      // Clear city if state changes
-      if (field === 'state') {
-        newData.city = '';
-      }
+      if (field === 'state') newData.city = '';
       return newData;
     })
+  }
+
+  const selectPlan = (planId: string) => {
+    setFormData((prev) => ({ ...prev, billingPlanId: planId, plan: 'basic' }))
   }
 
   return (
@@ -193,33 +219,48 @@ export default function AddSocietyPage() {
             </CardContent>
           </Card>
 
-          {/* Subscription Plan */}
+          {/* Subscription Plan - from created plans (Platform Billing > Subscriptions) */}
           <Card className="border-0 shadow-md">
             <CardHeader>
-              <CardTitle>Subscription Plan</CardTitle>
-              <CardDescription>Select the appropriate plan for the society</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Subscription Plan
+              </CardTitle>
+              <CardDescription>Select the plan you created in Platform Billing → Subscriptions</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                {[
-                  { value: 'basic', label: 'Basic', price: '₹10,000/month', features: 'Up to 100 units' },
-                  { value: 'professional', label: 'Professional', price: '₹20,000/month', features: 'Up to 300 units' },
-                  { value: 'enterprise', label: 'Enterprise', price: '₹75,000/month', features: 'Unlimited units' },
-                ].map((plan) => (
-                  <div
-                    key={plan.value}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${formData.plan === plan.value
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
+              {plansLoading ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-gray-500">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Loading plans…
+                </div>
+              ) : activePlans.length === 0 ? (
+                <p className="text-center text-amber-600 py-4 bg-amber-50 rounded-lg border border-amber-200">
+                  No active plans. Create a plan in <strong>Platform Billing → Subscriptions</strong> first, then come back here.
+                </p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {activePlans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => selectPlan(String(plan.id))}
+                      className={`p-4 border-2 rounded-lg text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
+                        formData.billingPlanId === String(plan.id)
+                          ? 'border-purple-500 bg-purple-50'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
-                    onClick={() => handleChange('plan', plan.value)}
-                  >
-                    <h4 className="font-semibold">{plan.label}</h4>
-                    <p className="text-lg font-bold text-purple-600">{plan.price}</p>
-                    <p className="text-sm text-gray-500">{plan.features}</p>
-                  </div>
-                ))}
-              </div>
+                    >
+                      <h4 className="font-semibold text-gray-900">{plan.name}</h4>
+                      <p className="text-lg font-bold text-purple-600 mt-1">₹{Number(plan.price).toLocaleString()}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">{plan.type}</p>
+                      {plan.description && (
+                        <p className="text-xs text-gray-400 mt-2 line-clamp-2">{plan.description}</p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

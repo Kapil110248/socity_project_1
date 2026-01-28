@@ -12,7 +12,6 @@ import {
   Bell,
   Shield,
   Palette,
-  Globe,
   Key,
   Smartphone,
   Mail,
@@ -43,7 +42,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
@@ -66,15 +64,21 @@ const itemVariants = {
   visible: { y: 0, opacity: 1 },
 }
 
+const NOTIFICATION_PREFS_KEY = 'notification-preferences'
+
+const defaultNotificationPrefs = {
+  email: true,
+  push: true,
+  sms: false,
+  whatsapp: true,
+}
+
 export default function SettingsPage() {
   const { user, logout, updateUser } = useAuthStore()
-  const { theme, setTheme } = useTheme()
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: true,
-    sms: false,
-    whatsapp: true,
-  })
+  const themeContext = useTheme()
+  const theme = themeContext?.theme ?? 'system'
+  const setTheme = themeContext?.setTheme ?? (() => {})
+  const [notifications, setNotifications] = useState(defaultNotificationPrefs)
   const [showSuccess, setShowSuccess] = useState<string | null>(null)
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
@@ -118,6 +122,21 @@ export default function SettingsPage() {
       }))
     }
   }, [profileUser, user])
+
+  // Load notification preferences from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(NOTIFICATION_PREFS_KEY) : null
+      if (stored) {
+        const parsed = JSON.parse(stored) as typeof defaultNotificationPrefs
+        if (parsed && typeof parsed.email === 'boolean' && typeof parsed.push === 'boolean' && typeof parsed.sms === 'boolean' && typeof parsed.whatsapp === 'boolean') {
+          setNotifications(parsed)
+        }
+      }
+    } catch (_) {
+      // keep default
+    }
+  }, [])
 
   const showNotification = (message: string) => {
     setShowSuccess(message)
@@ -169,7 +188,14 @@ export default function SettingsPage() {
   }
 
   const handleSave = () => {
-    showNotification('Settings saved successfully!')
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(notifications))
+      }
+      showNotification('Notification preferences saved!')
+    } catch (_) {
+      toast.error('Failed to save preferences')
+    }
   }
 
   const handlePasswordChange = () => {
@@ -222,6 +248,15 @@ export default function SettingsPage() {
   const isAdmin = user?.role === 'admin'
   const isGuard = user?.role === 'guard'
 
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'appearance' | 'security' | 'society'>('profile')
+
+  const tabButtonClass = (tab: string) =>
+    `inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-md px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+      activeTab === tab
+        ? 'bg-white dark:bg-gray-800 text-teal-600 dark:text-teal-400 shadow-sm border border-gray-200 dark:border-gray-700'
+        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900'
+    }`
+
   return (
     <motion.div
       variants={containerVariants}
@@ -263,41 +298,75 @@ export default function SettingsPage() {
         </div>
       </motion.div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <motion.div variants={itemVariants}>
-          <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-            <TabsList className="bg-gray-100 p-1 h-auto flex-nowrap sm:flex-wrap w-max sm:w-auto">
-              <TabsTrigger value="profile" className="gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
-                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Profile
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
-                <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Notifications</span>
-                <span className="sm:hidden">Alerts</span>
-              </TabsTrigger>
-              <TabsTrigger value="appearance" className="gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
-                <Palette className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Appearance</span>
-                <span className="sm:hidden">Theme</span>
-              </TabsTrigger>
-              <TabsTrigger value="security" className="gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
-                <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Security
-              </TabsTrigger>
-              {isAdmin && (
-                <TabsTrigger value="society" className="gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap">
-                  <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  Society
-                </TabsTrigger>
-              )}
-            </TabsList>
+      {/* Tab buttons - controlled */}
+      <motion.div variants={itemVariants}>
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div
+            role="tablist"
+            className="bg-gray-100 dark:bg-gray-800 p-1.5 h-auto inline-flex flex-nowrap sm:flex-wrap gap-1 w-max sm:w-auto rounded-lg border border-gray-200 dark:border-gray-700"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'profile'}
+              onClick={() => setActiveTab('profile')}
+              className={tabButtonClass('profile')}
+            >
+              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              Profile
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'notifications'}
+              onClick={() => setActiveTab('notifications')}
+              className={tabButtonClass('notifications')}
+            >
+              <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">Notifications</span>
+              <span className="sm:hidden">Alerts</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'appearance'}
+              onClick={() => setActiveTab('appearance')}
+              className={tabButtonClass('appearance')}
+            >
+              <Palette className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              <span className="hidden sm:inline">Appearance</span>
+              <span className="sm:hidden">Theme</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'security'}
+              onClick={() => setActiveTab('security')}
+              className={tabButtonClass('security')}
+            >
+              <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+              Security
+            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'society'}
+                onClick={() => setActiveTab('society')}
+                className={tabButtonClass('society')}
+              >
+                <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                Society
+              </button>
+            )}
           </div>
-        </motion.div>
+        </div>
+      </motion.div>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-          <motion.div variants={itemVariants}>
+      <div className="mt-6 min-h-[400px]">
+      {/* Profile Tab */}
+      {activeTab === 'profile' && (
+          <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -410,12 +479,12 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-        </TabsContent>
+          </div>
+      )}
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-6">
-          <motion.div variants={itemVariants}>
+      {/* Notifications Tab */}
+      {activeTab === 'notifications' && (
+          <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -503,12 +572,12 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-        </TabsContent>
+          </div>
+      )}
 
-        {/* Appearance Tab */}
-        <TabsContent value="appearance" className="space-y-6">
-          <motion.div variants={itemVariants}>
+      {/* Appearance Tab */}
+      {activeTab === 'appearance' && (
+          <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -555,32 +624,14 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <Label>Language</Label>
-                  <Select defaultValue="en">
-                    <SelectTrigger className="w-full md:w-64">
-                      <Globe className="h-4 w-4 mr-2" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="hi">Hindi</SelectItem>
-                      <SelectItem value="mr">Marathi</SelectItem>
-                      <SelectItem value="ta">Tamil</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </CardContent>
             </Card>
-          </motion.div>
-        </TabsContent>
+          </div>
+      )}
 
-        {/* Security Tab */}
-        <TabsContent value="security" className="space-y-6">
-          <motion.div variants={itemVariants}>
+      {/* Security Tab */}
+      {activeTab === 'security' && (
+          <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -676,13 +727,12 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-        </TabsContent>
+          </div>
+      )}
 
-        {/* Society Tab (Admin Only) */}
-        {isAdmin && (
-          <TabsContent value="society" className="space-y-6">
-            <motion.div variants={itemVariants}>
+      {/* Society Tab (Admin Only) */}
+      {isAdmin && activeTab === 'society' && (
+            <div className="space-y-6">
               <Card className="border-0 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -750,10 +800,9 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
-          </TabsContent>
-        )}
-      </Tabs>
+            </div>
+      )}
+      </div>
     </motion.div>
   )
 }

@@ -90,6 +90,8 @@ model Society {
   code             String           @unique // Unique code for society login/reg
   status           SocietyStatus    @default(PENDING)
   subscriptionPlan SubscriptionPlan @default(BASIC)
+  billingPlanId    Int?
+  billingPlan      BillingPlan?     @relation(fields: [billingPlanId], references: [id])
   expectedUnits    Int              @default(0)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -729,6 +731,7 @@ model BillingPlan {
   status      String   @default("active") // active, inactive
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  societies   Society[]
 
   @@map("billingplan")
 }

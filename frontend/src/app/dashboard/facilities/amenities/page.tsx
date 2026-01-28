@@ -34,6 +34,13 @@ import AmenityService, { Amenity, AmenityBooking } from '@/services/amenityServi
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 
+function formatSafeDate(value: string | Date | null | undefined, fmt: string): string {
+  if (value == null || value === '') return '–'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '–'
+  return format(d, fmt)
+}
+
 export default function AmenitiesPage() {
   const [activeTab, setActiveTab] = useState('browse')
   const [selectedAmenity, setSelectedAmenity] = useState<Amenity | null>(null)
@@ -243,7 +250,7 @@ export default function AmenitiesPage() {
                                         <div>
                                             <h4 className="font-semibold text-gray-900">{booking.amenity?.name}</h4>
                                             <p className="text-sm text-gray-600">
-                                                {format(new Date(booking.startTime), 'PPP')} • {format(new Date(booking.startTime), 'p')} - {format(new Date(booking.endTime), 'p')}
+                                                {formatSafeDate(booking.startTime, 'PPP')} • {formatSafeDate(booking.startTime, 'p')} – {formatSafeDate(booking.endTime, 'p')}
                                             </p>
                                             <p className="text-xs text-gray-500 mt-1">Booked by: {booking.user?.name}</p>
                                         </div>

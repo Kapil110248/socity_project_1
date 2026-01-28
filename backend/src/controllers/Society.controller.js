@@ -284,6 +284,7 @@ class SocietyController {
         pincode,
         units,
         plan,
+        billingPlanId,
         adminName,
         adminEmail,
         adminPassword,
@@ -296,6 +297,11 @@ class SocietyController {
       const bcrypt = require('bcryptjs');
       const hashedPassword = adminPassword ? await bcrypt.hash(adminPassword, 10) : null;
 
+      let subscriptionPlan = (plan && typeof plan === 'string') ? plan.toUpperCase() : 'BASIC';
+      if (!['BASIC', 'PROFESSIONAL', 'ENTERPRISE'].includes(subscriptionPlan)) {
+        subscriptionPlan = 'BASIC';
+      }
+
       const data = {
         name,
         address,
@@ -304,9 +310,22 @@ class SocietyController {
         pincode,
         code,
         status: 'PENDING',
-        subscriptionPlan: plan.toUpperCase(),
+        subscriptionPlan,
         expectedUnits: parseInt(units) || 0,
       };
+
+      if (billingPlanId != null && billingPlanId !== '') {
+        const billingPlan = await prisma.billingPlan.findUnique({
+          where: { id: parseInt(billingPlanId) }
+        });
+        if (billingPlan && billingPlan.status === 'active') {
+          data.billingPlanId = billingPlan.id;
+          const nameUpper = (billingPlan.name || '').toUpperCase();
+          if (nameUpper === 'BASIC' || nameUpper === 'PROFESSIONAL' || nameUpper === 'ENTERPRISE') {
+            data.subscriptionPlan = nameUpper;
+          }
+        }
+      }
 
       if (adminEmail && adminName) {
         data.users = {

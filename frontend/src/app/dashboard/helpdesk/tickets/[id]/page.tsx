@@ -363,10 +363,11 @@
 import ClientPage from '../ClientPage'
 import { mockTickets } from '@/lib/mocks/tickets'
 
+// With output: 'export', every [id] must be pre-declared. Include mock ids + numeric range for API ticket ids (e.g. /tickets/7).
 export async function generateStaticParams() {
-  return mockTickets.map((ticket) => ({
-    id: ticket.id,
-  }))
+  const mockParams = mockTickets.map((ticket) => ({ id: ticket.id }))
+  const numericParams = Array.from({ length: 500 }, (_, i) => ({ id: String(i + 1) }))
+  return [...mockParams, ...numericParams]
 }
 
 export default function Page() {

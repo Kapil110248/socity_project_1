@@ -1006,9 +1006,11 @@ export function AdminDashboard() {
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {amenities.map((amenity, index) => (
-                <div
+                <button
                   key={index}
-                  className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                  type="button"
+                  onClick={() => router.push('/dashboard/facilities/amenities')}
+                  className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left w-full cursor-pointer border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-white rounded-lg shadow-sm">
@@ -1016,10 +1018,13 @@ export function AdminDashboard() {
                     </div>
                     <span className="font-medium text-gray-700">{amenity.name}</span>
                   </div>
-                  <div className={`w-12 h-6 rounded-full p-1 transition-colors ${amenity.status ? 'bg-teal-500' : 'bg-gray-300'}`}>
-                    <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${amenity.status ? 'translate-x-6' : 'translate-x-0'}`} />
+                  <div className="flex items-center gap-2">
+                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${amenity.status ? 'bg-teal-500' : 'bg-gray-300'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${amenity.status ? 'translate-x-6' : 'translate-x-0'}`} />
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </CardContent>
