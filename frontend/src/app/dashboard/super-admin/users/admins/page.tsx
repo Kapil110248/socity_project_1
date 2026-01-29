@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Users,
   Search,
@@ -18,18 +18,18 @@ import {
   Mail,
   User,
   Trash2,
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -37,7 +37,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -45,184 +45,205 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { RoleGuard } from '@/components/auth/role-guard'
-import { useSocietyStore } from '@/lib/stores/society-store'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
-import { toast } from 'react-hot-toast'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RoleGuard } from "@/components/auth/role-guard";
+import { useSocietyStore } from "@/lib/stores/society-store";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { toast } from "react-hot-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 
 // Types
 interface Admin {
-  id: number
-  name: string
-  email: string
-  society: string
-  status: string
-  joinedDate: string
-  lastLogin: string
-  phone?: string
-  designation?: string
-  societyId?: number
+  id: number;
+  name: string;
+  email: string;
+  society: string;
+  status: string;
+  joinedDate: string;
+  lastLogin: string;
+  phone?: string;
+  designation?: string;
+  societyId?: number;
+  profileImg?: string | null;
 }
 
 export default function SocietyAdminsPage() {
-  const queryClient = useQueryClient()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isAddAdminOpen, setIsAddAdminOpen] = useState(false)
+  const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAddAdminOpen, setIsAddAdminOpen] = useState(false);
 
   // Fetch Admins
   const { data: admins = [], isLoading } = useQuery({
-    queryKey: ['society-admins'],
+    queryKey: ["society-admins"],
     queryFn: async () => {
-      const response = await api.get('/auth/admins')
-      return response.data
-    }
-  })
+      const response = await api.get("/auth/admins");
+      return response.data;
+    },
+  });
 
   // Fetch Stats
   const { data: stats } = useQuery({
-    queryKey: ['admin-stats'],
+    queryKey: ["admin-stats"],
     queryFn: async () => {
-      const response = await api.get('/auth/stats')
-      return response.data
-    }
-  })
+      const response = await api.get("/auth/stats");
+      return response.data;
+    },
+  });
 
   // Fetch Societies (backend route is /api/society/all)
   const { data: realSocieties = [] } = useQuery({
-    queryKey: ['societies'],
+    queryKey: ["societies"],
     queryFn: async () => {
-      const response = await api.get('/society/all')
-      return response.data
-    }
-  })
+      const response = await api.get("/society/all");
+      return response.data;
+    },
+  });
 
   // Mutations
   const addAdminMutation = useMutation({
-    mutationFn: (data: any) => api.post('/auth/admins', data),
+    mutationFn: (data: any) => api.post("/auth/admins", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['society-admins'] })
-      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
-      setIsAddAdminOpen(false)
-      setNewAdmin({ name: '', email: '', phone: '', designation: '', password: '', societyId: '', role: 'admin' })
-      toast.success('Admin created successfully')
+      queryClient.invalidateQueries({ queryKey: ["society-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      setIsAddAdminOpen(false);
+      setNewAdmin({
+        name: "",
+        email: "",
+        phone: "",
+        designation: "",
+        password: "",
+        societyId: "",
+        role: "admin",
+      });
+      toast.success("Admin created successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to create admin')
-    }
-  })
+      toast.error(err.response?.data?.error || "Failed to create admin");
+    },
+  });
 
   const updateAdminMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number, data: any }) => api.put(`/auth/admins/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      api.put(`/auth/admins/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['society-admins'] })
-      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
-      setEditAdmin(null)
-      toast.success('Admin updated successfully')
+      queryClient.invalidateQueries({ queryKey: ["society-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      setEditAdmin(null);
+      toast.success("Admin updated successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to update admin')
-    }
-  })
+      toast.error(err.response?.data?.error || "Failed to update admin");
+    },
+  });
 
   const deleteAdminMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/auth/admins/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['society-admins'] })
-      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
-      setDeleteAdminId(null)
-      toast.success('Admin deleted successfully')
+      queryClient.invalidateQueries({ queryKey: ["society-admins"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+      setDeleteAdminId(null);
+      toast.success("Admin deleted successfully");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to delete admin')
-    }
-  })
+      toast.error(err.response?.data?.error || "Failed to delete admin");
+    },
+  });
 
   // New Admin Form State
   const [newAdmin, setNewAdmin] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    designation: '',
-    password: '',
-    societyId: '',
-    role: 'admin'
-  })
+    name: "",
+    email: "",
+    phone: "",
+    designation: "",
+    password: "",
+    societyId: "",
+    role: "admin",
+  });
 
   // States for View, Edit, Delete
-  const [viewAdmin, setViewAdmin] = useState<Admin | null>(null)
-  const [editAdmin, setEditAdmin] = useState<Admin | null>(null)
-  const [deleteAdminId, setDeleteAdminId] = useState<number | null>(null)
+  const [viewAdmin, setViewAdmin] = useState<Admin | null>(null);
+  const [editAdmin, setEditAdmin] = useState<Admin | null>(null);
+  const [deleteAdminId, setDeleteAdminId] = useState<number | null>(null);
 
   // Filter admins
   const filteredAdmins = admins.filter(
     (admin: Admin) =>
       admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       admin.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      admin.society.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+      admin.society.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   const handleAddAdmin = () => {
-    if (!newAdmin.name || !newAdmin.email || !newAdmin.password || !newAdmin.societyId) {
-      return toast.error('Please fill all required fields')
+    if (
+      !newAdmin.name ||
+      !newAdmin.email ||
+      !newAdmin.password ||
+      !newAdmin.societyId
+    ) {
+      return toast.error("Please fill all required fields");
     }
-    addAdminMutation.mutate(newAdmin)
-  }
+    addAdminMutation.mutate(newAdmin);
+  };
 
   const handleUpdateAdmin = () => {
-    if (!editAdmin) return
-    updateAdminMutation.mutate({ 
-      id: editAdmin.id, 
+    if (!editAdmin) return;
+    updateAdminMutation.mutate({
+      id: editAdmin.id,
       data: {
         name: editAdmin.name,
         email: editAdmin.email,
         phone: editAdmin.phone,
         societyId: editAdmin.societyId,
-        status: editAdmin.status
-      }
-    })
-  }
+        status: editAdmin.status,
+      },
+    });
+  };
 
   const handleDeleteAdmin = () => {
-    if (deleteAdminId === null) return
-    deleteAdminMutation.mutate(deleteAdminId)
-  }
+    if (deleteAdminId === null) return;
+    deleteAdminMutation.mutate(deleteAdminId);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return (
           <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
             <CheckCircle className="h-3 w-3 mr-1" />
             Active
           </Badge>
-        )
-      case 'pending':
+        );
+      case "pending":
         return (
           <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
             <Clock className="h-3 w-3 mr-1" />
             Pending
           </Badge>
-        )
-      case 'suspended':
+        );
+      case "suspended":
         return (
           <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
             <XCircle className="h-3 w-3 mr-1" />
             Suspended
           </Badge>
-        )
+        );
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status}</Badge>;
     }
-  }
+  };
 
   return (
-    <RoleGuard allowedRoles={['super_admin']}>
+    <RoleGuard allowedRoles={["super_admin"]}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -232,7 +253,9 @@ export default function SocietyAdminsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Society Admins</h1>
-            <p className="text-gray-600">Manage all society administrators on the platform</p>
+            <p className="text-gray-600">
+              Manage all society administrators on the platform
+            </p>
           </div>
           <Button
             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
@@ -252,7 +275,9 @@ export default function SocietyAdminsPage() {
                   <CheckCircle className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats?.activeAdmins ?? 0}</p>
+                  <p className="text-2xl font-bold">
+                    {stats?.activeAdmins ?? 0}
+                  </p>
                   <p className="text-sm text-gray-500">Active Admins</p>
                 </div>
               </div>
@@ -265,7 +290,9 @@ export default function SocietyAdminsPage() {
                   <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats?.totalAdmins ?? 0}</p>
+                  <p className="text-2xl font-bold">
+                    {stats?.totalAdmins ?? 0}
+                  </p>
                   <p className="text-sm text-gray-500">Total Admins</p>
                 </div>
               </div>
@@ -278,7 +305,9 @@ export default function SocietyAdminsPage() {
                   <Clock className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats?.pendingAdmins ?? 0}</p>
+                  <p className="text-2xl font-bold">
+                    {stats?.pendingAdmins ?? 0}
+                  </p>
                   <p className="text-sm text-gray-500">Pending</p>
                 </div>
               </div>
@@ -291,7 +320,9 @@ export default function SocietyAdminsPage() {
                   <XCircle className="h-5 w-5 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats?.suspendedAdmins ?? 0}</p>
+                  <p className="text-2xl font-bold">
+                    {stats?.suspendedAdmins ?? 0}
+                  </p>
                   <p className="text-sm text-gray-500">Suspended</p>
                 </div>
               </div>
@@ -337,17 +368,32 @@ export default function SocietyAdminsPage() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                      <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                      <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                      <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                      <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                      <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                      <TableCell>
+                        <Skeleton className="h-10 w-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-10 w-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-10 w-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-10 w-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-10 w-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-10 w-full" />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : filteredAdmins.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-gray-500">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-10 text-gray-500"
+                    >
                       No administrators found.
                     </TableCell>
                   </TableRow>
@@ -357,42 +403,74 @@ export default function SocietyAdminsPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
+                            <AvatarImage
+                              src={admin.profileImg}
+                              alt={admin.name}
+                            />
                             <AvatarFallback className="bg-purple-100 text-purple-700 font-bold">
-                              {admin.name.split(' ').map(n => n[0]).join('')}
+                              {admin.name
+                                ?.split(" ")
+                                .map((n: string) => n[0])
+                                .join("") || "?"}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium">{admin.name}</p>
-                            <p className="text-xs text-gray-500">{admin.email}</p>
+                            <p className="text-xs text-gray-500">
+                              {admin.email}
+                            </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Building2 className="h-3 w-3 text-gray-400" />
-                          <span className="text-sm font-medium">{admin.society}</span>
+                          <span className="text-sm font-medium">
+                            {admin.society}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(admin.status)}</TableCell>
-                      <TableCell className="text-sm text-gray-500">{admin.joinedDate}</TableCell>
-                      <TableCell className="text-sm text-gray-500">{admin.lastLogin}</TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {admin.joinedDate}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {admin.lastLogin}
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-gray-100 rounded-full"
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem onSelect={() => setTimeout(() => setViewAdmin(admin), 0)}>
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                setTimeout(() => setViewAdmin(admin), 0)
+                              }
+                            >
                               <Eye className="h-4 w-4 mr-2" />
                               View Profile
                             </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => setTimeout(() => setEditAdmin(admin), 0)}>
+                            <DropdownMenuItem
+                              onSelect={() =>
+                                setTimeout(() => setEditAdmin(admin), 0)
+                              }
+                            >
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Admin
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onSelect={() => setTimeout(() => setDeleteAdminId(admin.id), 0)}>
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              onSelect={() =>
+                                setTimeout(() => setDeleteAdminId(admin.id), 0)
+                              }
+                            >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete Admin
                             </DropdownMenuItem>
@@ -418,12 +496,17 @@ export default function SocietyAdminsPage() {
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarFallback className="text-xl bg-purple-100 text-purple-700">
-                      {viewAdmin.name.split(' ').map(n => n[0]).join('')}
+                      {viewAdmin.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="font-bold text-lg">{viewAdmin.name}</h3>
-                    <p className="text-gray-500">{viewAdmin.designation || 'Administrator'}</p>
+                    <p className="text-gray-500">
+                      {viewAdmin.designation || "Administrator"}
+                    </p>
                     <div className="flex gap-2 mt-2">
                       {getStatusBadge(viewAdmin.status)}
                     </div>
@@ -437,7 +520,7 @@ export default function SocietyAdminsPage() {
                   </div>
                   <div className="space-y-1">
                     <Label className="text-gray-500 text-xs">Phone</Label>
-                    <p className="font-medium">{viewAdmin.phone || 'N/A'}</p>
+                    <p className="font-medium">{viewAdmin.phone || "N/A"}</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-gray-500 text-xs">Society</Label>
@@ -458,7 +541,9 @@ export default function SocietyAdminsPage() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Administrator</DialogTitle>
-              <DialogDescription>Update admin details and permissions.</DialogDescription>
+              <DialogDescription>
+                Update admin details and permissions.
+              </DialogDescription>
             </DialogHeader>
             {editAdmin && (
               <div className="grid grid-cols-2 gap-4 py-4">
@@ -466,42 +551,58 @@ export default function SocietyAdminsPage() {
                   <Label>Full Name</Label>
                   <Input
                     value={editAdmin.name}
-                    onChange={(e) => setEditAdmin({ ...editAdmin, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditAdmin({ ...editAdmin, name: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
                   <Input
                     value={editAdmin.email}
-                    onChange={(e) => setEditAdmin({ ...editAdmin, email: e.target.value })}
+                    onChange={(e) =>
+                      setEditAdmin({ ...editAdmin, email: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Phone</Label>
                   <Input
-                    value={editAdmin.phone || ''}
-                    onChange={(e) => setEditAdmin({ ...editAdmin, phone: e.target.value })}
+                    value={editAdmin.phone || ""}
+                    onChange={(e) =>
+                      setEditAdmin({ ...editAdmin, phone: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Designation</Label>
                   <Input
-                    value={editAdmin.designation || ''}
-                    onChange={(e) => setEditAdmin({ ...editAdmin, designation: e.target.value })}
+                    value={editAdmin.designation || ""}
+                    onChange={(e) =>
+                      setEditAdmin({
+                        ...editAdmin,
+                        designation: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Society</Label>
                   <Select
                     value={editAdmin.societyId?.toString()}
-                    onValueChange={(val) => setEditAdmin({ ...editAdmin, societyId: parseInt(val) })}
+                    onValueChange={(val) =>
+                      setEditAdmin({ ...editAdmin, societyId: parseInt(val) })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Society" />
                     </SelectTrigger>
                     <SelectContent>
                       {realSocieties.map((society: any) => (
-                        <SelectItem key={society.id} value={society.id.toString()}>
+                        <SelectItem
+                          key={society.id}
+                          value={society.id.toString()}
+                        >
                           {society.name}
                         </SelectItem>
                       ))}
@@ -512,7 +613,9 @@ export default function SocietyAdminsPage() {
                   <Label>Status</Label>
                   <Select
                     value={editAdmin.status}
-                    onValueChange={(val) => setEditAdmin({ ...editAdmin, status: val })}
+                    onValueChange={(val) =>
+                      setEditAdmin({ ...editAdmin, status: val })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -527,31 +630,42 @@ export default function SocietyAdminsPage() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditAdmin(null)}>Cancel</Button>
-              <Button onClick={handleUpdateAdmin} disabled={updateAdminMutation.isPending}>
-                {updateAdminMutation.isPending ? 'Saving...' : 'Save Changes'}
+              <Button variant="outline" onClick={() => setEditAdmin(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateAdmin}
+                disabled={updateAdminMutation.isPending}
+              >
+                {updateAdminMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
-        <Dialog open={deleteAdminId !== null} onOpenChange={() => setDeleteAdminId(null)}>
+        <Dialog
+          open={deleteAdminId !== null}
+          onOpenChange={() => setDeleteAdminId(null)}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Delete Administrator</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this administrator? This action cannot be undone.
+                Are you sure you want to delete this administrator? This action
+                cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteAdminId(null)}>Cancel</Button>
-              <Button 
-                variant="destructive" 
+              <Button variant="outline" onClick={() => setDeleteAdminId(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
                 onClick={handleDeleteAdmin}
                 disabled={deleteAdminMutation.isPending}
               >
-                {deleteAdminMutation.isPending ? 'Deleting...' : 'Delete'}
+                {deleteAdminMutation.isPending ? "Deleting..." : "Delete"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -576,7 +690,9 @@ export default function SocietyAdminsPage() {
                     placeholder="e.g. John Doe"
                     className="pl-10 h-11"
                     value={newAdmin.name}
-                    onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewAdmin({ ...newAdmin, name: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -589,7 +705,9 @@ export default function SocietyAdminsPage() {
                     placeholder="e.g. admin@society.com"
                     className="pl-10 h-11"
                     value={newAdmin.email}
-                    onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                    onChange={(e) =>
+                      setNewAdmin({ ...newAdmin, email: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -600,7 +718,9 @@ export default function SocietyAdminsPage() {
                   placeholder="+91 98765 43210"
                   className="h-11"
                   value={newAdmin.phone}
-                  onChange={(e) => setNewAdmin({ ...newAdmin, phone: e.target.value })}
+                  onChange={(e) =>
+                    setNewAdmin({ ...newAdmin, phone: e.target.value })
+                  }
                 />
               </div>
 
@@ -610,7 +730,9 @@ export default function SocietyAdminsPage() {
                   placeholder="e.g. Secretary, Chairman"
                   className="h-11"
                   value={newAdmin.designation}
-                  onChange={(e) => setNewAdmin({ ...newAdmin, designation: e.target.value })}
+                  onChange={(e) =>
+                    setNewAdmin({ ...newAdmin, designation: e.target.value })
+                  }
                 />
               </div>
 
@@ -621,7 +743,9 @@ export default function SocietyAdminsPage() {
                   placeholder="********"
                   className="h-11"
                   value={newAdmin.password}
-                  onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                  onChange={(e) =>
+                    setNewAdmin({ ...newAdmin, password: e.target.value })
+                  }
                 />
                 <p className="text-xs text-gray-500">
                   Must be at least 8 characters.
@@ -632,14 +756,19 @@ export default function SocietyAdminsPage() {
                 <Label>Assign Society</Label>
                 <Select
                   value={newAdmin.societyId}
-                  onValueChange={(val) => setNewAdmin({ ...newAdmin, societyId: val })}
+                  onValueChange={(val) =>
+                    setNewAdmin({ ...newAdmin, societyId: val })
+                  }
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Select a society" />
                   </SelectTrigger>
                   <SelectContent>
                     {realSocieties.map((society: any) => (
-                      <SelectItem key={society.id} value={society.id.toString()}>
+                      <SelectItem
+                        key={society.id}
+                        value={society.id.toString()}
+                      >
                         {society.name}
                       </SelectItem>
                     ))}
@@ -649,18 +778,29 @@ export default function SocietyAdminsPage() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddAdminOpen(false)}>Cancel</Button>
-              <Button 
-                onClick={handleAddAdmin} 
-                className="bg-purple-600 hover:bg-purple-700"
-                disabled={addAdminMutation.isPending || !newAdmin.name || !newAdmin.email || !newAdmin.password || !newAdmin.societyId}
+              <Button
+                variant="outline"
+                onClick={() => setIsAddAdminOpen(false)}
               >
-                {addAdminMutation.isPending ? 'Creating...' : 'Create Account'}
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddAdmin}
+                className="bg-purple-600 hover:bg-purple-700"
+                disabled={
+                  addAdminMutation.isPending ||
+                  !newAdmin.name ||
+                  !newAdmin.email ||
+                  !newAdmin.password ||
+                  !newAdmin.societyId
+                }
+              >
+                {addAdminMutation.isPending ? "Creating..." : "Create Account"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </motion.div>
     </RoleGuard>
-  )
+  );
 }

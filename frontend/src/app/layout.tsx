@@ -9,6 +9,7 @@ import { AuthInitializer } from "@/components/auth-initializer";
 import EmergencyNotificationListener from "@/components/emergency/EmergencyNotificationListener";
 import ComplaintNotificationListener from "@/components/complaints/ComplaintNotificationListener";
 import ChatNotificationListener from "@/components/chat/ChatNotificationListener";
+import ProfileUpdateNotificationListener from "@/components/profile/ProfileUpdateNotificationListener";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body
+        className={`${inter.variable} font-sans antialiased`}
+        suppressHydrationWarning
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -39,6 +43,7 @@ export default function RootLayout({
             <EmergencyNotificationListener />
             <ComplaintNotificationListener />
             <ChatNotificationListener />
+            <ProfileUpdateNotificationListener />
             {children}
             <Toaster position="top-right" />
             <SonnerToaster position="top-right" richColors />
