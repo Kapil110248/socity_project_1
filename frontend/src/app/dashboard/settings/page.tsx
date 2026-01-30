@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
-import { toast } from 'react-hot-toast'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAuthStore } from '@/lib/stores/auth-store'
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/api";
+import { toast } from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import {
   Settings,
   User,
@@ -27,22 +27,28 @@ import {
   CreditCard,
   FileText,
   HelpCircle,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -51,211 +57,224 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { useTheme } from 'next-themes'
+} from "@/components/ui/dialog";
+import { useTheme } from "next-themes";
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-}
+};
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: { y: 0, opacity: 1 },
-}
+};
 
-const NOTIFICATION_PREFS_KEY = 'notification-preferences'
+const NOTIFICATION_PREFS_KEY = "notification-preferences";
 
 const defaultNotificationPrefs = {
   email: true,
   push: true,
   sms: false,
   whatsapp: true,
-}
+};
 
 export default function SettingsPage() {
-  const { user, logout, updateUser } = useAuthStore()
-  const themeContext = useTheme()
-  const theme = themeContext?.theme ?? 'system'
-  const setTheme = themeContext?.setTheme ?? (() => {})
-  const [notifications, setNotifications] = useState(defaultNotificationPrefs)
-  const [showSuccess, setShowSuccess] = useState<string | null>(null)
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
-  const queryClient = useQueryClient()
+  const { user, logout, updateUser } = useAuthStore();
+  const themeContext = useTheme();
+  const theme = themeContext?.theme ?? "system";
+  const setTheme = themeContext?.setTheme ?? (() => {});
+  const [notifications, setNotifications] = useState(defaultNotificationPrefs);
+  const [showSuccess, setShowSuccess] = useState<string | null>(null);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const queryClient = useQueryClient();
 
   // Profile Form State
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: ''
-  })
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
 
   // Fetch fresh user data
   const { data: profileUser } = useQuery({
-    queryKey: ['user-profile'],
+    queryKey: ["user-profile"],
     queryFn: async () => {
       try {
-        const res = await api.get('/auth/me')
-        return res.data
+        const res = await api.get("/auth/me");
+        return res.data;
       } catch (err) {
-        return null
+        return null;
       }
-    }
-  })
+    },
+  });
 
   useEffect(() => {
     if (profileUser) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        name: profileUser.name || '',
-        email: profileUser.email || '',
-        phone: profileUser.phone || '',
-        password: ''
-      }))
+        name: profileUser.name || "",
+        email: profileUser.email || "",
+        phone: profileUser.phone || "",
+        password: "",
+      }));
     } else if (user) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        name: user.name || '',
-        email: user.email || '',
-      }))
+        name: user.name || "",
+        email: user.email || "",
+      }));
     }
-  }, [profileUser, user])
+  }, [profileUser, user]);
 
   // Load notification preferences from localStorage on mount
   useEffect(() => {
     try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(NOTIFICATION_PREFS_KEY) : null
+      const stored =
+        typeof window !== "undefined"
+          ? localStorage.getItem(NOTIFICATION_PREFS_KEY)
+          : null;
       if (stored) {
-        const parsed = JSON.parse(stored) as typeof defaultNotificationPrefs
-        if (parsed && typeof parsed.email === 'boolean' && typeof parsed.push === 'boolean' && typeof parsed.sms === 'boolean' && typeof parsed.whatsapp === 'boolean') {
-          setNotifications(parsed)
+        const parsed = JSON.parse(stored) as typeof defaultNotificationPrefs;
+        if (
+          parsed &&
+          typeof parsed.email === "boolean" &&
+          typeof parsed.push === "boolean" &&
+          typeof parsed.sms === "boolean" &&
+          typeof parsed.whatsapp === "boolean"
+        ) {
+          setNotifications(parsed);
         }
       }
     } catch (_) {
       // keep default
     }
-  }, [])
+  }, []);
 
   const showNotification = (message: string) => {
-    setShowSuccess(message)
-    setTimeout(() => setShowSuccess(null), 3000)
-  }
+    setShowSuccess(message);
+    setTimeout(() => setShowSuccess(null), 3000);
+  };
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
-
-      const response = await api.put('/auth/profile', data)
-      return response.data
+      const response = await api.put("/auth/profile", data);
+      return response.data;
     },
     onSuccess: (updatedUser) => {
-
-      showNotification('Profile updated successfully!')
-      setFormData(prev => ({ ...prev, password: '' }))
-      updateUser(updatedUser)
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] })
-      queryClient.invalidateQueries({ queryKey: ['current-user'] })
+      showNotification("Profile updated successfully!");
+      setFormData((prev) => ({ ...prev, password: "" }));
+      updateUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["current-user"] });
     },
     onError: (error: any) => {
-      console.error('Update failed:', error)
-      toast.error(error.response?.data?.error || 'Failed to update profile')
-    }
-  })
+      console.error("Update failed:", error);
+      toast.error(error.response?.data?.error || "Failed to update profile");
+    },
+  });
 
   const handleProfileSave = () => {
-
-    updateProfileMutation.mutate(formData)
-  }
+    updateProfileMutation.mutate(formData);
+  };
 
   const handleReset = () => {
-    console.log('Reset button clicked')
+    console.log("Reset button clicked");
     if (profileUser) {
       setFormData({
-        name: profileUser.name || '',
-        email: profileUser.email || '',
-        phone: profileUser.phone || '',
-        password: ''
-      })
+        name: profileUser.name || "",
+        email: profileUser.email || "",
+        phone: profileUser.phone || "",
+        password: "",
+      });
     } else {
       setFormData({
-        name: user?.name || '',
-        email: user?.email || '',
-        phone: user?.phone || '',
-        password: ''
-      })
+        name: user?.name || "",
+        email: user?.email || "",
+        phone: user?.phone || "",
+        password: "",
+      });
     }
-  }
+  };
 
   const handleSave = () => {
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(notifications))
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          NOTIFICATION_PREFS_KEY,
+          JSON.stringify(notifications),
+        );
       }
-      showNotification('Notification preferences saved!')
+      showNotification("Notification preferences saved!");
     } catch (_) {
-      toast.error('Failed to save preferences')
+      toast.error("Failed to save preferences");
     }
-  }
+  };
 
   const handlePasswordChange = () => {
-    setIsPasswordDialogOpen(false)
-    showNotification('Password updated successfully!')
-  }
+    setIsPasswordDialogOpen(false);
+    showNotification("Password updated successfully!");
+  };
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handlePhotoUpload = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    setIsUploading(true)
-    const formData = new FormData()
-    formData.append('photo', file)
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("photo", file);
 
     try {
-      const response = await api.post('/auth/profile/photo', formData, {
+      const response = await api.post("/auth/profile/photo", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
-      })
+      });
 
-      showNotification('Photo uploaded successfully!')
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      showNotification("Photo uploaded successfully!");
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
       // Update store user if needed
       if (user) {
-        updateUser({ ...user, avatar: response.data.profileImg })
+        updateUser({ ...user, avatar: response.data.profileImg });
       }
     } catch (error: any) {
-      console.error('Upload failed:', error)
-      toast.error(error.response?.data?.error || 'Failed to upload photo')
+      console.error("Upload failed:", error);
+      toast.error(error.response?.data?.error || "Failed to upload photo");
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   const handleLogout = () => {
-    logout()
-    window.location.href = '/auth/login'
-  }
+    logout();
+    window.location.href = "/auth/login";
+  };
 
-  const isAdmin = user?.role === 'admin'
-  const isGuard = user?.role === 'guard'
+  const isAdmin = user?.role === "admin";
+  const isGuard = user?.role === "guard";
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'appearance' | 'security' | 'society'>('profile')
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "notifications" | "appearance" | "security" | "society"
+  >("profile");
 
   const tabButtonClass = (tab: string) =>
     `inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-md px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
       activeTab === tab
-        ? 'bg-white dark:bg-gray-800 text-teal-600 dark:text-teal-400 shadow-sm border border-gray-200 dark:border-gray-700'
-        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900'
-    }`
+        ? "bg-white dark:bg-gray-800 text-teal-600 dark:text-teal-400 shadow-sm border border-gray-200 dark:border-gray-700"
+        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900"
+    }`;
 
   return (
     <motion.div
@@ -280,16 +299,17 @@ export default function SettingsPage() {
       </AnimatePresence>
 
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
+      <motion.div
+        variants={itemVariants}
+        className="flex items-center justify-between"
+      >
         <div>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500">
               <Settings className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-[#1e3a5f]">
-                Settings
-              </h1>
+              <h1 className="text-2xl font-bold text-[#1e3a5f]">Settings</h1>
               <p className="text-muted-foreground text-sm">
                 Manage your account and preferences
               </p>
@@ -308,9 +328,9 @@ export default function SettingsPage() {
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === 'profile'}
-              onClick={() => setActiveTab('profile')}
-              className={tabButtonClass('profile')}
+              aria-selected={activeTab === "profile"}
+              onClick={() => setActiveTab("profile")}
+              className={tabButtonClass("profile")}
             >
               <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               Profile
@@ -318,9 +338,9 @@ export default function SettingsPage() {
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === 'notifications'}
-              onClick={() => setActiveTab('notifications')}
-              className={tabButtonClass('notifications')}
+              aria-selected={activeTab === "notifications"}
+              onClick={() => setActiveTab("notifications")}
+              className={tabButtonClass("notifications")}
             >
               <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               <span className="hidden sm:inline">Notifications</span>
@@ -329,9 +349,9 @@ export default function SettingsPage() {
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === 'appearance'}
-              onClick={() => setActiveTab('appearance')}
-              className={tabButtonClass('appearance')}
+              aria-selected={activeTab === "appearance"}
+              onClick={() => setActiveTab("appearance")}
+              className={tabButtonClass("appearance")}
             >
               <Palette className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               <span className="hidden sm:inline">Appearance</span>
@@ -340,9 +360,9 @@ export default function SettingsPage() {
             <button
               type="button"
               role="tab"
-              aria-selected={activeTab === 'security'}
-              onClick={() => setActiveTab('security')}
-              className={tabButtonClass('security')}
+              aria-selected={activeTab === "security"}
+              onClick={() => setActiveTab("security")}
+              className={tabButtonClass("security")}
             >
               <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               Security
@@ -351,9 +371,9 @@ export default function SettingsPage() {
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTab === 'society'}
-                onClick={() => setActiveTab('society')}
-                className={tabButtonClass('society')}
+                aria-selected={activeTab === "society"}
+                onClick={() => setActiveTab("society")}
+                className={tabButtonClass("society")}
               >
                 <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                 Society
@@ -364,8 +384,8 @@ export default function SettingsPage() {
       </motion.div>
 
       <div className="mt-6 min-h-[400px]">
-      {/* Profile Tab */}
-      {activeTab === 'profile' && (
+        {/* Profile Tab */}
+        {activeTab === "profile" && (
           <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
@@ -389,7 +409,9 @@ export default function SettingsPage() {
                       onChange={handleFileChange}
                     />
                     <Avatar className="h-24 w-24 ring-4 ring-teal-100">
-                      <AvatarImage src={profileUser?.profileImg || user?.avatar} />
+                      <AvatarImage
+                        src={profileUser?.profileImg || user?.avatar}
+                      />
                       <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-2xl">
                         {user?.name?.charAt(0)}
                       </AvatarFallback>
@@ -409,9 +431,17 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold">{user?.name}</h3>
-                    <p className="text-sm text-muted-foreground">{user?.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {user?.email}
+                    </p>
                     <Badge className="mt-2 bg-teal-100 text-teal-700">
-                      {user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'admin' ? 'Administrator' : user?.role === 'guard' ? 'Security Guard' : 'Resident'}
+                      {user?.role === "super_admin"
+                        ? "Super Admin"
+                        : user?.role === "admin"
+                          ? "Administrator"
+                          : user?.role === "guard"
+                            ? "Security Guard"
+                            : "Resident"}
                     </Badge>
                   </div>
                 </div>
@@ -424,7 +454,9 @@ export default function SettingsPage() {
                     <Label>Full Name</Label>
                     <Input
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       placeholder="Enter your name"
                     />
                   </div>
@@ -432,58 +464,78 @@ export default function SettingsPage() {
                     <Label>Email Address</Label>
                     <Input
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       type="email"
                       placeholder="Enter email"
                       disabled
                     />
-                    <p className="text-xs text-muted-foreground">Email cannot be changed directly.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Email cannot be changed directly.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>Phone Number</Label>
                     <Input
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       placeholder="Enter phone"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Unit Number</Label>
-                    <Input defaultValue="A-101" placeholder="Your unit" disabled={!isAdmin} />
+                    <Input
+                      defaultValue="A-101"
+                      placeholder="Your unit"
+                      disabled={!isAdmin}
+                    />
                   </div>
                   <div className="space-y-2 col-span-1 md:col-span-2 border-t pt-4 mt-2">
-                    <Label className="text-base font-semibold text-gray-900 mb-2 block">Change Password</Label>
+                    <Label className="text-base font-semibold text-gray-900 mb-2 block">
+                      Change Password
+                    </Label>
                     <div className="relative">
                       <Key className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         type="password"
                         value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, password: e.target.value })
+                        }
                         placeholder="Type new password to update (optional)"
                         className="pl-10"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Leave empty if you don't want to change password.</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Leave empty if you don't want to change password.
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={handleReset}>Reset</Button>
+                  <Button variant="outline" onClick={handleReset}>
+                    Reset
+                  </Button>
                   <Button
                     className="bg-gradient-to-r from-teal-500 to-cyan-500"
                     onClick={handleProfileSave}
                     disabled={updateProfileMutation.isPending}
                   >
-                    {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
+                    {updateProfileMutation.isPending
+                      ? "Saving..."
+                      : "Save Changes"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
-      )}
+        )}
 
-      {/* Notifications Tab */}
-      {activeTab === 'notifications' && (
+        {/* Notifications Tab */}
+        {activeTab === "notifications" && (
           <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
@@ -504,12 +556,19 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <p className="font-medium">Email Notifications</p>
-                        <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                        <p className="text-sm text-muted-foreground">
+                          Receive updates via email
+                        </p>
                       </div>
                     </div>
                     <Switch
                       checked={notifications.email}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, email: checked }))}
+                      onCheckedChange={(checked) =>
+                        setNotifications((prev) => ({
+                          ...prev,
+                          email: checked,
+                        }))
+                      }
                     />
                   </div>
 
@@ -520,12 +579,16 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <p className="font-medium">Push Notifications</p>
-                        <p className="text-sm text-muted-foreground">Get instant app notifications</p>
+                        <p className="text-sm text-muted-foreground">
+                          Get instant app notifications
+                        </p>
                       </div>
                     </div>
                     <Switch
                       checked={notifications.push}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, push: checked }))}
+                      onCheckedChange={(checked) =>
+                        setNotifications((prev) => ({ ...prev, push: checked }))
+                      }
                     />
                   </div>
 
@@ -536,12 +599,19 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <p className="font-medium">WhatsApp Notifications</p>
-                        <p className="text-sm text-muted-foreground">Receive updates via WhatsApp</p>
+                        <p className="text-sm text-muted-foreground">
+                          Receive updates via WhatsApp
+                        </p>
                       </div>
                     </div>
                     <Switch
                       checked={notifications.whatsapp}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, whatsapp: checked }))}
+                      onCheckedChange={(checked) =>
+                        setNotifications((prev) => ({
+                          ...prev,
+                          whatsapp: checked,
+                        }))
+                      }
                     />
                   </div>
 
@@ -552,12 +622,16 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <p className="font-medium">SMS Notifications</p>
-                        <p className="text-sm text-muted-foreground">Get text message alerts</p>
+                        <p className="text-sm text-muted-foreground">
+                          Get text message alerts
+                        </p>
                       </div>
                     </div>
                     <Switch
                       checked={notifications.sms}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, sms: checked }))}
+                      onCheckedChange={(checked) =>
+                        setNotifications((prev) => ({ ...prev, sms: checked }))
+                      }
                     />
                   </div>
                 </div>
@@ -573,10 +647,10 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
-      )}
+        )}
 
-      {/* Appearance Tab */}
-      {activeTab === 'appearance' && (
+        {/* Appearance Tab */}
+        {activeTab === "appearance" && (
           <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
@@ -593,9 +667,12 @@ export default function SettingsPage() {
                   <Label>Theme</Label>
                   <div className="grid grid-cols-3 gap-4">
                     <div
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${theme === 'light' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      onClick={() => setTheme('light')}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        theme === "light"
+                          ? "border-teal-500 bg-teal-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => setTheme("light")}
                     >
                       <div className="flex items-center justify-center mb-2">
                         <Sun className="h-8 w-8 text-orange-500" />
@@ -603,9 +680,12 @@ export default function SettingsPage() {
                       <p className="text-center font-medium">Light</p>
                     </div>
                     <div
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${theme === 'dark' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      onClick={() => setTheme('dark')}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        theme === "dark"
+                          ? "border-teal-500 bg-teal-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => setTheme("dark")}
                     >
                       <div className="flex items-center justify-center mb-2">
                         <Moon className="h-8 w-8 text-blue-600" />
@@ -613,9 +693,12 @@ export default function SettingsPage() {
                       <p className="text-center font-medium">Dark</p>
                     </div>
                     <div
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${theme === 'system' ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      onClick={() => setTheme('system')}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        theme === "system"
+                          ? "border-teal-500 bg-teal-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => setTheme("system")}
                     >
                       <div className="flex items-center justify-center mb-2">
                         <Settings className="h-8 w-8 text-gray-500" />
@@ -627,10 +710,10 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
-      )}
+        )}
 
-      {/* Security Tab */}
-      {activeTab === 'security' && (
+        {/* Security Tab */}
+        {activeTab === "security" && (
           <div className="space-y-6">
             <Card className="border-0 shadow-lg">
               <CardHeader>
@@ -643,7 +726,10 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                <Dialog
+                  open={isPasswordDialogOpen}
+                  onOpenChange={setIsPasswordDialogOpen}
+                >
                   <DialogTrigger asChild>
                     <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
@@ -652,7 +738,9 @@ export default function SettingsPage() {
                         </div>
                         <div>
                           <p className="font-medium">Change Password</p>
-                          <p className="text-sm text-muted-foreground">Update your password regularly</p>
+                          <p className="text-sm text-muted-foreground">
+                            Update your password regularly
+                          </p>
                         </div>
                       </div>
                       <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -668,20 +756,37 @@ export default function SettingsPage() {
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
                         <Label>Current Password</Label>
-                        <Input type="password" placeholder="Enter current password" />
+                        <Input
+                          type="password"
+                          placeholder="Enter current password"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>New Password</Label>
-                        <Input type="password" placeholder="Enter new password" />
+                        <Input
+                          type="password"
+                          placeholder="Enter new password"
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Confirm New Password</Label>
-                        <Input type="password" placeholder="Confirm new password" />
+                        <Input
+                          type="password"
+                          placeholder="Confirm new password"
+                        />
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>Cancel</Button>
-                      <Button className="bg-gradient-to-r from-teal-500 to-cyan-500" onClick={handlePasswordChange}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsPasswordDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="bg-gradient-to-r from-teal-500 to-cyan-500"
+                        onClick={handlePasswordChange}
+                      >
                         Update Password
                       </Button>
                     </DialogFooter>
@@ -695,14 +800,18 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <p className="font-medium">Two-Factor Authentication</p>
-                      <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+                      <p className="text-sm text-muted-foreground">
+                        Add an extra layer of security
+                      </p>
                     </div>
                   </div>
                   <Switch
                     checked={twoFactorEnabled}
                     onCheckedChange={(checked) => {
-                      setTwoFactorEnabled(checked)
-                      showNotification(checked ? '2FA enabled!' : '2FA disabled!')
+                      setTwoFactorEnabled(checked);
+                      showNotification(
+                        checked ? "2FA enabled!" : "2FA disabled!",
+                      );
                     }}
                   />
                 </div>
@@ -717,10 +826,16 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <p className="font-medium text-red-700">Sign Out</p>
-                        <p className="text-sm text-red-600">Log out from your account</p>
+                        <p className="text-sm text-red-600">
+                          Log out from your account
+                        </p>
                       </div>
                     </div>
-                    <Button variant="destructive" size="sm" onClick={handleLogout}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleLogout}
+                    >
                       Sign Out
                     </Button>
                   </div>
@@ -728,81 +843,91 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
-      )}
+        )}
 
-      {/* Society Tab (Admin Only) */}
-      {isAdmin && activeTab === 'society' && (
-            <div className="space-y-6">
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-indigo-500" />
-                    Society Settings
-                  </CardTitle>
-                  <CardDescription>
-                    Manage society-wide configurations
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Society Tab (Admin Only) */}
+        {isAdmin && activeTab === "society" && (
+          <div className="space-y-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-indigo-500" />
+                  Society Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage society-wide configurations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Society Name</Label>
+                    <Input
+                      defaultValue="Sunrise Heights"
+                      placeholder="Society name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Registration Number</Label>
+                    <Input
+                      defaultValue="SOC/MH/2020/12345"
+                      placeholder="Reg. number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Total Units</Label>
+                    <Input defaultValue="180" type="number" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Total Blocks</Label>
+                    <Input defaultValue="4" type="number" />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <Label>Billing Settings</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Society Name</Label>
-                      <Input defaultValue="Sunrise Heights" placeholder="Society name" />
+                      <Label className="text-sm text-muted-foreground">
+                        Maintenance Due Day
+                      </Label>
+                      <Select defaultValue="5">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1st of month</SelectItem>
+                          <SelectItem value="5">5th of month</SelectItem>
+                          <SelectItem value="10">10th of month</SelectItem>
+                          <SelectItem value="15">15th of month</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Registration Number</Label>
-                      <Input defaultValue="SOC/MH/2020/12345" placeholder="Reg. number" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Total Units</Label>
-                      <Input defaultValue="180" type="number" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Total Blocks</Label>
-                      <Input defaultValue="4" type="number" />
+                      <Label className="text-sm text-muted-foreground">
+                        Late Fee
+                      </Label>
+                      <Input defaultValue="500" type="number" />
                     </div>
                   </div>
+                </div>
 
-                  <Separator />
-
-                  <div className="space-y-4">
-                    <Label>Billing Settings</Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Maintenance Due Day</Label>
-                        <Select defaultValue="5">
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1st of month</SelectItem>
-                            <SelectItem value="5">5th of month</SelectItem>
-                            <SelectItem value="10">10th of month</SelectItem>
-                            <SelectItem value="15">15th of month</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Late Fee</Label>
-                        <Input defaultValue="500" type="number" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-3">
-                    <Button variant="outline">Cancel</Button>
-                    <Button
-                      className="bg-gradient-to-r from-teal-500 to-cyan-500"
-                      onClick={handleSave}
-                    >
-                      Save Settings
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-      )}
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline">Cancel</Button>
+                  <Button
+                    className="bg-gradient-to-r from-teal-500 to-cyan-500"
+                    onClick={handleSave}
+                  >
+                    Save Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </motion.div>
-  )
+  );
 }
