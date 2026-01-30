@@ -1,3 +1,9 @@
+/** PIN Code length for customer/individual (configurable via NEXT_PUBLIC_PIN_CODE_LENGTH, default 6). */
+export const PIN_CODE_LENGTH = parseInt(
+  process.env.NEXT_PUBLIC_PIN_CODE_LENGTH || "6",
+  10
+);
+
 export const API_CONFIG = {
   // BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://socity-backend-production.up.railway.app/api',
   BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api",
@@ -216,6 +222,9 @@ export const API_CONFIG = {
     CATEGORY_DETAILS: (id: string) => `/services/categories/${id}`,
     INQUIRIES: "/services/inquiries",
     ASSIGN_VENDOR: (id: string) => `/services/inquiries/${id}/assign`,
+    PAYMENT_DETAILS: (id: number | string) => `/services/inquiries/${id}/payment-details`,
+    INITIATE_PAYMENT: (id: number | string) => `/services/inquiries/${id}/initiate-payment`,
+    UPDATE_PAYMENT_STATUS: (id: number | string) => `/services/inquiries/${id}/payment-status`,
   },
 
   // Billing

@@ -327,7 +327,7 @@ export default function VendorsPage() {
   const [selectedRating, setSelectedRating] = useState(0)
   const queryClient = useQueryClient()
 
-  // Add Vendor Form State
+  // Add Vendor Form State (Admin adds society vendor – vendor gets login with email + password)
   const [vendorForm, setVendorForm] = useState({
     name: '',
     company: '',
@@ -335,13 +335,15 @@ export default function VendorsPage() {
     contactPerson: '',
     phone: '',
     email: '',
+    password: '',
     address: '',
     gst: '',
     pan: '',
     contractStart: '',
     contractEnd: '',
     contractValue: '',
-    paymentTerms: ''
+    paymentTerms: '',
+    servicePincodes: ''
   })
 
   // Queries
@@ -369,13 +371,15 @@ export default function VendorsPage() {
         contactPerson: '',
         phone: '',
         email: '',
+        password: '',
         address: '',
         gst: '',
         pan: '',
         contractStart: '',
         contractEnd: '',
         contractValue: '',
-        paymentTerms: ''
+        paymentTerms: '',
+        servicePincodes: ''
       })
       showNotification('Vendor added successfully!')
     },
@@ -448,27 +452,35 @@ export default function VendorsPage() {
   }
 
   const handleAddVendor = () => {
-    // Validation
     if (!vendorForm.name || !vendorForm.type || !vendorForm.contactPerson || !vendorForm.phone) {
-      showNotification('Please fill in all required fields')
+      showNotification('Please fill in all required fields (Name, Type, Contact Person, Phone)')
+      return
+    }
+    if (!vendorForm.email?.trim()) {
+      showNotification('Email is required. Vendor will use it to log in.')
+      return
+    }
+    if (!vendorForm.password || vendorForm.password.length < 6) {
+      showNotification('Password is required (minimum 6 characters). Share it with the vendor for login.')
       return
     }
 
-    // Submit to API
     createMutation.mutate({
       name: vendorForm.name,
       company: vendorForm.company,
       type: vendorForm.type,
       contactPerson: vendorForm.contactPerson,
       phone: vendorForm.phone,
-      email: vendorForm.email,
+      email: vendorForm.email.trim(),
+      password: vendorForm.password,
       address: vendorForm.address,
       gst: vendorForm.gst,
       pan: vendorForm.pan,
       contractStart: vendorForm.contractStart,
       contractEnd: vendorForm.contractEnd,
       contractValue: vendorForm.contractValue ? parseFloat(vendorForm.contractValue) : undefined,
-      paymentTerms: vendorForm.paymentTerms
+      paymentTerms: vendorForm.paymentTerms,
+      servicePincodes: vendorForm.servicePincodes?.trim() || undefined
     })
   }
 
@@ -745,14 +757,40 @@ export default function VendorsPage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Email Address</Label>
+                            <Label>Email Address *</Label>
                             <Input
                               type="email"
                               placeholder="contact@vendor.com"
                               value={vendorForm.email}
                               onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
+                              required
                             />
+                            <p className="text-xs text-gray-500">Vendor will use this email to log in to the dashboard.</p>
                           </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Login Password *</Label>
+                          <Input
+                            type="password"
+                            placeholder="Minimum 6 characters"
+                            minLength={6}
+                            value={vendorForm.password}
+                            onChange={(e) => setVendorForm({ ...vendorForm, password: e.target.value })}
+                            required
+                          />
+                          <p className="text-xs text-gray-500">Share this password with the vendor. They will use Email + Password to sign in.</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4 text-teal-500" />
+                            Serviceable PIN Codes (optional)
+                          </Label>
+                          <Input
+                            placeholder="e.g. 110001, 110002, 110010-110020"
+                            value={vendorForm.servicePincodes}
+                            onChange={(e) => setVendorForm({ ...vendorForm, servicePincodes: e.target.value })}
+                          />
+                          <p className="text-xs text-gray-500">Comma-separated or range. Used if this vendor serves individual customers by location.</p>
                         </div>
                         <div className="space-y-2">
                           <Label>Complete Address</Label>

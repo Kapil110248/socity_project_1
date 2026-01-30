@@ -46,6 +46,21 @@ export const connectPlatformAdmin = () => {
   return s;
 };
 
+/** Connect socket for users without society (e.g. Individual) – join user room only for chat/dashboard notifications */
+export const connectUser = (userId: number | string) => {
+  const s = getSocket();
+  if (!s.connected) {
+    s.connect();
+    s.on('connect', () => {
+      console.log('Connected to socket server (user room)');
+      s.emit('join-user', userId);
+    });
+  } else {
+    s.emit('join-user', userId);
+  }
+  return s;
+};
+
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();

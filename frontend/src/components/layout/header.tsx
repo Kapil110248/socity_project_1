@@ -45,6 +45,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
+import { chatService } from '@/services/chat.service'
 import { getDisplayConversations, SUPPORT_CHANNELS as SUPPORT_CHANNELS_CONFIG } from '@/lib/chat-display'
 
 function formatNotificationTime(createdAt: string) {
@@ -81,43 +82,44 @@ export function Header() {
   // Same display list as Live Chat (support channels + direct for resident; all for admin)
   const displayConversations = getDisplayConversations(conversations, user)
 
-  // Fetch Messages for selected conversation
-  const { data: currentMessages = [], refetch: refetchMessages } = useQuery({
+  // Fetch Messages for selected conversation (API returns { data, total, limit, offset })
+  const { data: messagesRes, refetch: refetchMessages } = useQuery({
     queryKey: ['messages', selectedConversationId],
     queryFn: async () => {
-      if (!selectedConversationId) return []
+      if (!selectedConversationId) return { data: [], total: 0, limit: 50, offset: 0 }
       const response = await api.get(`/chat/conversations/${selectedConversationId}/messages`)
-      return response.data
+      const body = response.data
+      return Array.isArray(body) ? { data: body, total: body.length, limit: 50, offset: 0 } : (body ?? { data: [], total: 0, limit: 50, offset: 0 })
     },
     enabled: !!selectedConversationId,
     refetchInterval: 3000 // Poll every 3 seconds for new messages (simple real-time)
   })
+  const currentMessages = Array.isArray(messagesRes?.data) ? messagesRes.data : []
 
-  // Fetch Users for New Chat
+  // Fetch Users for New Chat (Super Admin: only society admins they created; Admin/Committee: same society + platform)
   const { data: availableUsers = [], isLoading: isUsersLoading } = useQuery({
     queryKey: ['users-for-chat', userSearchTerm],
     queryFn: async () => {
-      const response = await api.get('/auth/all') // Optimization: Should ideally be a search API
-      let users = response.data.filter((u: any) => u.id !== user?.id)
-      if (userSearchTerm) {
-        const lowerTerm = userSearchTerm.toLowerCase()
-        users = users.filter((u: any) => 
-            u.name.toLowerCase().includes(lowerTerm) || 
-            u.email.toLowerCase().includes(lowerTerm) ||
-            u.role.toLowerCase().includes(lowerTerm)
+      const list = await chatService.getAvailableUsersForChat()
+      if (!userSearchTerm) return list.slice(0, 20)
+      const lowerTerm = userSearchTerm.toLowerCase()
+      return list
+        .filter((u: any) =>
+          (u.name || '').toLowerCase().includes(lowerTerm) ||
+          (u.email || '').toLowerCase().includes(lowerTerm) ||
+          (u.role || '').toLowerCase().includes(lowerTerm) ||
+          (u.societyName || '').toLowerCase().includes(lowerTerm)
         )
-      }
-      return users.slice(0, 20) // Limit to 20 for performance
+        .slice(0, 20)
     },
     enabled: isNewChatOpen
   })
 
-  // Fetch current user's notifications (user-specific, no hardcoded data)
-  // refetchInterval + refetchOnWindowFocus so new notifications (e.g. second lead assign) show without refresh
+  // Fetch current user's notifications – only unread in dropdown so read ones auto-disappear
   const { data: notificationRes, refetch: refetchNotifications } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', 'unread'],
     queryFn: async () => {
-      const res = await api.get('/notifications', { params: { limit: 50 } })
+      const res = await api.get('/notifications', { params: { limit: 50, unreadOnly: true } })
       const body = res.data
       return {
         data: Array.isArray(body?.data) ? body.data : (body?.data ? [body.data] : []),
@@ -125,11 +127,20 @@ export function Header() {
       }
     },
     enabled: !!user?.id,
-    refetchInterval: 15000, // Poll every 15 sec so new lead-assign etc. show without refresh
+    refetchInterval: 15000,
     refetchOnWindowFocus: true,
   })
   const notificationsList = notificationRes?.data ?? []
   const notificationCount = notificationRes?.unreadCount ?? 0
+
+  const markOneNotificationRead = useMutation({
+    mutationFn: async (id: number) => {
+      await api.patch(`/notifications/${id}/read`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
 
   const markAllNotificationsRead = useMutation({
     mutationFn: async () => {
@@ -588,6 +599,7 @@ export function Header() {
                     <DropdownMenuItem
                       key={n.id}
                       className="flex items-start space-x-3 p-3 cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
+                      onClick={() => markOneNotificationRead.mutate(n.id)}
                     >
                       <div
                         className={`p-2 rounded-lg flex-shrink-0 ${getNotificationIcon(n.type || '')}`}
@@ -599,9 +611,7 @@ export function Header() {
                           <p className="text-sm font-semibold text-gray-900">
                             {n.title}
                           </p>
-                          {!n.read && (
-                            <span className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0" />
-                          )}
+                          <span className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0" />
                         </div>
                         {n.description && (
                           <p className="text-sm text-gray-600 truncate">

@@ -29,6 +29,18 @@ export function VendorDashboard() {
 
     const vendorLeads = Array.isArray(inquiriesRaw) ? inquiriesRaw : []
 
+    const contactMutation = useMutation({
+        mutationFn: async (id: number | string) => {
+            const res = await api.patch(`/services/inquiries/${id}/contact`)
+            return res.data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vendor-my-leads'] })
+            toast.success('Customer marked as contacted.')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.error || 'Failed to mark as contacted'),
+    })
+
     const statusMutation = useMutation({
         mutationFn: async ({ id, status }: { id: number | string; status: string }) => {
             const res = await api.patch(`/services/inquiries/${id}/status`, { status })
@@ -38,6 +50,11 @@ export function VendorDashboard() {
             queryClient.invalidateQueries({ queryKey: ['vendor-my-leads'] })
         },
     })
+
+    const isContacted = (lead: any) => {
+        const s = String(lead?.status || '').toLowerCase()
+        return lead?.contactedAt != null || s === 'contacted' || s === 'confirmed' || s === 'done' || s === 'completed'
+    }
 
     const handleStatusUpdate = (id: string | number, status: string) => {
         statusMutation.mutate(
@@ -50,7 +67,7 @@ export function VendorDashboard() {
     }
 
     const activeStatuses = ['pending', 'booked']
-    const contactedStatuses = ['confirmed']
+    const contactedStatuses = ['contacted', 'confirmed']
     const closedStatuses = ['done', 'completed']
 
     const stats = [
@@ -153,7 +170,8 @@ export function VendorDashboard() {
                                                     <AlertCircle className="h-4 w-4 mr-2 text-blue-500" /> Mark Pending
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
-                                                    onClick={() => handleStatusUpdate(lead.id, 'confirmed')}
+                                                    onClick={() => !isContacted(lead) && contactMutation.mutate(lead.id)}
+                                                    disabled={isContacted(lead) || contactMutation.isPending}
                                                     className="rounded-xl font-bold text-[10px] uppercase p-3"
                                                 >
                                                     <Clock className="h-4 w-4 mr-2 text-yellow-500" /> Mark Contacted

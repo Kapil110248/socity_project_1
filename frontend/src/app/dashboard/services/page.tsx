@@ -14,6 +14,9 @@ import {
   Plus,
   Loader2,
   FileText,
+  CreditCard,
+  Banknote,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +97,9 @@ export default function ServicesPage() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isCallbackOpen, setIsCallbackOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("browse");
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [paymentAmount, setPaymentAmount] = useState<string>("");
 
   // Form states
   const [unit, setUnit] = useState(user?.unit || "");
@@ -124,6 +130,21 @@ export default function ServicesPage() {
     },
     onError: (err: any) =>
       toast.error(err.message || "Failed to submit request"),
+  });
+
+  const initiatePaymentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { paymentMethod: string; amount?: number } }) =>
+      residentService.initiatePayment(id, data),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      setIsPaymentOpen(false);
+      setSelectedRequest(null);
+      setPaymentMethod("");
+      setPaymentAmount("");
+      toast.success(res?.message || "Payment initiated successfully!");
+    },
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.error || err.message || "Payment failed"),
   });
 
   const handleBookService = () => {
@@ -451,7 +472,21 @@ export default function ServicesPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
+                              {(request.status?.toUpperCase() === "CONFIRMED" &&
+                                (request.paymentStatus || "PENDING")?.toUpperCase() !== "PAID") && (
+                                <Button
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    setSelectedRequest(request);
+                                    setIsPaymentOpen(true);
+                                    setPaymentAmount(request.payableAmount != null ? String(request.payableAmount) : "");
+                                  }}
+                                >
+                                  Make Payment
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -642,6 +677,41 @@ export default function ServicesPage() {
                     </div>
                   </div>
                 )}
+
+                {selectedRequest?.status?.toUpperCase() === "CONFIRMED" && (
+                  <div className="p-4 bg-green-50 rounded-xl border border-green-100 space-y-3">
+                    <p className="text-sm font-bold text-green-800 uppercase tracking-wide">Payment</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Status</span>
+                      <Badge className={((selectedRequest as any).paymentStatus?.toUpperCase() === "PAID" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700") + " px-2 py-0.5"}>
+                        {(selectedRequest as any).paymentStatus || "PENDING"}
+                      </Badge>
+                    </div>
+                    {(selectedRequest as any).payableAmount != null && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Payable amount</span>
+                        <span className="font-bold text-gray-900">₹{Number((selectedRequest as any).payableAmount).toLocaleString()}</span>
+                      </div>
+                    )}
+                    {(selectedRequest as any).transactionId && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Transaction ID</span>
+                        <span className="font-mono text-gray-700">{(selectedRequest as any).transactionId}</span>
+                      </div>
+                    )}
+                    {(selectedRequest as any).paymentStatus?.toUpperCase() !== "PAID" && (
+                      <Button
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-11 rounded-xl mt-2"
+                        onClick={() => {
+                          setIsPaymentOpen(true);
+                          setPaymentAmount((selectedRequest as any).payableAmount != null ? String((selectedRequest as any).payableAmount) : "");
+                        }}
+                      >
+                        Make Payment
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter className="p-8 pt-0 bg-white">
@@ -650,6 +720,71 @@ export default function ServicesPage() {
                 onClick={() => setSelectedRequest(null)}
               >
                 Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Dialog – only when lead status = CONFIRMED */}
+        <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+          <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
+            <DialogHeader className="p-8 bg-green-600 text-white">
+              <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                <CreditCard className="h-6 w-6" />
+                Make Payment
+              </DialogTitle>
+              <DialogDescription className="text-green-100">
+                {selectedRequest?.serviceName} – Lead #{selectedRequest?.id}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-8 space-y-6 bg-white">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <p className="text-sm text-gray-500 font-bold uppercase">Payable amount (₹)</p>
+                <Input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="Enter amount"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="mt-2 h-12 rounded-xl text-lg font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-bold">Payment method</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger className="h-12 rounded-xl border-gray-200">
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="CARD">Card</SelectItem>
+                    <SelectItem value="NET_BANKING">Net Banking</SelectItem>
+                    <SelectItem value="WALLET">Wallet</SelectItem>
+                    <SelectItem value="CASH">Cash (admin will confirm)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-gray-500">
+                Payment is only available for confirmed leads. For Cash, admin will mark as paid after receipt.
+              </p>
+            </div>
+            <DialogFooter className="p-8 pt-0 bg-white">
+              <Button variant="ghost" className="rounded-xl h-12 px-8" onClick={() => setIsPaymentOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white shadow-lg h-12 px-10 rounded-xl font-bold"
+                disabled={!paymentMethod || !paymentAmount || parseFloat(paymentAmount) <= 0 || initiatePaymentMutation.isPending}
+                onClick={() => {
+                  if (!selectedRequest?.id || !paymentMethod) return;
+                  initiatePaymentMutation.mutate({
+                    id: selectedRequest.id,
+                    data: { paymentMethod, amount: parseFloat(paymentAmount) || undefined },
+                  });
+                }}
+              >
+                {initiatePaymentMutation.isPending ? "Processing..." : "Confirm Payment"}
               </Button>
             </DialogFooter>
           </DialogContent>

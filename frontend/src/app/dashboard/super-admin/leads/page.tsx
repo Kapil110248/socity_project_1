@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, ClipboardList, UserCheck, Clock, MapPin, Search, Building2 } from 'lucide-react'
+import { TrendingUp, ClipboardList, UserCheck, Clock, MapPin, Search, Building2, CreditCard, Banknote } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -85,6 +85,18 @@ export default function SuperAdminLeadTrackingPage() {
         }
     })
 
+    const markPaymentPaidMutation = useMutation({
+        mutationFn: async (inquiryId: number) => {
+            const response = await api.patch(`/services/inquiries/${inquiryId}/payment-status`, { paymentStatus: 'PAID' })
+            return response.data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['service-inquiries'] })
+            toast.success('Payment marked as PAID')
+        },
+        onError: (err: any) => toast.error(err?.response?.data?.error || 'Failed to update payment status')
+    })
+
     const filteredInquiries = inquiries
 
     const getMatchingVendors = (serviceName: string, inquiryPincode?: string) => {
@@ -132,6 +144,7 @@ export default function SuperAdminLeadTrackingPage() {
     const statusColors: Record<string, string> = {
         pending: 'bg-yellow-100 text-yellow-700',
         booked: 'bg-blue-100 text-blue-700',
+        confirmed: 'bg-teal-100 text-teal-700',
         completed: 'bg-green-100 text-green-700',
         cancelled: 'bg-red-100 text-red-700',
     }
@@ -234,6 +247,7 @@ export default function SuperAdminLeadTrackingPage() {
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Society</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Service Requested</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Vendor</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
                             </tr>
@@ -280,8 +294,21 @@ export default function SuperAdminLeadTrackingPage() {
                                     </td>
                                     <td className="px-8 py-6">
                                         <Badge className={statusColors[inquiry.status] || 'bg-gray-100 text-gray-700'}>
-                                            {inquiry.status.toUpperCase()}
+                                            {inquiry.status?.toUpperCase()}
                                         </Badge>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex flex-col gap-1">
+                                            <Badge className={(inquiry.paymentStatus || 'PENDING').toUpperCase() === 'PAID' ? 'bg-green-100 text-green-700' : (inquiry.paymentStatus || 'PENDING').toUpperCase() === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}>
+                                                {(inquiry.paymentStatus || 'PENDING').toUpperCase()}
+                                            </Badge>
+                                            {inquiry.payableAmount != null && (
+                                                <span className="text-xs font-bold text-gray-600">₹{Number(inquiry.payableAmount).toLocaleString()}</span>
+                                            )}
+                                            {inquiry.transactionId && (
+                                                <span className="text-[10px] text-gray-400 font-mono truncate max-w-[120px]" title={inquiry.transactionId}>{inquiry.transactionId}</span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-8 py-6">
                                         {inquiry.vendorName ? (
@@ -296,22 +323,34 @@ export default function SuperAdminLeadTrackingPage() {
                                         )}
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        {inquiry.status === 'pending' || inquiry.status === 'confirmed' ? (
-                                            <Button
-                                                size="sm"
-                                                className="bg-[#1e3a5f] hover:bg-[#2d4a6f] rounded-xl font-bold text-[10px] uppercase"
-                                                onClick={() => {
-                                                    setSelectedInquiry(inquiry)
-                                                    setIsAssignDialogOpen(true)
-                                                }}
-                                            >
-                                                Assign Vendor
-                                            </Button>
-                                        ) : (
-                                            <Button size="sm" variant="ghost" className="rounded-xl" disabled>
-                                                Locked
-                                            </Button>
-                                        )}
+                                        <div className="flex items-center justify-end gap-2">
+                                            {(inquiry.status?.toUpperCase() === 'CONFIRMED' && (inquiry.paymentStatus || 'PENDING').toUpperCase() !== 'PAID') && (
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700 rounded-xl font-bold text-[10px] uppercase"
+                                                    onClick={() => markPaymentPaidMutation.mutate(inquiry.id)}
+                                                    disabled={markPaymentPaidMutation.isPending}
+                                                >
+                                                    Mark PAID
+                                                </Button>
+                                            )}
+                                            {inquiry.status === 'pending' || inquiry.status === 'confirmed' ? (
+                                                <Button
+                                                    size="sm"
+                                                    className="bg-[#1e3a5f] hover:bg-[#2d4a6f] rounded-xl font-bold text-[10px] uppercase"
+                                                    onClick={() => {
+                                                        setSelectedInquiry(inquiry)
+                                                        setIsAssignDialogOpen(true)
+                                                    }}
+                                                >
+                                                    Assign Vendor
+                                                </Button>
+                                            ) : (
+                                                <Button size="sm" variant="ghost" className="rounded-xl" disabled>
+                                                    Locked
+                                                </Button>
+                                            )}
+                                        </div>
                                     </td>
                                 </motion.tr>
                             ))}

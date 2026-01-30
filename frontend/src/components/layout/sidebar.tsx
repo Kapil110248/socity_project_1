@@ -239,6 +239,11 @@ const allMenuItems = [
         href: "/dashboard/staff/maids",
       },
       { title: "Parcels", icon: Package, href: "/dashboard/security/parcels" },
+      {
+        title: "Chat with Residents",
+        icon: MessageCircle,
+        href: "/dashboard/guard/chat",
+      },
     ],
   },
   // ==========================================
@@ -260,6 +265,12 @@ const allMenuItems = [
     href: "/dashboard/my-unit",
     roles: ["resident"],
   },
+  {
+    title: "Chat with Guard",
+    icon: MessageCircle,
+    href: "/dashboard/helpdesk/chat",
+    roles: ["resident"],
+  },
 
   // ==========================================
   // SHARED (Admin, Resident, Guard - NOT Super Admin)
@@ -269,7 +280,13 @@ const allMenuItems = [
     icon: AlertTriangle,
     href: "/dashboard/sos",
     badge: null,
-    roles: ["admin", "resident", "guard"],
+    roles: ["resident", "guard"],
+  },
+  {
+    title: "Updates & Guidelines",
+    icon: BookOpen,
+    href: "/dashboard/guidelines/updates",
+    roles: ["resident", "admin", "individual", "vendor"],
   },
   {
     title: "Services",
@@ -281,13 +298,13 @@ const allMenuItems = [
     title: "QR Access",
     icon: Shield,
     href: "/dashboard/qr-access",
-    roles: ["admin", "resident", "individual"],
+    roles: ["resident", "individual"],
   },
   {
     title: "Helpdesk",
     icon: Headphones,
     href: "/dashboard/helpdesk",
-    roles: ["admin", "resident", "committee"],
+    roles: ["super_admin", "admin", "resident", "committee", "individual"],
     submenu: [
       {
         title: "Tickets",
@@ -458,12 +475,6 @@ const allMenuItems = [
     title: "Marketplace",
     icon: ShoppingBag,
     href: "/dashboard/resident/market",
-    roles: ["resident"],
-  },
-  {
-    title: "Guidelines",
-    icon: BookOpen,
-    href: "/dashboard/resident/guidelines",
     roles: ["resident"],
   },
   {

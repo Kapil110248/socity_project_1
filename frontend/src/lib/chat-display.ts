@@ -19,6 +19,7 @@ export type DisplayConversation = {
   existingId?: number
   otherUser?: { id: number; name: string; profileImg?: string; role?: string; phone?: string } | null
   updatedAt?: string
+  unreadCount?: number
 }
 
 /**
@@ -63,6 +64,7 @@ export function getDisplayConversations(
         existingId: c.id,
         otherUser: c.otherUser ?? null,
         updatedAt: c.updatedAt,
+        unreadCount: c.unreadCount ?? 0,
       })
     }
     // Sort by updatedAt so most recent first (support channels without existing put at end)
@@ -86,6 +88,7 @@ export function getDisplayConversations(
       existingId: c.id,
       otherUser: c.otherUser ?? null,
       updatedAt: c.updatedAt,
+      unreadCount: c.unreadCount ?? 0,
     })
   }
   return list

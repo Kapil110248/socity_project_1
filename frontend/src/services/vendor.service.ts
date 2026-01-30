@@ -22,9 +22,12 @@ export const VendorService = {
     name: string;
     company?: string;
     type: string;
+    serviceType?: string;
     contactPerson: string;
     phone: string;
-    email?: string;
+    contact?: string;
+    email: string;
+    password: string;
     address?: string;
     gst?: string;
     pan?: string;
@@ -32,8 +35,14 @@ export const VendorService = {
     contractEnd?: string;
     contractValue?: number;
     paymentTerms?: string;
+    servicePincodes?: string;
   }) => {
-    const response = await api.post(API_CONFIG.VENDOR.CREATE, data);
+    const payload = {
+      ...data,
+      contact: data.contact || data.phone,
+      serviceType: data.serviceType || data.type,
+    };
+    const response = await api.post(API_CONFIG.VENDOR.CREATE, payload);
     return response.data;
   },
 

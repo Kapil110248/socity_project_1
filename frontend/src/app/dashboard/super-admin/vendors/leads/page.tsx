@@ -31,6 +31,7 @@ export default function SuperAdminLeadsPage() {
     const [leadType, setLeadType] = useState<string>('all')
     const [assignInquiry, setAssignInquiry] = useState<any | null>(null)
     const [vendorSearch, setVendorSearch] = useState('')
+    const [showAllVendors, setShowAllVendors] = useState(false)
 
     const { data: inquiriesRaw, isLoading } = useQuery<any>({
         queryKey: ['platform-inquiries', 'all'],
@@ -47,10 +48,11 @@ export default function SuperAdminLeadsPage() {
         : ''
 
     const { data: vendorsByPincode = [], isLoading: vendorsLoading } = useQuery<any[]>({
-        queryKey: ['vendors-by-pincode', leadPincode],
+        queryKey: ['vendors-by-pincode', leadPincode, showAllVendors],
         queryFn: async () => {
+            const usePincode = leadPincode && !showAllVendors
             const res = await api.get('/vendors/all', {
-                params: leadPincode ? { pincode: leadPincode, limit: 100 } : { limit: 100 }
+                params: usePincode ? { pincode: leadPincode, limit: 100 } : { limit: 100 }
             })
             const body = res.data
             const list = Array.isArray(body) ? body : (body?.data ?? [])
@@ -104,6 +106,7 @@ export default function SuperAdminLeadsPage() {
     const openAssignDialog = (inq: any) => {
         setAssignInquiry(inq)
         setVendorSearch('')
+        setShowAllVendors(false)
     }
 
     const getStatusBadge = (status: string) => {
@@ -112,7 +115,11 @@ export default function SuperAdminLeadsPage() {
                 return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200">Pending</Badge>
             case 'booked':
                 return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">Assigned</Badge>
+            case 'contacted':
+            case 'confirmed':
+                return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200">Contacted</Badge>
             case 'done':
+            case 'completed':
                 return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Done</Badge>
             default:
                 return <Badge variant="outline">{status}</Badge>
@@ -268,7 +275,25 @@ export default function SuperAdminLeadsPage() {
                         </DialogDescription>
                     </DialogHeader>
                     {leadPincode && (
-                        <p className="text-sm text-gray-600">Vendors registered for this area (PIN {leadPincode}) are listed below. You can search by name.</p>
+                        <div className="flex flex-col gap-2">
+                            <p className="text-sm text-gray-600">
+                                {showAllVendors
+                                    ? 'Showing all vendors (PIN filter off). You can assign any vendor.'
+                                    : `Vendors registered for this area (PIN ${leadPincode}) are listed below. You can search by name.`}
+                            </p>
+                            <Button
+                                type="button"
+                                variant={showAllVendors ? 'secondary' : 'outline'}
+                                size="sm"
+                                className="w-fit rounded-xl"
+                                onClick={() => setShowAllVendors(!showAllVendors)}
+                            >
+                                {showAllVendors ? 'Filter by PIN ' + leadPincode : 'Show all vendors (ignore PIN)'}
+                            </Button>
+                        </div>
+                    )}
+                    {!leadPincode && (
+                        <p className="text-sm text-gray-600">All vendors are listed below. You can search by name.</p>
                     )}
                     <div className="space-y-3 pt-2">
                         <div className="relative">
@@ -284,8 +309,13 @@ export default function SuperAdminLeadsPage() {
                             {vendorsLoading ? (
                                 <div className="py-8 text-center text-gray-500 text-sm">Loading vendors...</div>
                             ) : filteredVendorsInDialog.length === 0 ? (
-                                <div className="py-8 text-center text-gray-500 text-sm">
-                                    {leadPincode ? `No vendors registered for PIN ${leadPincode}. Try different PIN or assign from All Vendors.` : 'No vendors found.'}
+                                <div className="py-8 text-center text-gray-500 text-sm space-y-2">
+                                    <p>{leadPincode && !showAllVendors ? `No vendors registered for PIN ${leadPincode}.` : 'No vendors found.'}</p>
+                                    {leadPincode && !showAllVendors && (
+                                        <Button type="button" variant="outline" size="sm" className="rounded-xl" onClick={() => setShowAllVendors(true)}>
+                                            Show all vendors (assign from any)
+                                        </Button>
+                                    )}
                                 </div>
                             ) : (
                                 filteredVendorsInDialog.map((v: any) => (

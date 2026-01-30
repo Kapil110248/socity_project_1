@@ -52,13 +52,47 @@ const authenticate = async (req, res, next) => {
         });
     }
 
-    req.user = { ...decoded, id: user.id, societyId: user.societyId };
+    // Always use fresh role/societyId from DB so guard-scoping and role checks are correct
+    req.user = {
+      ...decoded,
+      id: user.id,
+      societyId: user.societyId,
+      role: user.role,
+    };
     console.log("User authenticated:", req.user.id);
     next();
   } catch (error) {
     console.error("Auth Error:", error);
     res.status(401).json({ error: "Invalid token" });
   }
+};
+
+/**
+ * Optional auth: if valid token present, set req.user; otherwise continue without req.user.
+ * Use for routes that work both with and without login (e.g. register: public self-register vs Super Admin adding user).
+ */
+const optionalAuthenticate = async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return next();
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(decoded.id) },
+    });
+    if (user && user.status !== "SUSPENDED") {
+      req.user = {
+        ...decoded,
+        id: user.id,
+        societyId: user.societyId,
+        role: user.role,
+      };
+    }
+  } catch (_) {
+    // Invalid or expired token – continue without req.user
+  }
+  next();
 };
 
 const authorize = (roles) => {
@@ -73,4 +107,4 @@ const authorize = (roles) => {
   };
 };
 
-module.exports = { authenticate, authorize };
+module.exports = { authenticate, authorize, optionalAuthenticate };

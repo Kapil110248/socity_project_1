@@ -4,6 +4,36 @@ const jwt = require("jsonwebtoken");
 const cloudinary = require("../config/cloudinary");
 const { getIO } = require("../lib/socket");
 
+const PIN_CODE_LENGTH = parseInt(process.env.PIN_CODE_LENGTH || "6", 10);
+const NO_VENDOR_MESSAGE = "Service not available in your area.";
+
+/** Check if vendor's servicePincodes covers this pincode (comma list or "start-end" ranges). */
+function vendorServesPincode(servicePincodes, pincode) {
+  if (!servicePincodes || !pincode) return false;
+  const parts = servicePincodes
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  for (const part of parts) {
+    if (part.includes("-")) {
+      const [start, end] = part.split("-").map((s) => s.trim());
+      if (start && end && pincode >= start && pincode <= end) return true;
+    } else if (part === pincode) return true;
+  }
+  return false;
+}
+
+/** Find first active vendor that serves the given pincode. */
+async function findVendorByPincode(pincode) {
+  const vendors = await prisma.vendor.findMany({
+    where: { status: "ACTIVE", servicePincodes: { not: null } },
+  });
+  for (const v of vendors) {
+    if (vendorServesPincode(v.servicePincodes, pincode)) return v;
+  }
+  return null;
+}
+
 class UserController {
   static async uploadPhoto(req, res) {
     try {
@@ -57,12 +87,43 @@ class UserController {
 
   static async register(req, res) {
     try {
-      let { email, password, name, phone, role, societyCode } = req.body;
+      let { email, password, name, phone, role, societyCode, pinCode } =
+        req.body;
+      const effectiveRole = (role || "RESIDENT").toUpperCase();
 
       // Check if user exists
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
         return res.status(400).json({ error: "User already exists" });
+      }
+
+      // Individual/customer: PIN Code mandatory + vendor auto-assignment
+      let pinCodeToSave = null;
+      let assignedVendorId = null;
+      if (effectiveRole === "INDIVIDUAL") {
+        const trimmed =
+          pinCode != null && pinCode !== "" ? String(pinCode).trim() : "";
+        if (!trimmed) {
+          return res.status(400).json({
+            error: "PIN Code is required for customer registration.",
+          });
+        }
+        if (!/^\d+$/.test(trimmed)) {
+          return res.status(400).json({
+            error: "PIN Code must contain only digits.",
+          });
+        }
+        if (trimmed.length !== PIN_CODE_LENGTH) {
+          return res.status(400).json({
+            error: `PIN Code must be exactly ${PIN_CODE_LENGTH} digits.`,
+          });
+        }
+        const vendor = await findVendorByPincode(trimmed);
+        if (!vendor) {
+          return res.status(400).json({ error: NO_VENDOR_MESSAGE });
+        }
+        pinCodeToSave = trimmed;
+        assignedVendorId = vendor.id;
       }
 
       // Handle optional password
@@ -84,6 +145,10 @@ class UserController {
         societyId = society.id;
       }
 
+      // If Individual is created by logged-in user (Super Admin/Admin), record who added them (Individual can only chat with Super Admin + this user)
+      const addedByUserId =
+        req.user && effectiveRole === "INDIVIDUAL" ? req.user.id : null;
+
       // Create User
       const user = await prisma.user.create({
         data: {
@@ -91,8 +156,11 @@ class UserController {
           password: hashedPassword,
           name,
           phone,
-          role: role || "RESIDENT",
+          role: effectiveRole,
           societyId,
+          ...(pinCodeToSave != null && { pinCode: pinCodeToSave }),
+          ...(assignedVendorId != null && { assignedVendorId }),
+          ...(addedByUserId != null && { addedByUserId }),
         },
       });
 
@@ -181,7 +249,7 @@ class UserController {
     try {
       const user = await prisma.user.findUnique({
         where: { id: req.user.id },
-        include: { society: true },
+        include: { society: true, assignedVendor: true },
       });
       if (user) {
         user.role = user.role.toLowerCase();
@@ -195,12 +263,51 @@ class UserController {
 
   static async updateProfile(req, res) {
     try {
-      const { name, phone, profileImg, password } = req.body;
+      const { name, phone, profileImg, password, pinCode } = req.body;
+
+      const currentUser = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { role: true },
+      });
+      const isIndividual =
+        currentUser && currentUser.role === "INDIVIDUAL";
+
+      // Individual/customer: PIN Code mandatory on every save; re-assign vendor
+      if (isIndividual) {
+        const trimmed =
+          pinCode !== undefined && pinCode !== null
+            ? String(pinCode).trim()
+            : "";
+        if (!trimmed) {
+          return res.status(400).json({
+            error: "PIN Code is required for customer profile.",
+          });
+        }
+        if (!/^\d+$/.test(trimmed)) {
+          return res.status(400).json({
+            error: "PIN Code must contain only digits.",
+          });
+        }
+        if (trimmed.length !== PIN_CODE_LENGTH) {
+          return res.status(400).json({
+            error: `PIN Code must be exactly ${PIN_CODE_LENGTH} digits.`,
+          });
+        }
+        const vendor = await findVendorByPincode(trimmed);
+        if (!vendor) {
+          return res.status(400).json({ error: NO_VENDOR_MESSAGE });
+        }
+        req._pinCode = trimmed;
+        req._assignedVendorId = vendor.id;
+      }
 
       const updateData = {};
       if (name !== undefined) updateData.name = name;
       if (phone !== undefined) updateData.phone = phone;
       if (profileImg !== undefined) updateData.profileImg = profileImg;
+      if (req._pinCode !== undefined) updateData.pinCode = req._pinCode;
+      if (req._assignedVendorId !== undefined)
+        updateData.assignedVendorId = req._assignedVendorId;
 
       // If password is provided, hash it and add to update data
       if (password && password.trim() !== "") {
@@ -211,7 +318,7 @@ class UserController {
       const user = await prisma.user.update({
         where: { id: req.user.id },
         data: updateData,
-        include: { society: true },
+        include: { society: true, assignedVendor: true },
       });
 
       // Notify admins/superadmins so user lists show updated name/photo

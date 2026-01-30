@@ -191,6 +191,222 @@ class ServiceInquiryController {
     }
   }
 
+  /**
+   * Get payment details for a confirmed lead. Only owner (resident/individual) or Admin/Super Admin.
+   * Payment options visible ONLY when lead status = CONFIRMED.
+   */
+  static async getPaymentDetails(req, res) {
+    try {
+      const inquiryId = parseInt(req.params.id);
+      const role = (req.user.role || "").toUpperCase();
+      const inquiry = await prisma.serviceInquiry.findUnique({
+        where: { id: inquiryId },
+        include: {
+          resident: { select: { name: true, email: true } },
+          vendor: { select: { name: true } },
+        },
+      });
+      if (!inquiry) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      const isOwner = inquiry.residentId === req.user.id;
+      const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ error: "You can only view payment details for your own leads" });
+      }
+      if ((inquiry.status || "").toUpperCase() !== "CONFIRMED") {
+        return res.status(400).json({
+          error: "Payment is only available for confirmed leads. Current status: " + (inquiry.status || "—"),
+        });
+      }
+      res.json({
+        id: inquiry.id,
+        serviceName: inquiry.serviceName,
+        vendorName: inquiry.vendorName,
+        status: inquiry.status,
+        paymentStatus: inquiry.paymentStatus || "PENDING",
+        payableAmount: inquiry.payableAmount ?? null,
+        paymentMethod: inquiry.paymentMethod ?? null,
+        transactionId: inquiry.transactionId ?? null,
+        paymentDate: inquiry.paymentDate ?? null,
+        residentName: inquiry.resident?.name ?? null,
+      });
+    } catch (error) {
+      console.error("Get Payment Details Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * Initiate payment for a confirmed lead. Only owner (customer). Prevents duplicate payment.
+   */
+  static async initiatePayment(req, res) {
+    try {
+      const inquiryId = parseInt(req.params.id);
+      const { paymentMethod, amount } = req.body;
+      const inquiry = await prisma.serviceInquiry.findUnique({
+        where: { id: inquiryId },
+      });
+      if (!inquiry) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      if (inquiry.residentId !== req.user.id) {
+        return res.status(403).json({ error: "You can only pay for your own leads" });
+      }
+      if ((inquiry.status || "").toUpperCase() !== "CONFIRMED") {
+        return res.status(400).json({
+          error: "Payment is only available when lead status is CONFIRMED",
+        });
+      }
+      if ((inquiry.paymentStatus || "").toUpperCase() === "PAID") {
+        return res.status(400).json({ error: "This lead has already been paid. Duplicate payment is not allowed." });
+      }
+      const validMethods = ["UPI", "CARD", "NET_BANKING", "WALLET", "CASH"];
+      const method = (paymentMethod || "").toUpperCase().replace(/\s+/g, "_");
+      if (!validMethods.includes(method)) {
+        return res.status(400).json({
+          error: "Invalid payment method. Allowed: " + validMethods.join(", "),
+        });
+      }
+      const payableAmount = amount != null ? parseFloat(amount) : inquiry.payableAmount;
+      if (payableAmount == null || isNaN(payableAmount) || payableAmount <= 0) {
+        return res.status(400).json({
+          error: "Payable amount is required and must be greater than 0. Set amount on the lead or pass it in the request.",
+        });
+      }
+      const updateData = {
+        paymentMethod: method,
+        payableAmount,
+        paymentStatus: "PENDING",
+      };
+      if (method === "CASH") {
+        updateData.paymentStatus = "PENDING";
+      } else {
+        updateData.transactionId = "TXN-" + Date.now() + "-" + inquiryId;
+        updateData.paymentStatus = "PAID";
+        updateData.paymentDate = new Date();
+      }
+      const updated = await prisma.serviceInquiry.update({
+        where: { id: inquiryId },
+        data: updateData,
+      });
+      res.json({
+        success: true,
+        inquiryId: updated.id,
+        paymentStatus: updated.paymentStatus,
+        transactionId: updated.transactionId ?? null,
+        message:
+          method === "CASH"
+            ? "Payment recorded as Cash. Admin will confirm receipt."
+            : "Payment initiated successfully. Transaction ID: " + (updated.transactionId || ""),
+      });
+    } catch (error) {
+      console.error("Initiate Payment Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * Update payment status (Admin/Super Admin: mark as PAID for cash/offline, or webhook callback).
+   */
+  static async updatePaymentStatus(req, res) {
+    try {
+      const inquiryId = parseInt(req.params.id);
+      const { paymentStatus, transactionId } = req.body;
+      const role = (req.user.role || "").toUpperCase();
+      if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+        return res.status(403).json({ error: "Only Admin or Super Admin can update payment status" });
+      }
+      const inquiry = await prisma.serviceInquiry.findUnique({
+        where: { id: inquiryId },
+      });
+      if (!inquiry) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      const status = (paymentStatus || "").toUpperCase();
+      if (!["PENDING", "PAID", "FAILED"].includes(status)) {
+        return res.status(400).json({ error: "Invalid paymentStatus. Allowed: PENDING, PAID, FAILED" });
+      }
+      const updated = await prisma.serviceInquiry.update({
+        where: { id: inquiryId },
+        data: {
+          paymentStatus: status,
+          ...(transactionId != null && transactionId !== "" && { transactionId: String(transactionId) }),
+          ...(status === "PAID" && { paymentDate: new Date() }),
+        },
+      });
+      res.json(updated);
+    } catch (error) {
+      console.error("Update Payment Status Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * Vendor marks lead as contacted (CONTACT button). One-time only.
+   * Sets status = CONTACTED, contactedAt, contactedBy, and appends to activityLog.
+   */
+  static async markAsContacted(req, res) {
+    try {
+      const { id } = req.params;
+      const role = (req.user.role || "").toUpperCase();
+      if (role !== "VENDOR") {
+        return res
+          .status(403)
+          .json({ error: "Only vendors can mark a lead as contacted" });
+      }
+      const vendor = await prisma.vendor.findFirst({
+        where: { email: req.user.email },
+      });
+      if (!vendor) {
+        return res.status(403).json({ error: "Vendor profile not found" });
+      }
+      const existing = await prisma.serviceInquiry.findUnique({
+        where: { id: parseInt(id) },
+      });
+      if (!existing) {
+        return res.status(404).json({ error: "Inquiry not found" });
+      }
+      if (existing.vendorId !== vendor.id) {
+        return res
+          .status(403)
+          .json({ error: "You can only mark inquiries assigned to you as contacted" });
+      }
+      const statusUpper = (existing.status || "").toUpperCase();
+      const alreadyContacted =
+        existing.contactedAt != null ||
+        ["CONTACTED", "CONFIRMED", "COMPLETED", "DONE"].includes(statusUpper);
+      if (alreadyContacted) {
+        return res.status(400).json({
+          error: "Lead is already contacted or completed. Cannot contact again.",
+        });
+      }
+      const now = new Date();
+      const activityEntry = {
+        action: "Vendor contacted customer",
+        time: now.toISOString(),
+        byVendorId: vendor.id,
+      };
+      const existingLog = Array.isArray(existing.activityLog)
+        ? existing.activityLog
+        : [];
+      const newLog = [...existingLog, activityEntry];
+      const inquiry = await prisma.serviceInquiry.update({
+        where: { id: parseInt(id) },
+        data: {
+          status: "CONTACTED",
+          contactedAt: now,
+          contactedBy: vendor.id,
+          activityLog: newLog,
+        },
+      });
+      res.json(inquiry);
+    } catch (error) {
+      console.error("Mark As Contacted Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   /** Vendor updates status of an inquiry assigned to them (confirmed, done, completed, etc.) */
   static async updateStatus(req, res) {
     try {

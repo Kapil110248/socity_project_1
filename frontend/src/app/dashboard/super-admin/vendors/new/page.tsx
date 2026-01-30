@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Save, X, Phone, Mail, Shield, Lock } from 'lucide-react'
+import { Users, Save, X, Phone, Mail, Shield, Lock, MapPin } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,6 +50,16 @@ export default function NewPlatformVendorPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        const pins = (formData.servicePincodes || '').trim()
+        if (!pins) {
+            toast.error('Serviceable PIN Codes are required. Individual customers are assigned to vendors by their PIN code.')
+            return
+        }
+        const parts = pins.split(',').map((s) => s.trim()).filter(Boolean)
+        if (parts.length === 0) {
+            toast.error('Enter at least one PIN code or range (e.g. 110001, 110010-110020).')
+            return
+        }
         createVendorMutation.mutate(formData)
     }
 
@@ -122,15 +132,21 @@ export default function NewPlatformVendorPage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2 col-span-1 md:col-span-2">
-                                    <Label htmlFor="servicePincodes">Service PIN Codes</Label>
+                                    <Label htmlFor="servicePincodes" className="flex items-center gap-1">
+                                        <MapPin className="h-4 w-4 text-purple-500" />
+                                        Serviceable PIN Codes <span className="text-red-500">*</span>
+                                    </Label>
                                     <Input
                                         id="servicePincodes"
-                                        placeholder="e.g. 110001, 110002 (Comma separated)"
+                                        placeholder="e.g. 110001, 110002, 110010-110020 (comma-separated or range)"
                                         value={formData.servicePincodes}
                                         onChange={(e) => handleChange('servicePincodes', e.target.value)}
                                         className="rounded-xl border-gray-200"
+                                        required
                                     />
-                                    <p className="text-xs text-gray-500">Leave empty to serve all locations</p>
+                                    <p className="text-xs text-gray-500">
+                                        Required for assigning individual customers by location. Individual user PIN code is matched against these to auto-assign this vendor.
+                                    </p>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Official Email *</Label>

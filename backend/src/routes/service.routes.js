@@ -33,6 +33,22 @@ router.delete(
 
 router.get("/inquiries", authenticate, ServiceInquiryController.listInquiries);
 router.post("/inquiries", authenticate, ServiceInquiryController.createInquiry);
+router.get(
+  "/inquiries/:id/payment-details",
+  authenticate,
+  ServiceInquiryController.getPaymentDetails,
+);
+router.post(
+  "/inquiries/:id/initiate-payment",
+  authenticate,
+  ServiceInquiryController.initiatePayment,
+);
+router.patch(
+  "/inquiries/:id/payment-status",
+  authenticate,
+  authorize(["ADMIN", "SUPER_ADMIN"]),
+  ServiceInquiryController.updatePaymentStatus,
+);
 router.put(
   "/inquiries/:id/assign",
   authenticate,
@@ -44,6 +60,11 @@ router.patch(
   authenticate,
   authorize(["SUPER_ADMIN"]),
   ServiceInquiryController.assignVendor,
+);
+router.patch(
+  "/inquiries/:id/contact",
+  authenticate,
+  ServiceInquiryController.markAsContacted,
 );
 router.patch(
   "/inquiries/:id/status",

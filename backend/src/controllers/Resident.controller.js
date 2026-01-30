@@ -592,15 +592,15 @@ class ResidentController {
         }
     }
 
-    // --- Services ---
+    // --- Services --- (Resident + Individual: own inquiries; Individual has societyId null)
     static async getServices(req, res) {
         try {
             const categories = await prisma.serviceCategory.findMany({ include: { variants: true } });
+            const where = { residentId: req.user.id };
+            if (req.user.societyId != null) where.societyId = req.user.societyId;
+            else where.societyId = null;
             const myRequests = await prisma.serviceInquiry.findMany({
-                where: {
-                    societyId: req.user.societyId,
-                    residentId: req.user.id
-                },
+                where,
                 orderBy: { createdAt: 'desc' }
             });
             res.json({ categories, myRequests });

@@ -53,6 +53,8 @@ import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { PIN_CODE_LENGTH } from "@/config/api.config";
+import { MapPin } from "lucide-react";
 
 export default function SuperAdminB2CUsers() {
   const queryClient = useQueryClient();
@@ -92,7 +94,8 @@ export default function SuperAdminB2CUsers() {
         password: data.user.password,
       });
       setIsAddDialogOpen(false);
-      setNewUser({ name: "", email: "", phone: "", password: "" });
+      setNewUser({ name: "", email: "", phone: "", pinCode: "", password: "" });
+      setPinCodeError(null);
       toast.success("B2C user created successfully");
     },
     onError: (error: any) => {
@@ -155,8 +158,10 @@ export default function SuperAdminB2CUsers() {
     name: "",
     email: "",
     phone: "",
+    pinCode: "",
     password: "",
   });
+  const [pinCodeError, setPinCodeError] = useState<string | null>(null);
 
   // Credentials State for Success Modal
   const [createdCredentials, setCreatedCredentials] = useState<{
@@ -175,6 +180,20 @@ export default function SuperAdminB2CUsers() {
       toast.error("Please fill in Name, Email and Phone");
       return;
     }
+    const pin = (newUser.pinCode || "").trim();
+    if (!pin) {
+      setPinCodeError("PIN Code is required for customer creation.");
+      return;
+    }
+    if (!/^\d+$/.test(pin)) {
+      setPinCodeError("PIN Code must contain only digits.");
+      return;
+    }
+    if (pin.length !== PIN_CODE_LENGTH) {
+      setPinCodeError(`PIN Code must be exactly ${PIN_CODE_LENGTH} digits.`);
+      return;
+    }
+    setPinCodeError(null);
     addUserMutation.mutate(newUser);
   };
 
@@ -513,6 +532,36 @@ export default function SuperAdminB2CUsers() {
                   setNewUser({ ...newUser, phone: e.target.value })
                 }
               />
+            </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="pinCode"
+                className="text-xs font-bold text-gray-900 uppercase tracking-wide flex items-center gap-1"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                PIN Code <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="pinCode"
+                placeholder={`${PIN_CODE_LENGTH}-digit PIN Code (required for vendor assignment)`}
+                className={`h-11 rounded-xl bg-gray-50 border-0 focus:bg-white focus:ring-2 focus:ring-[#1e3a5f] ${pinCodeError ? "ring-2 ring-red-200" : ""}`}
+                value={newUser.pinCode}
+                onChange={(e) => {
+                  setNewUser({
+                    ...newUser,
+                    pinCode: e.target.value.replace(/\D/g, "").slice(0, PIN_CODE_LENGTH),
+                  });
+                  setPinCodeError(null);
+                }}
+                maxLength={PIN_CODE_LENGTH}
+                inputMode="numeric"
+              />
+              {pinCodeError && (
+                <p className="text-sm text-red-600 font-medium">{pinCodeError}</p>
+              )}
+              <p className="text-xs text-gray-500">
+                Used to auto-assign the nearest serviceable vendor. API may return &quot;Service not available in your area.&quot; if no vendor covers this PIN Code.
+              </p>
             </div>
             <div className="space-y-2">
               <Label

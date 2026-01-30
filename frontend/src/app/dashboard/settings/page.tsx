@@ -27,6 +27,11 @@ import {
   CreditCard,
   FileText,
   HelpCircle,
+  Eye,
+  EyeOff,
+  Phone,
+  MapPin,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +64,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useTheme } from "next-themes";
+import { PIN_CODE_LENGTH } from "@/config/api.config";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -95,8 +101,10 @@ export default function SettingsPage() {
     name: "",
     email: "",
     phone: "",
+    pinCode: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // Fetch fresh user data
   const { data: profileUser } = useQuery({
@@ -118,6 +126,7 @@ export default function SettingsPage() {
         name: profileUser.name || "",
         email: profileUser.email || "",
         phone: profileUser.phone || "",
+        pinCode: profileUser.pinCode || "",
         password: "",
       }));
     } else if (user) {
@@ -125,6 +134,7 @@ export default function SettingsPage() {
         ...prev,
         name: user.name || "",
         email: user.email || "",
+        pinCode: user.pinCode || "",
       }));
     }
   }, [profileUser, user]);
@@ -176,7 +186,26 @@ export default function SettingsPage() {
     },
   });
 
+  const validatePinCode = () => {
+    if (user?.role?.toLowerCase() !== "individual") return true;
+    const raw = (formData.pinCode ?? "").trim();
+    if (!raw) {
+      toast.error("PIN Code is required.");
+      return false;
+    }
+    if (!/^\d+$/.test(raw)) {
+      toast.error("PIN Code must contain only digits.");
+      return false;
+    }
+    if (raw.length !== PIN_CODE_LENGTH) {
+      toast.error(`PIN Code must be exactly ${PIN_CODE_LENGTH} digits.`);
+      return false;
+    }
+    return true;
+  };
+
   const handleProfileSave = () => {
+    if (!validatePinCode()) return;
     updateProfileMutation.mutate(formData);
   };
 
@@ -187,6 +216,7 @@ export default function SettingsPage() {
         name: profileUser.name || "",
         email: profileUser.email || "",
         phone: profileUser.phone || "",
+        pinCode: profileUser.pinCode || "",
         password: "",
       });
     } else {
@@ -194,6 +224,7 @@ export default function SettingsPage() {
         name: user?.name || "",
         email: user?.email || "",
         phone: user?.phone || "",
+        pinCode: user?.pinCode || "",
         password: "",
       });
     }
@@ -441,8 +472,28 @@ export default function SettingsPage() {
                           ? "Administrator"
                           : user?.role === "guard"
                             ? "Security Guard"
-                            : "Resident"}
+                            : user?.role === "individual"
+                              ? "Individual User"
+                              : "Resident"}
                     </Badge>
+                  </div>
+                  
+                  {/* Assigned Vendor Badge */}
+                  <div className="mt-4 sm:ml-auto sm:mt-0 sm:text-right">
+                     {profileUser?.assignedVendor ? (
+                        <div className="flex flex-col items-start sm:items-end">
+                            <span className="text-xs text-muted-foreground">Assigned Service Provider</span>
+                            <Badge variant="outline" className="mt-1 border-teal-200 bg-teal-50 text-teal-700 flex items-center gap-1">
+                                <Shield className="h-3 w-3" />
+                                {profileUser.assignedVendor.name}
+                            </Badge>
+                        </div>
+                     ) : (
+                        <div className="flex flex-col items-start sm:items-end">
+                             <span className="text-xs text-muted-foreground">Service Provider</span>
+                             <span className="text-sm text-gray-400 italic">Pending Assignment</span>
+                        </div>
+                     )}
                   </div>
                 </div>
 
@@ -485,29 +536,161 @@ export default function SettingsPage() {
                       placeholder="Enter phone"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Unit Number</Label>
-                    <Input
-                      defaultValue="A-101"
-                      placeholder="Your unit"
-                      disabled={!isAdmin}
-                    />
-                  </div>
+                  {user?.role?.toLowerCase() === "individual" && (
+                    <div className="space-y-2">
+                      <Label>
+                        PIN Code <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        value={formData.pinCode}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "").slice(0, PIN_CODE_LENGTH);
+                          setFormData({ ...formData, pinCode: val });
+                        }}
+                        placeholder={`${PIN_CODE_LENGTH}-digit PIN Code (required for vendor assignment)`}
+                        maxLength={PIN_CODE_LENGTH}
+                        inputMode="numeric"
+                        autoComplete="postal-code"
+                        className={
+                          formData.pinCode && formData.pinCode.length !== PIN_CODE_LENGTH
+                            ? "border-red-500 focus-visible:ring-red-500"
+                            : ""
+                        }
+                      />
+                      {formData.pinCode && formData.pinCode.length !== PIN_CODE_LENGTH && (
+                        <p className="text-xs text-red-500">
+                          PIN Code must be exactly {PIN_CODE_LENGTH} digits.
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Used to assign the nearest serviceable vendor.
+                      </p>
+                    </div>
+                  )}
+                  {/* Assigned Vendor full details – only for individual with vendor */}
+                  {user?.role?.toLowerCase() === "individual" && profileUser?.assignedVendor && (
+                    <div className="col-span-1 md:col-span-2 space-y-3 border rounded-lg p-4 bg-muted/30">
+                      <h4 className="text-sm font-semibold flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-teal-600" />
+                        Assigned Service Provider – Full Details
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-start gap-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-muted-foreground">Name</span>
+                            <p className="font-medium">{profileUser.assignedVendor.name}</p>
+                          </div>
+                        </div>
+                        {profileUser.assignedVendor.company && (
+                          <div className="flex items-start gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-muted-foreground">Company</span>
+                              <p className="font-medium">{profileUser.assignedVendor.company}</p>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-start gap-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-muted-foreground">Service Type</span>
+                            <p className="font-medium">{profileUser.assignedVendor.serviceType}</p>
+                          </div>
+                        </div>
+                        {profileUser.assignedVendor.contactPerson && (
+                          <div className="flex items-start gap-2">
+                            <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-muted-foreground">Contact Person</span>
+                              <p className="font-medium">{profileUser.assignedVendor.contactPerson}</p>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-start gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-muted-foreground">Phone</span>
+                            <p className="font-medium">
+                              <a href={`tel:${profileUser.assignedVendor.contact}`} className="text-teal-600 hover:underline">
+                                {profileUser.assignedVendor.contact}
+                              </a>
+                            </p>
+                          </div>
+                        </div>
+                        {profileUser.assignedVendor.email && (
+                          <div className="flex items-start gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-muted-foreground">Email</span>
+                              <p className="font-medium">
+                                <a href={`mailto:${profileUser.assignedVendor.email}`} className="text-teal-600 hover:underline">
+                                  {profileUser.assignedVendor.email}
+                                </a>
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        {profileUser.assignedVendor.address && (
+                          <div className="flex items-start gap-2 sm:col-span-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-muted-foreground">Address</span>
+                              <p className="font-medium">{profileUser.assignedVendor.address}</p>
+                            </div>
+                          </div>
+                        )}
+                        {profileUser.assignedVendor.servicePincodes && (
+                          <div className="flex items-start gap-2 sm:col-span-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <div>
+                              <span className="text-muted-foreground">Serviceable PIN Codes / Area</span>
+                              <p className="font-medium text-foreground break-words">
+                                {profileUser.assignedVendor.servicePincodes}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {user?.role?.toLowerCase() !== "individual" && (
+                    <div className="space-y-2">
+                      <Label>Unit Number</Label>
+                      <Input
+                        defaultValue="A-101"
+                        placeholder="Your unit"
+                        disabled={!isAdmin}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2 col-span-1 md:col-span-2 border-t pt-4 mt-2">
                     <Label className="text-base font-semibold text-gray-900 mb-2 block">
                       Change Password
                     </Label>
                     <div className="relative">
-                      <Key className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) =>
                           setFormData({ ...formData, password: e.target.value })
                         }
                         placeholder="Type new password to update (optional)"
-                        className="pl-10"
+                        className="pl-10 pr-10"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none z-10 cursor-pointer p-1"
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Leave empty if you don't want to change password.
@@ -522,7 +705,11 @@ export default function SettingsPage() {
                   <Button
                     className="bg-gradient-to-r from-teal-500 to-cyan-500"
                     onClick={handleProfileSave}
-                    disabled={updateProfileMutation.isPending}
+                    disabled={
+                      updateProfileMutation.isPending ||
+                      (user?.role?.toLowerCase() === "individual" &&
+                        (!formData.pinCode?.trim() || formData.pinCode.length !== PIN_CODE_LENGTH))
+                    }
                   >
                     {updateProfileMutation.isPending
                       ? "Saving..."
@@ -571,6 +758,8 @@ export default function SettingsPage() {
                       }
                     />
                   </div>
+                  
+
 
                   <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                     <div className="flex items-center gap-3">

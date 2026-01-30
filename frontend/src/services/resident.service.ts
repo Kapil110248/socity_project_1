@@ -109,6 +109,20 @@ export const residentService = {
         return response.data;
     },
 
+    // Lead payment (only when status = CONFIRMED)
+    getPaymentDetails: async (inquiryId: number | string) => {
+        const response = await api.get(`/services/inquiries/${inquiryId}/payment-details`);
+        return response.data;
+    },
+    initiatePayment: async (inquiryId: number | string, data: { paymentMethod: string; amount?: number }) => {
+        const response = await api.post(`/services/inquiries/${inquiryId}/initiate-payment`, data);
+        return response.data;
+    },
+    updateLeadPaymentStatus: async (inquiryId: number | string, data: { paymentStatus: string; transactionId?: string }) => {
+        const response = await api.patch(`/services/inquiries/${inquiryId}/payment-status`, data);
+        return response.data;
+    },
+
     // Amenities
     getAmenities: async () => {
         const response = await api.get('/resident/amenities');

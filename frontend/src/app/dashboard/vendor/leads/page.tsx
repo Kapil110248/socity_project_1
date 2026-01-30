@@ -37,6 +37,20 @@ export default function VendorLeadsPage() {
         })
     }, [inquiries, searchQuery])
 
+    const contactMutation = useMutation({
+        mutationFn: async (id: number | string) => {
+            const res = await api.patch(`/services/inquiries/${id}/contact`)
+            return res.data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vendor-my-leads'] })
+            toast.success('Customer marked as contacted.')
+        },
+        onError: (err: any) => {
+            toast.error(err?.response?.data?.error || 'Failed to mark as contacted')
+        },
+    })
+
     const statusMutation = useMutation({
         mutationFn: async ({ id, status }: { id: number | string; status: string }) => {
             const res = await api.patch(`/services/inquiries/${id}/status`, { status })
@@ -46,6 +60,17 @@ export default function VendorLeadsPage() {
             queryClient.invalidateQueries({ queryKey: ['vendor-my-leads'] })
         },
     })
+
+    const isContacted = (lead: any) => {
+        const s = String(lead?.status || '').toLowerCase()
+        return (
+            lead?.contactedAt != null ||
+            s === 'contacted' ||
+            s === 'confirmed' ||
+            s === 'done' ||
+            s === 'completed'
+        )
+    }
 
     const handleStatusUpdate = (id: string | number, status: string) => {
         statusMutation.mutate(
@@ -125,10 +150,13 @@ export default function VendorLeadsPage() {
                                                 <Badge variant="outline" className="rounded-full text-[10px] font-black uppercase tracking-tighter">
                                                     {lead.unit ?? '—'}
                                                 </Badge>
-                                                {lead.status === 'done' && (
+                                                {(lead.status === 'done' || lead.status === 'completed') && (
                                                     <Badge className="bg-green-100 text-green-700 border-green-200">Done</Badge>
                                                 )}
-                                                {lead.status === 'booked' && (
+                                                {isContacted(lead) && lead.status !== 'done' && lead.status !== 'completed' && (
+                                                    <Badge className="bg-orange-100 text-orange-700 border-orange-200">Contacted</Badge>
+                                                )}
+                                                {!isContacted(lead) && (lead.status === 'booked' || lead.status === 'pending') && (
                                                     <Badge className="bg-blue-100 text-blue-700 border-blue-200">Pending</Badge>
                                                 )}
                                                 {lead.vendorName?.includes('(Platform)') && (
@@ -151,17 +179,18 @@ export default function VendorLeadsPage() {
 
                                     <div className="flex items-center gap-2">
                                         <Button
-                                            variant={lead.status === 'confirmed' ? 'default' : 'outline'}
+                                            variant={isContacted(lead) ? 'default' : 'outline'}
+                                            disabled={isContacted(lead) || contactMutation.isPending}
                                             className={cn(
                                                 "h-10 px-4 rounded-xl font-bold transition-all",
-                                                lead.status === 'confirmed'
+                                                isContacted(lead)
                                                     ? "bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-100"
-                                                    : "bg-white text-gray-400 border-gray-100 hover:bg-gray-50"
+                                                    : "bg-white text-gray-400 border-gray-100 hover:bg-gray-50 hover:text-gray-600"
                                             )}
-                                            onClick={() => handleStatusUpdate(lead.id, 'confirmed')}
+                                            onClick={() => contactMutation.mutate(lead.id)}
                                         >
                                             <Phone className="h-4 w-4 mr-2" />
-                                            CONTACT
+                                            {contactMutation.isPending ? '...' : isContacted(lead) ? 'CONTACTED' : 'CONTACT'}
                                         </Button>
                                         <Button
                                             variant={lead.status === 'booked' ? 'default' : 'outline'}
