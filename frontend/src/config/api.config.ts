@@ -1,6 +1,6 @@
 export const API_CONFIG = {
-  // BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://socity-backend-production.up.railway.app/api',
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://socity-backend-production.up.railway.app/api',
+  // BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api',
     //  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://02x4fc84-9000.inc1.devtunnels.ms/api',
 
   // Authentication & Users
