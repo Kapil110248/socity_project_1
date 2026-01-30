@@ -107,6 +107,10 @@ export default function ServicesPage() {
   const [notes, setNotes] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
+  const [pincode, setPincode] = useState((user as any)?.pinCode || "");
+  const isIndividual = (user?.role || "").toLowerCase() === "individual";
+  const PIN_LEN = 6;
+  const pincodeValid = !isIndividual || (pincode.trim().length >= 5 && pincode.trim().length <= 10);
 
   const {
     data: servicesData,
@@ -149,6 +153,10 @@ export default function ServicesPage() {
 
   const handleBookService = () => {
     if (!selectedCategory || !user) return;
+    if (isIndividual && !pincodeValid) {
+      toast.error("PIN Code is required (5–10 digits) for vendor assignment.");
+      return;
+    }
     createInquiryMutation.mutate({
       serviceId: selectedCategory.id,
       serviceName: selectedCategory.name,
@@ -156,11 +164,16 @@ export default function ServicesPage() {
       preferredDate,
       preferredTime,
       notes,
+      ...(isIndividual && { pincode: pincode.trim() }),
     });
   };
 
   const handleRequestCallback = () => {
     if (!selectedCategory || !user) return;
+    if (isIndividual && !pincodeValid) {
+      toast.error("PIN Code is required (5–10 digits) for vendor assignment.");
+      return;
+    }
     createInquiryMutation.mutate({
       serviceId: selectedCategory.id,
       serviceName: selectedCategory.name,
@@ -168,6 +181,7 @@ export default function ServicesPage() {
       notes,
       preferredTime,
       phone,
+      ...(isIndividual && { pincode: pincode.trim() }),
     });
   };
 
@@ -468,34 +482,50 @@ export default function ServicesPage() {
                                         {request.preferredTime}
                                       </span>
                                     )}
+                                    {request.status?.toUpperCase() === "CONFIRMED" && request.payableAmount != null && (
+                                      <>
+                                        <span className="text-gray-300">|</span>
+                                        <span className="font-semibold text-green-700">
+                                          ₹{Number(request.payableAmount).toLocaleString()} payable
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-2 items-center">
+                            <div className="flex flex-wrap gap-2 items-center">
                               {(request.status?.toUpperCase() === "CONFIRMED" &&
                                 (request.paymentStatus || "PENDING")?.toUpperCase() !== "PAID") && (
                                 <Button
                                   size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="bg-green-600 hover:bg-green-700 text-white shrink-0 font-semibold"
                                   onClick={() => {
                                     setSelectedRequest(request);
                                     setIsPaymentOpen(true);
                                     setPaymentAmount(request.payableAmount != null ? String(request.payableAmount) : "");
                                   }}
+                                  title="Pay for this confirmed lead"
                                 >
-                                  Make Payment
+                                  <CreditCard className="h-4 w-4 mr-1.5" />
+                                  Pay / Make Payment
                                 </Button>
+                              )}
+                              {(request.status?.toUpperCase() === "CONFIRMED" &&
+                                (request.paymentStatus || "PENDING")?.toUpperCase() === "PAID") && (
+                                <Badge className="bg-green-100 text-green-700 border-green-200 shrink-0">
+                                  Payment Completed
+                                </Badge>
                               )}
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="shrink-0"
                                 onClick={() => setSelectedRequest(request)}
                               >
                                 View Details
                               </Button>
-                              <ArrowRight className="h-5 w-5 text-gray-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                              <ArrowRight className="h-5 w-5 text-gray-300 shrink-0" />
                             </div>
                           </div>
                         </CardContent>
@@ -565,6 +595,25 @@ export default function ServicesPage() {
                 />
               </div>
 
+              {isIndividual && (
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-bold">
+                    PIN Code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder={`${PIN_LEN}-digit PIN (required for vendor assignment)`}
+                    maxLength={10}
+                    inputMode="numeric"
+                    className={!pincodeValid && pincode.trim() ? "border-red-500" : ""}
+                  />
+                  {!pincodeValid && pincode.trim() && (
+                    <p className="text-xs text-red-500">PIN Code must be 5–10 digits.</p>
+                  )}
+                </div>
+              )}
+
               <div className="p-4 bg-indigo-50 rounded-xl flex items-start gap-3">
                 <CheckCircle2 className="h-5 w-5 text-indigo-600 mt-0.5" />
                 <p className="text-sm text-indigo-700">
@@ -584,7 +633,7 @@ export default function ServicesPage() {
               <Button
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg h-12 px-10 rounded-xl font-bold"
                 onClick={handleBookService}
-                disabled={createInquiryMutation.isPending}
+                disabled={createInquiryMutation.isPending || (isIndividual && !pincodeValid)}
               >
                 {createInquiryMutation.isPending
                   ? "Processing..."
@@ -706,8 +755,10 @@ export default function ServicesPage() {
                           setIsPaymentOpen(true);
                           setPaymentAmount((selectedRequest as any).payableAmount != null ? String((selectedRequest as any).payableAmount) : "");
                         }}
+                        title="Pay for this confirmed lead"
                       >
-                        Make Payment
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Pay / Make Payment
                       </Button>
                     )}
                   </div>
@@ -725,7 +776,7 @@ export default function ServicesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Payment Dialog – only when lead status = CONFIRMED */}
+        {/* Payment Dialog – only for CONFIRMED leads; guard so non-confirmed never see payment UI */}
         <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
           <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
             <DialogHeader className="p-8 bg-green-600 text-white">
@@ -738,54 +789,71 @@ export default function ServicesPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="p-8 space-y-6 bg-white">
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm text-gray-500 font-bold uppercase">Payable amount (₹)</p>
-                <Input
-                  type="number"
-                  min="1"
-                  step="0.01"
-                  placeholder="Enter amount"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="mt-2 h-12 rounded-xl text-lg font-bold"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-700 font-bold">Payment method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger className="h-12 rounded-xl border-gray-200">
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UPI">UPI</SelectItem>
-                    <SelectItem value="CARD">Card</SelectItem>
-                    <SelectItem value="NET_BANKING">Net Banking</SelectItem>
-                    <SelectItem value="WALLET">Wallet</SelectItem>
-                    <SelectItem value="CASH">Cash (admin will confirm)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <p className="text-xs text-gray-500">
-                Payment is only available for confirmed leads. For Cash, admin will mark as paid after receipt.
-              </p>
+              {selectedRequest?.status?.toUpperCase() !== "CONFIRMED" ? (
+                <p className="text-sm text-amber-700 bg-amber-50 p-4 rounded-xl">
+                  Payment is only available after your lead is confirmed. Current status: {selectedRequest?.status || "—"}.
+                </p>
+              ) : (selectedRequest?.paymentStatus || "PENDING")?.toUpperCase() === "PAID" ? (
+                <div className="p-4 bg-green-50 rounded-xl text-center">
+                  <CheckCircle2 className="h-10 w-10 text-green-600 mx-auto mb-2" />
+                  <p className="font-semibold text-green-800">Payment Completed</p>
+                  <p className="text-sm text-green-700 mt-1">This lead has already been paid.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <p className="text-sm text-gray-500 font-bold uppercase">Payable amount (₹)</p>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="0.01"
+                      placeholder="Enter amount"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="mt-2 h-12 rounded-xl text-lg font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-bold">Select payment option</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                      <SelectTrigger className="h-12 rounded-xl border-gray-200">
+                        <SelectValue placeholder="Choose a payment method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UPI">Online – UPI</SelectItem>
+                        <SelectItem value="CARD">Online – Card</SelectItem>
+                        <SelectItem value="NET_BANKING">Online – Net Banking</SelectItem>
+                        <SelectItem value="WALLET">Wallet</SelectItem>
+                        <SelectItem value="CASH">Cash / Pay Later (admin will confirm)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    For Cash / Pay Later, admin will mark as paid after receipt.
+                  </p>
+                </>
+              )}
             </div>
             <DialogFooter className="p-8 pt-0 bg-white">
               <Button variant="ghost" className="rounded-xl h-12 px-8" onClick={() => setIsPaymentOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700 text-white shadow-lg h-12 px-10 rounded-xl font-bold"
-                disabled={!paymentMethod || !paymentAmount || parseFloat(paymentAmount) <= 0 || initiatePaymentMutation.isPending}
-                onClick={() => {
-                  if (!selectedRequest?.id || !paymentMethod) return;
-                  initiatePaymentMutation.mutate({
-                    id: selectedRequest.id,
-                    data: { paymentMethod, amount: parseFloat(paymentAmount) || undefined },
-                  });
-                }}
-              >
-                {initiatePaymentMutation.isPending ? "Processing..." : "Confirm Payment"}
-              </Button>
+              {selectedRequest?.status?.toUpperCase() === "CONFIRMED" &&
+                (selectedRequest?.paymentStatus || "PENDING")?.toUpperCase() !== "PAID" && (
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white shadow-lg h-12 px-10 rounded-xl font-bold"
+                  disabled={!paymentMethod || !paymentAmount || parseFloat(paymentAmount) <= 0 || initiatePaymentMutation.isPending}
+                  onClick={() => {
+                    if (!selectedRequest?.id || !paymentMethod) return;
+                    initiatePaymentMutation.mutate({
+                      id: selectedRequest.id,
+                      data: { paymentMethod, amount: parseFloat(paymentAmount) || undefined },
+                    });
+                  }}
+                >
+                  {initiatePaymentMutation.isPending ? "Processing..." : "Confirm Payment"}
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -851,6 +919,25 @@ export default function ServicesPage() {
                   className="rounded-xl border-gray-200"
                 />
               </div>
+
+              {isIndividual && (
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-bold">
+                    PIN Code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder={`${PIN_LEN}-digit PIN (required for vendor assignment)`}
+                    maxLength={10}
+                    inputMode="numeric"
+                    className={!pincodeValid && pincode.trim() ? "border-red-500" : ""}
+                  />
+                  {!pincodeValid && pincode.trim() && (
+                    <p className="text-xs text-red-500">PIN Code must be 5–10 digits.</p>
+                  )}
+                </div>
+              )}
             </div>
             <DialogFooter className="p-8 pt-0 bg-white">
               <Button
@@ -863,7 +950,7 @@ export default function ServicesPage() {
               <Button
                 className="bg-teal-600 hover:bg-teal-700 text-white shadow-lg h-12 px-10 rounded-xl font-bold"
                 onClick={handleRequestCallback}
-                disabled={createInquiryMutation.isPending}
+                disabled={createInquiryMutation.isPending || (isIndividual && !pincodeValid)}
               >
                 {createInquiryMutation.isPending
                   ? "Requesting..."

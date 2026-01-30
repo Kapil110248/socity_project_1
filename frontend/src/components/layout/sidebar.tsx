@@ -145,6 +145,12 @@ const allMenuItems = [
       },
     ],
   },
+  {
+    title: "Accounting",
+    icon: BookOpen,
+    href: "/dashboard/super-admin/accounting",
+    roles: ["super_admin"],
+  },
   // {
   //   title: 'System Settings',
   //   icon: Settings,
@@ -304,7 +310,7 @@ const allMenuItems = [
     title: "Helpdesk",
     icon: Headphones,
     href: "/dashboard/helpdesk",
-    roles: ["super_admin", "admin", "resident", "committee", "individual"],
+    roles: ["super_admin", "admin", "resident", "committee"],
     submenu: [
       {
         title: "Tickets",

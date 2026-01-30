@@ -180,8 +180,14 @@ export function SuperAdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-white/90">Total Users</p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mt-1">{((platformStats?.totalUsers || 0) / 1000).toFixed(1)}K</h3>
-                  <p className="text-xs text-white/70 mt-1">{((platformStats?.activeUsers || 0) / 1000).toFixed(1)}K active</p>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white mt-1">
+                    {(platformStats?.totalUsers || 0) >= 1000
+                      ? `${((platformStats.totalUsers || 0) / 1000).toFixed(1)}K`
+                      : platformStats?.totalUsers ?? 0}
+                  </h3>
+                  <p className="text-xs text-white/70 mt-1">
+                    {(platformStats?.activeUsers ?? platformStats?.totalUsers ?? 0)} active
+                  </p>
                 </div>
                 <div className="p-2 sm:p-3 bg-white/20 rounded-xl">
                   <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -215,7 +221,9 @@ export function SuperAdminDashboard() {
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-white/90">Pending Approvals</p>
                   <h3 className="text-2xl sm:text-3xl font-bold text-white mt-1">{platformStats?.pendingApprovals || 0}</h3>
-                  <p className="text-xs text-white/70 mt-1">{platformStats?.pendingSocieties || 0} societies waiting</p>
+                  <p className="text-xs text-white/70 mt-1">
+                    {(platformStats?.pendingSocieties ?? platformStats?.pendingApprovals ?? 0)} societies waiting
+                  </p>
                 </div>
                 <div className="p-2 sm:p-3 bg-white/20 rounded-xl">
                   <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
@@ -334,7 +342,12 @@ export function SuperAdminDashboard() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-bold text-gray-800">Recent Societies</CardTitle>
-                <Button variant="outline" size="sm" className="text-purple-600 border-purple-200 hover:bg-purple-50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                  onClick={() => router.push('/dashboard/super-admin/societies/new')}
+                >
                   <Plus className="h-4 w-4 mr-1" />
                   Add Society
                 </Button>
@@ -342,7 +355,10 @@ export function SuperAdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {(recentSocieties || []).map((society) => (
+                {(recentSocieties || []).length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-6">No societies yet.</p>
+                ) : (
+                (recentSocieties || []).map((society) => (
                   <div
                     key={society.id}
                     className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -376,7 +392,8 @@ export function SuperAdminDashboard() {
                       </Button>
                     </div>
                   </div>
-                ))}
+                ))
+                )}
               </div>
               <Button
                 className="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white"
@@ -415,8 +432,10 @@ export function SuperAdminDashboard() {
               <div className="mt-6 p-4 bg-gradient-to-br from-purple-50 to-indigo-100 rounded-xl border border-purple-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Total MRR</p>
-                    <p className="text-2xl font-bold text-purple-700">₹45.6L</p>
+                    <p className="text-sm text-gray-600">Total MRR (this month)</p>
+                    <p className="text-2xl font-bold text-purple-700">
+                      ₹{((platformStats?.monthlyRevenue ?? 0) / 100000).toFixed(1)}L
+                    </p>
                   </div>
                   <CreditCard className="h-10 w-10 text-purple-500" />
                 </div>
@@ -482,18 +501,26 @@ export function SuperAdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-orange-600" />
-                  <div>
-                    <p className="font-medium text-gray-900">8 societies pending approval</p>
-                    <p className="text-sm text-gray-600">Review and approve new society registrations</p>
+              {(platformStats?.pendingApprovals ?? platformStats?.pendingSocieties ?? 0) > 0 && (
+                <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-orange-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {platformStats?.pendingApprovals ?? platformStats?.pendingSocieties ?? 0} societies pending approval
+                      </p>
+                      <p className="text-sm text-gray-600">Review and approve new society registrations</p>
+                    </div>
                   </div>
+                  <Button
+                    size="sm"
+                    className="bg-orange-600 hover:bg-orange-700"
+                    onClick={() => router.push('/dashboard/super-admin/societies/pending')}
+                  >
+                    Review
+                  </Button>
                 </div>
-                <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                  Review
-                </Button>
-              </div>
+              )}
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center gap-3">
                   <RefreshCw className="h-5 w-5 text-blue-600" />

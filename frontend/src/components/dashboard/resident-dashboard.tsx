@@ -157,7 +157,7 @@ export function ResidentDashboard() {
     )
   }
 
-  const { unit, gateUpdates: apiGateUpdates, dues, announcements: apiAnnouncements, buzz: apiBuzz, events: apiEvents } = dashboardData || {}
+  const { societyName, unit, gateUpdates: apiGateUpdates, dues, announcements: apiAnnouncements, buzz: apiBuzz, events: apiEvents } = dashboardData || {}
 
   return (
     <motion.div
@@ -276,11 +276,12 @@ export function ResidentDashboard() {
             <div className="mt-4 pt-4 border-t">
               <h4 className="font-semibold text-gray-800 mb-3">Gate Updates</h4>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                {apiGateUpdates?.map((item: any, index: number) => {
+                {(apiGateUpdates || gateUpdates).map((item: any, index: number) => {
                   const Icon = item.type === 'Visitor' ? Users : item.type === 'Helper' ? User : Package
+                  const colorParts = (item.color || 'bg-gray-100 text-gray-600').split(' ')
                   return (
-                    <div key={index} className={`rounded-xl p-3 ${item.color.split(' ')[0]} text-center`}>
-                      <Icon className={`h-5 w-5 mx-auto mb-1 ${item.color.split(' ')[1]}`} />
+                    <div key={index} className={`rounded-xl p-3 ${colorParts[0]} text-center`}>
+                      <Icon className={`h-5 w-5 mx-auto mb-1 ${colorParts[1] || 'text-gray-600'}`} />
                       <p className="text-xs font-medium text-gray-700">{item.type}</p>
                       <p className="text-lg font-bold text-gray-900">{item.count}</p>
                       <p className="text-[10px] text-gray-500">{item.label}</p>
@@ -293,7 +294,7 @@ export function ResidentDashboard() {
             {/* My Dues Detail */}
             <div className="mt-4 pt-4 border-t">
               <h4 className="font-semibold text-gray-800 mb-3">My Dues</h4>
-              {dues?.penalty > 0 && (
+              {dues?.penalty > 0 && dues?.penaltyLabel && (
                 <div className="bg-red-50 text-red-600 text-xs font-medium px-3 py-1 rounded-full inline-block mb-2">
                   {dues.penaltyLabel} Rs. {dues.penalty}
                 </div>
@@ -333,7 +334,7 @@ export function ResidentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
-              {apiAnnouncements?.map((announcement: any) => (
+              {(apiAnnouncements && apiAnnouncements.length > 0) ? apiAnnouncements.map((announcement: any) => (
                 <div
                   key={announcement.id}
                   className="flex-shrink-0 w-[280px] sm:w-[320px] p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors bg-white"
@@ -343,14 +344,16 @@ export function ResidentDashboard() {
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
-                        {announcement.author.charAt(0)}
+                        {(announcement.author || '').charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-xs text-gray-500">{announcement.author}</span>
-                    <span className="text-xs text-gray-400">• {new Date(announcement.time).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-400">• {announcement.time ? new Date(announcement.time).toLocaleDateString() : '—'}</span>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-gray-500 py-4">No announcements yet.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -369,7 +372,7 @@ export function ResidentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {apiBuzz?.map((item: any) => (
+              {(apiBuzz && apiBuzz.length > 0) ? apiBuzz.map((item: any) => (
                 <div
                   key={item.id}
                   className="p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors"
@@ -385,7 +388,7 @@ export function ResidentDashboard() {
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
                           <AvatarFallback className="text-[10px] bg-gray-100 text-gray-600">
-                            {item.author.charAt(0)}
+                            {(item.author || '').charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-xs text-gray-500">{item.author}</span>
@@ -394,7 +397,9 @@ export function ResidentDashboard() {
                     <ChevronRight className="h-5 w-5 text-gray-400" />
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-gray-500 py-4">No community buzz yet.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -411,7 +416,7 @@ export function ResidentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {apiEvents?.map((event: any) => (
+              {(apiEvents && apiEvents.length > 0) ? apiEvents.map((event: any) => (
                 <div
                   key={event.id}
                   className="p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
@@ -433,7 +438,9 @@ export function ResidentDashboard() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-gray-500 col-span-full py-4">No upcoming events.</p>
+              )}
             </div>
             <Link href="/dashboard/residents/events">
               <Button variant="outline" className="w-full mt-4 border-teal-200 text-teal-600 hover:bg-teal-50">
