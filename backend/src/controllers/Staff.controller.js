@@ -110,7 +110,8 @@ const StaffController = {
             password: hashedPassword,
             role: role === 'GUARD' ? 'GUARD' : 'VENDOR',
             societyId,
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            addedByUserId: req.user.id
           }
         });
       }

@@ -536,6 +536,7 @@ class UserController {
           role: "ADMIN",
           status: "ACTIVE",
           societyId: parseInt(societyId),
+          addedByUserId: req.user.id,
         },
         include: { society: true },
       });

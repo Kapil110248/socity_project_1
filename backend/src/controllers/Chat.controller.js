@@ -271,10 +271,15 @@ class ChatController {
       if (!societyId || !["ADMIN", "COMMITTEE"].includes(roleNorm)) {
         return res.json([]);
       }
+      
+      // RESTRICTION: Admin can only chat with Super Admin and users they created (addedByUserId = me)
       const users = await prisma.user.findMany({
         where: {
           id: { not: id },
-          OR: [{ societyId }, { role: "SUPER_ADMIN" }],
+          OR: [
+            { addedByUserId: id }, // Only users created by this Admin
+            { role: "SUPER_ADMIN" } // And Platform Super Admin
+          ],
         },
         select: {
           id: true,
