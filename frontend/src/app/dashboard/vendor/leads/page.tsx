@@ -200,6 +200,9 @@ export default function VendorLeadsPage() {
                                                 {lead.status === 'confirmed' && (
                                                     <Badge className="bg-green-100 text-green-700 border-green-200">Quote Sent</Badge>
                                                 )}
+                                                {lead.paymentStatus === 'PAID' && (
+                                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-bold">PAID</Badge>
+                                                )}
                                             </div>
                                             <p className="text-sm font-bold text-[#1e3a5f] uppercase tracking-wide">{lead.serviceName}</p>
                                             <div className="flex flex-wrap items-center gap-4 pt-2">

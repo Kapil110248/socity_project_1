@@ -106,10 +106,23 @@ class ServiceInquiryController {
         type,
         preferredDate,
         preferredTime,
+
         notes,
+        variants, // Array of { name, price }
+        total,    // Estimated total amount
       } = req.body;
 
       const role = (req.user.role || "").toUpperCase();
+      
+      // Format variants into notes string if present
+      let finalNotes = notes || "";
+      if (Array.isArray(variants) && variants.length > 0) {
+        const variantText = variants.map(v => `- ${v.name} (₹${v.price})`).join("\n");
+        finalNotes = (finalNotes ? finalNotes + "\n\n" : "") + 
+          "--- Selected Variants ---\n" + variantText + 
+          `\nTotal Estimated: ₹${total}`;
+      }
+
       const inquiry = await prisma.serviceInquiry.create({
         data: {
           residentName,
@@ -120,7 +133,8 @@ class ServiceInquiryController {
           type: type || "service",
           preferredDate,
           preferredTime,
-          notes,
+          notes: finalNotes,
+          payableAmount: total ? parseFloat(total) : null, // Set initial estimate
           societyId: role === "INDIVIDUAL" ? null : req.user.societyId,
           residentId: req.user.id,
         },
@@ -277,14 +291,22 @@ class ServiceInquiryController {
       const updateData = {
         paymentMethod: method,
         payableAmount,
-        paymentStatus: "PENDING",
+        paymentStatus: "PAID", // Force PAID for ALL modes as requested
+        paymentDate: new Date(),
+        transactionId: method === "CASH" ? `CASH-${Date.now()}` : "TXN-" + Date.now() + "-" + inquiryId,
       };
-      if (method === "CASH") {
-        updateData.paymentStatus = "PENDING";
-      } else {
-        updateData.transactionId = "TXN-" + Date.now() + "-" + inquiryId;
-        updateData.paymentStatus = "PAID";
-        updateData.paymentDate = new Date();
+
+      // NOTIFICATION: Notify the vendor (For ALL modes)
+      if (inquiry.vendorId) {
+        await prisma.notification.create({
+          data: {
+            userId: inquiry.vendorId,
+            title: "Payment Received",
+            description: `Payment of ₹${updateData.payableAmount} received via ${method} for ${inquiry.serviceName} (Unit ${inquiry.unit}). Check "My Leads" for details.`,
+            type: "PAYMENT",
+            read: false,
+          },
+        });
       }
       const updated = await prisma.serviceInquiry.update({
         where: { id: inquiryId },

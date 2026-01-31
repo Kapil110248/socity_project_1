@@ -60,6 +60,7 @@ const statusColors: Record<string, string> = {
   confirmed: "bg-blue-100 text-blue-700",
   completed: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-700",
+  booked: "bg-indigo-100 text-indigo-700 border border-indigo-200",
 };
 
 const colorClasses: Record<
@@ -100,6 +101,7 @@ export default function ServicesPage() {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [paymentAmount, setPaymentAmount] = useState<string>("");
+  const [selectedVariants, setSelectedVariants] = useState<any[]>([]);
 
   // Form states
   const [unit, setUnit] = useState(user?.unit || "");
@@ -130,6 +132,7 @@ export default function ServicesPage() {
       setNotes("");
       setPreferredDate("");
       setPreferredTime("");
+      setSelectedVariants([]);
       toast.success("Service request submitted successfully!");
     },
     onError: (err: any) =>
@@ -165,6 +168,8 @@ export default function ServicesPage() {
       preferredTime,
       notes,
       ...(isIndividual && { pincode: pincode.trim() }),
+      variants: selectedVariants,
+      total: selectedVariants.reduce((sum: number, v: any) => sum + (v.price || 0), 0),
     });
   };
 
@@ -270,7 +275,7 @@ export default function ServicesPage() {
             </TabsTrigger>
           </TabsList>
 
-          <AnimatePresence mode="wait">
+
             <TabsContent value="browse" className="mt-6">
               {!selectedCategory ? (
                 <motion.div
@@ -534,7 +539,7 @@ export default function ServicesPage() {
                 )}
               </div>
             </TabsContent>
-          </AnimatePresence>
+
         </Tabs>
 
         {/* Booking Dialog */}
@@ -548,7 +553,7 @@ export default function ServicesPage() {
                 Schedule a professional service for your home
               </DialogDescription>
             </DialogHeader>
-            <div className="p-8 space-y-6 bg-white">
+            <div className="p-8 space-y-6 bg-white max-h-[60vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-bold">
@@ -614,7 +619,54 @@ export default function ServicesPage() {
                 </div>
               )}
 
-              <div className="p-4 bg-indigo-50 rounded-xl flex items-start gap-3">
+                {/* Variants Selection */}
+                {selectedCategory?.variants?.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-gray-700 font-bold">Select Variants</Label>
+                    <div className="grid grid-cols-1 gap-3">
+                      {selectedCategory.variants.map((variant: any) => {
+                         const isSelected = selectedVariants.some((v: any) => v.id === variant.id);
+                         return (
+                           <div
+                             key={variant.id}
+                             className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                               isSelected
+                                 ? "border-indigo-600 bg-indigo-50"
+                                 : "border-gray-100 hover:border-indigo-100"
+                             }`}
+                             onClick={() => {
+                               setSelectedVariants((prev: any[]) =>
+                                 prev.some((v) => v.id === variant.id)
+                                   ? prev.filter((v) => v.id !== variant.id)
+                                   : [...prev, variant]
+                               );
+                             }}
+                           >
+                             <div className="flex items-center gap-3">
+                               <div className={`w-5 h-5 rounded-md border flex items-center justify-center ${isSelected ? "bg-indigo-600 border-indigo-600" : "border-gray-300 bg-white"}`}>
+                                  {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                               </div>
+                               <span className={`font-medium ${isSelected ? "text-indigo-900" : "text-gray-700"}`}>{variant.name}</span>
+                             </div>
+                             <span className="font-bold text-indigo-600">₹{variant.price}</span>
+                           </div>
+                         );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Total Estimate */}
+                {selectedVariants.length > 0 && (
+                   <div className="p-4 bg-indigo-50 rounded-xl flex items-center justify-between border border-indigo-100">
+                     <span className="text-indigo-900 font-bold">Estimated Total</span>
+                     <span className="text-indigo-700 font-black text-xl">
+                       ₹{selectedVariants.reduce((sum: number, v: any) => sum + (v.price || 0), 0)}
+                     </span>
+                   </div>
+                )}
+
+              <div className="p-4 bg-indigo-50 rounded-xl flex items-start gap-3 mt-4">
                 <CheckCircle2 className="h-5 w-5 text-indigo-600 mt-0.5" />
                 <p className="text-sm text-indigo-700">
                   Our vendor will confirm the appointment and contact you for
@@ -662,7 +714,7 @@ export default function ServicesPage() {
                 Request ID: #{selectedRequest?.id}
               </DialogDescription>
             </DialogHeader>
-            <div className="p-8 space-y-6 bg-white">
+            <div className="p-8 space-y-6 bg-white max-h-[60vh] overflow-y-auto">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <span className="text-gray-500 font-medium">Status</span>
                 <Badge
