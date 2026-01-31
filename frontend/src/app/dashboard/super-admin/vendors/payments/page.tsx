@@ -159,7 +159,7 @@ export default function VendorPaymentsPage() {
                                         <Select
                                             value={formData.vendorId}
                                             onValueChange={(val) => {
-                                                const vendor = vendors.find(v => v.id.toString() === val)
+                                                const vendor = vendors.find((v: any) => v.id.toString() === val)
                                                 setFormData({ ...formData, vendorId: val, vendorName: vendor?.name || '' })
                                             }}
                                         >
@@ -182,7 +182,7 @@ export default function VendorPaymentsPage() {
                                         <Select
                                             value={formData.societyId}
                                             onValueChange={(val) => {
-                                                const society = societies.find(s => s.id.toString() === val)
+                                                const society = societies.find((s: any) => s.id.toString() === val)
                                                 setFormData({ ...formData, societyId: val, societyName: society?.name || '' })
                                             }}
                                         >

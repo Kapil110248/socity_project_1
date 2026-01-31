@@ -185,10 +185,12 @@ export default function DirectoryPage() {
   const { data: units = [], isLoading: unitsLoading, error: unitsError } = useQuery({
     queryKey: ['available-units'],
     queryFn: () => AdminResidentService.getUnits(),
-    onError: (error: any) => {
-      console.error('Failed to load units:', error)
-    }
   })
+
+  // Handle units error
+  if (unitsError) {
+    console.error('Failed to load units:', unitsError)
+  }
 
   // Mutations
   const createUnitMutation = useMutation({

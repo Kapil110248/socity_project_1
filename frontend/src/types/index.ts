@@ -8,6 +8,7 @@ export interface User {
   avatar?: string
   phone?: string
   unit?: string
+  pinCode?: string
   createdAt: Date
   updatedAt: Date
 }

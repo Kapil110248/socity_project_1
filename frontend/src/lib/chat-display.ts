@@ -29,7 +29,7 @@ export type DisplayConversation = {
  */
 export function getDisplayConversations(
   conversations: any[],
-  user: { id?: number; role?: string } | null
+  user: { id?: number | string; role?: string } | null
 ): DisplayConversation[] {
   const userRole = (user?.role || '').toUpperCase()
   const list: DisplayConversation[] = []

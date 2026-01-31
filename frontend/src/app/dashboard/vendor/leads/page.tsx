@@ -91,6 +91,41 @@ export default function VendorLeadsPage() {
         )
     }
 
+    const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; leadId: number | null; amount: string }>({
+        open: false,
+        leadId: null,
+        amount: ''
+    })
+
+    const confirmMutation = useMutation({
+        mutationFn: async ({ id, amount }: { id: number | string; amount: number }) => {
+            const res = await api.patch(`/services/inquiries/${id}/status`, { 
+                status: 'confirmed',
+                payableAmount: amount
+            })
+            return res.data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vendor-my-leads'] })
+            setConfirmDialog({ open: false, leadId: null, amount: '' })
+            toast.success('Lead confirmed and quote sent!')
+        },
+        onError: (err: any) => {
+            toast.error(err?.response?.data?.error || 'Failed to confirm lead')
+        },
+    })
+
+    const handleConfirmSubmit = () => {
+        if (!confirmDialog.leadId || !confirmDialog.amount) {
+            toast.error('Please enter a valid amount')
+            return
+        }
+        confirmMutation.mutate({ 
+            id: confirmDialog.leadId, 
+            amount: parseFloat(confirmDialog.amount) 
+        })
+    }
+
     if (isLoading) {
         return (
             <div className="space-y-6">
@@ -162,6 +197,9 @@ export default function VendorLeadsPage() {
                                                 {lead.vendorName?.includes('(Platform)') && (
                                                     <Badge className="bg-purple-100 text-purple-700 border-purple-200 font-black">PLATFORM</Badge>
                                                 )}
+                                                {lead.status === 'confirmed' && (
+                                                    <Badge className="bg-green-100 text-green-700 border-green-200">Quote Sent</Badge>
+                                                )}
                                             </div>
                                             <p className="text-sm font-bold text-[#1e3a5f] uppercase tracking-wide">{lead.serviceName}</p>
                                             <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -173,6 +211,13 @@ export default function VendorLeadsPage() {
                                                     <Clock className="h-3.5 w-3.5" />
                                                     Booked At: {new Date(lead.createdAt).toLocaleDateString()}
                                                 </div>
+                                                {lead.payableAmount && (
+                                                    <div className="flex items-center gap-1.5 text-xs text-green-600 font-bold">
+                                                        <span className="bg-green-50 px-2 py-0.5 rounded-md">
+                                                            Quote: ₹{lead.payableAmount}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -192,19 +237,18 @@ export default function VendorLeadsPage() {
                                             <Phone className="h-4 w-4 mr-2" />
                                             {contactMutation.isPending ? '...' : isContacted(lead) ? 'CONTACTED' : 'CONTACT'}
                                         </Button>
-                                        <Button
-                                            variant={lead.status === 'booked' ? 'default' : 'outline'}
-                                            className={cn(
-                                                "h-10 px-4 rounded-xl font-bold transition-all",
-                                                lead.status === 'booked'
-                                                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100"
-                                                    : "bg-white text-gray-400 border-gray-100 hover:bg-gray-50"
-                                            )}
-                                            onClick={() => handleStatusUpdate(lead.id, 'booked')}
-                                        >
-                                            <Clock className="h-4 w-4 mr-2" />
-                                            PENDING
-                                        </Button>
+                                        
+                                        {/* Quote/Confirm Button */}
+                                        {lead.status === 'booked' && (
+                                            <Button
+                                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100 h-10 px-4 rounded-xl font-bold"
+                                                onClick={() => setConfirmDialog({ open: true, leadId: lead.id, amount: '' })}
+                                            >
+                                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                                Confirm & Quote
+                                            </Button>
+                                        )}
+
                                         <Button
                                             variant={lead.status === 'done' || lead.status === 'completed' ? 'default' : 'outline'}
                                             className={cn(
@@ -247,6 +291,49 @@ export default function VendorLeadsPage() {
                         <h3 className="text-xl font-bold text-gray-900">No active bookings</h3>
                         <p className="text-gray-400 mt-2">When Super Admin assigns a service to you, it will appear here.</p>
                     </div>
+                )}
+
+                {/* Confirm Dialog */}
+                {confirmDialog.open && (
+                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                         <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl"
+                         >
+                             <h3 className="text-2xl font-bold text-gray-900 mb-2">Confirm Booking</h3>
+                             <p className="text-gray-500 mb-6">Enter the final service amount to quote to the customer.</p>
+                             
+                             <div className="space-y-2 mb-6">
+                                 <label className="text-sm font-bold text-gray-700">Service Amount (₹)</label>
+                                 <Input 
+                                     type="number" 
+                                     placeholder="e.g. 500" 
+                                     className="h-12 rounded-xl text-lg font-bold"
+                                     value={confirmDialog.amount}
+                                     onChange={(e) => setConfirmDialog(prev => ({ ...prev, amount: e.target.value }))}
+                                     autoFocus
+                                 />
+                             </div>
+                             
+                             <div className="flex gap-3">
+                                 <Button 
+                                     variant="outline" 
+                                     className="flex-1 h-12 rounded-xl font-bold"
+                                     onClick={() => setConfirmDialog({ open: false, leadId: null, amount: '' })}
+                                 >
+                                     Cancel
+                                 </Button>
+                                 <Button 
+                                     className="flex-1 h-12 rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                                     onClick={handleConfirmSubmit}
+                                     disabled={!confirmDialog.amount}
+                                 >
+                                     Send Quote
+                                 </Button>
+                             </div>
+                         </motion.div>
+                     </div>
                 )}
             </div>
         </div>
