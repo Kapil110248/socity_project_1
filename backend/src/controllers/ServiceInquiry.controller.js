@@ -437,7 +437,10 @@ class ServiceInquiryController {
       }
       const inquiry = await prisma.serviceInquiry.update({
         where: { id: parseInt(id) },
-        data: { status: String(status || existing.status) },
+        data: { 
+          status: String(status || existing.status),
+          ...(req.body.payableAmount != null && { payableAmount: parseFloat(req.body.payableAmount) })
+        },
       });
       res.json(inquiry);
     } catch (error) {
