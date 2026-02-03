@@ -32,6 +32,7 @@ import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useQuery } from '@tanstack/react-query'
 import { residentService } from '@/services/resident.service'
+import { SocietyService } from '@/services/society.service'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // My Unit data - IGATESECURITY style (page 5)
@@ -142,6 +143,12 @@ export function ResidentDashboard() {
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['residentDashboard'],
     queryFn: residentService.getDashboardData,
+  })
+
+  // Fetch guidelines for residents (from Super Admin)
+  const { data: guidelines = [] } = useQuery<any[]>({
+    queryKey: ['guidelines-for-me'],
+    queryFn: SocietyService.getGuidelinesForMe,
   })
 
   if (isLoading) {
@@ -404,6 +411,57 @@ export function ResidentDashboard() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Community Guidelines - Super Admin Messages */}
+      {guidelines.length > 0 && (
+        <motion.div variants={itemVariants}>
+          <Card className="border-0 shadow-md">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-bold text-gray-800">Community Guidelines</CardTitle>
+                <Badge variant="outline" className="bg-purple-100 text-purple-700">
+                  {guidelines.length} {guidelines.length === 1 ? 'Guideline' : 'Guidelines'}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {guidelines.slice(0, 3).map((guideline: any) => (
+                  <div
+                    key={guideline.id}
+                    className="p-4 rounded-xl border border-purple-100 bg-purple-50/30 hover:bg-purple-50/60 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                        <FileText className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 mb-1">{guideline.title}</h4>
+                        <p className="text-sm text-gray-600 line-clamp-2">{guideline.content}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs bg-white">
+                            {guideline.category || 'General'}
+                          </Badge>
+                          <span className="text-xs text-gray-400">
+                            {guideline.createdAt ? new Date(guideline.createdAt).toLocaleDateString() : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {guidelines.length > 3 && (
+                  <Link href="/dashboard/resident/guidelines">
+                    <Button variant="outline" className="w-full border-purple-200 text-purple-600 hover:bg-purple-50">
+                      View All {guidelines.length} Guidelines
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Upcoming Events */}
       <motion.div variants={itemVariants}>

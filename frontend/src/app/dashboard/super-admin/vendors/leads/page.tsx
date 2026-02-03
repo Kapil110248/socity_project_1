@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, User, Wrench, Clock, CheckCircle2, AlertCircle, ChevronDown, MapPin } from 'lucide-react'
+import { Search, User, Wrench, Clock, CheckCircle2, AlertCircle, ChevronDown, MapPin, Phone, Eye } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,7 @@ export default function SuperAdminLeadsPage() {
     const [assignInquiry, setAssignInquiry] = useState<any | null>(null)
     const [vendorSearch, setVendorSearch] = useState('')
     const [showAllVendors, setShowAllVendors] = useState(false)
+    const [viewUser, setViewUser] = useState<any | null>(null)
 
     const { data: inquiriesRaw, isLoading } = useQuery<any>({
         queryKey: ['platform-inquiries', 'all'],
@@ -91,10 +92,16 @@ export default function SuperAdminLeadsPage() {
     const filteredInquiries = inquiries.filter((inq: any) => {
         const matchesSearch = (inq.residentName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (inq.serviceName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (inq.unit || '').toLowerCase().includes(searchQuery.toLowerCase())
+            (inq.unit || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (inq.phone || '').toLowerCase().includes(searchQuery.toLowerCase())
 
         const source = leadSource(inq)
-        const matchesType = leadType === 'all' || source === leadType
+        
+        let matchesType = true;
+        if (leadType === 'all') matchesType = true;
+        else if (leadType === 'callback') matchesType = inq.type === 'CALLBACK';
+        else if (leadType === 'booking') matchesType = inq.type !== 'CALLBACK';
+        else matchesType = source === leadType;
 
         return matchesSearch && matchesType
     })
@@ -146,7 +153,7 @@ export default function SuperAdminLeadsPage() {
             <div className="flex flex-col space-y-4">
                 {/* Filter Tabs */}
                 <div className="flex flex-wrap gap-2">
-                    {['all', 'society', 'resident', 'individual'].map((type) => (
+                    {['all', 'callback', 'booking', 'society', 'resident', 'individual'].map((type) => (
                         <button
                             key={type}
                             onClick={() => setLeadType(type)}
@@ -158,7 +165,7 @@ export default function SuperAdminLeadsPage() {
                                 }
                             `}
                         >
-                            {type === 'all' ? 'All Leads' : type}
+                            {type === 'all' ? 'All Leads' : type === 'callback' ? 'Callback Requests' : type === 'booking' ? 'Bookings' : type}
                         </button>
                     ))}
                 </div>
@@ -167,7 +174,7 @@ export default function SuperAdminLeadsPage() {
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <Input
-                        placeholder="Search by resident, unit or service..."
+                        placeholder="Search by resident, unit, service or phone..."
                         className="pl-12 h-12 rounded-2xl border-0 shadow-sm bg-white ring-1 ring-black/5"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -177,6 +184,7 @@ export default function SuperAdminLeadsPage() {
 
             <div className="grid grid-cols-1 gap-4">
                 {filteredInquiries.length === 0 ? (
+                    // ... Empty State ...
                     <Card className="p-12 text-center border-2 border-dashed border-gray-100 rounded-[40px]">
                         <AlertCircle className="h-12 w-12 text-gray-200 mx-auto mb-4" />
                         <h3 className="text-xl font-bold text-gray-900">No leads found</h3>
@@ -195,22 +203,40 @@ export default function SuperAdminLeadsPage() {
 
                                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                     <div className="flex items-start gap-5">
-                                        <div className="p-4 rounded-2xl bg-gray-50 shrink-0">
-                                            <User className="h-6 w-6 text-gray-400" />
+                                        {/* ... Icon ... */}
+                                        <div className={`p-4 rounded-2xl shrink-0 ${inq.type === 'CALLBACK' ? 'bg-amber-50' : 'bg-gray-50'}`}>
+                                            {inq.type === 'CALLBACK' ? (
+                                                <Phone className="h-6 w-6 text-amber-500" />
+                                            ) : (
+                                                <User className="h-6 w-6 text-gray-400" />
+                                            )}
                                         </div>
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-bold text-lg text-gray-900">{inq.residentName}</h3>
+                                                
+                                                {/* View Profile Button */}
+                                                <button 
+                                                    onClick={() => setViewUser(inq)}
+                                                    className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-blue-600 transition-colors"
+                                                    title="View User Details"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </button>
+
                                                 <Badge variant="outline" className="rounded-full text-[10px] font-black uppercase tracking-tighter">
                                                     {inq.unit}
                                                 </Badge>
                                                 {getStatusBadge(inq.status)}
                                             </div>
+                                            {/* ... Rest of details ... */}
                                             <p className="text-sm font-bold text-[#1e3a5f] uppercase tracking-wide flex items-center gap-2">
                                                 <Wrench className="h-3.5 w-3.5" />
                                                 {inq.serviceName}
                                                 <span className="text-gray-300 mx-1">|</span>
-                                                <span className="text-gray-400 lowercase italic">{inq.type}</span>
+                                                <span className={`text-xs font-bold uppercase tracking-wider ${inq.type === 'CALLBACK' ? 'text-amber-600' : 'text-gray-400'}`}>
+                                                    {inq.type}
+                                                </span>
                                                 <>
                                                     <span className="text-gray-300 mx-1">|</span>
                                                     <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600">
@@ -218,14 +244,45 @@ export default function SuperAdminLeadsPage() {
                                                     </Badge>
                                                 </>
                                             </p>
-                                            <div className="flex items-center gap-4 pt-2 text-xs text-gray-500 font-medium">
+
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 text-xs text-gray-500 font-medium">
                                                 <span className="flex items-center gap-1.5">
                                                     <Clock className="h-3.5 w-3.5" />
                                                     {new Date(inq.createdAt).toLocaleString()}
                                                 </span>
+                                                
+                                                {/* Role Badge */}
+                                                {inq.residentRole && (
+                                                    <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-bold uppercase text-[10px]">
+                                                        {inq.residentRole}
+                                                    </span>
+                                                )}
+
+                                                {/* Phone Display */}
+                                                {(inq.residentPhone && inq.residentPhone !== '—') && (
+                                                    <span className="flex items-center gap-1.5 text-gray-700 font-semibold bg-gray-50 px-2 py-0.5 rounded-md">
+                                                        <Phone className="h-3 w-3" />
+                                                        {inq.residentPhone}
+                                                    </span>
+                                                )}
+
+                                                {/* Email Display */}
+                                                {(inq.residentEmail && inq.residentEmail !== '—') && (
+                                                    <span className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-2 py-0.5 rounded-md">
+                                                        <User className="h-3 w-3" />
+                                                        {inq.residentEmail}
+                                                    </span>
+                                                )}
+
+                                                {inq.paymentStatus === 'PAID' && (
+                                                    <span className="flex items-center gap-1.5 text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded-md border border-green-200">
+                                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                                        PAID
+                                                    </span>
+                                                )}
                                                 {inq.vendorName && (
                                                     <span className="flex items-center gap-1.5 text-blue-600">
-                                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                                        <User className="h-3.5 w-3.5" />
                                                         Assigned to: {inq.vendorName}
                                                     </span>
                                                 )}
@@ -233,7 +290,18 @@ export default function SuperAdminLeadsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="shrink-0">
+                                    <div className="shrink-0 flex items-center gap-3">
+                                        {/* ... Actions ... */}
+                                        {inq.type === 'CALLBACK' && inq.status !== 'completed' && (
+                                            <Button
+                                                variant="outline"
+                                                className="h-11 px-4 rounded-xl gap-2 font-bold ring-1 ring-amber-500/20 text-amber-700 bg-amber-50 hover:bg-amber-100 border-0"
+                                                onClick={() => window.open(`tel:${inq.phone}`)}
+                                            >
+                                                <Phone className="h-4 w-4" />
+                                                Call Now
+                                            </Button>
+                                        )}
                                         <Button
                                             variant="outline"
                                             className="h-11 px-4 rounded-xl gap-2 font-bold ring-1 ring-black/5 border-0 hover:bg-gray-50"
@@ -257,8 +325,76 @@ export default function SuperAdminLeadsPage() {
                 )}
             </div>
 
-            {/* Assign Vendor by PIN code – vendors serving customer area */}
+            {/* User Details Dialog */}
+            <Dialog open={!!viewUser} onOpenChange={(open) => !open && setViewUser(null)}>
+                <DialogContent className="max-w-md rounded-3xl shadow-2xl border-0 ring-1 ring-black/5">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                             <div className="p-2 bg-blue-50 rounded-lg">
+                                <User className="h-5 w-5 text-blue-600" />
+                             </div>
+                             User Details
+                        </DialogTitle>
+                    </DialogHeader>
+                    {viewUser && (
+                        <div className="space-y-4 pt-2">
+                            <div className="p-4 bg-gray-50 rounded-2xl space-y-3">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Name</label>
+                                    <p className="font-bold text-gray-900 text-lg">{viewUser.residentName}</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Role</label>
+                                        <div className="mt-1">
+                                            <Badge variant="secondary" className="bg-white border border-gray-200 text-gray-700">
+                                                {viewUser.residentRole || leadSource(viewUser).toUpperCase()}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Unit / Area</label>
+                                        <p className="font-medium text-gray-700 mt-1">{viewUser.unit || '—'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <div className="p-2 bg-green-50 rounded-lg">
+                                        <Phone className="h-4 w-4 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 font-medium">Phone Number</p>
+                                        <p className="font-semibold text-gray-900">{viewUser.residentPhone || viewUser.phone || '—'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <div className="p-2 bg-purple-50 rounded-lg">
+                                        <User className="h-4 w-4 text-purple-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 font-medium">Email Address</p>
+                                        <p className="font-semibold text-gray-900">{viewUser.residentEmail || '—'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-2 pt-2">
+                                <Button className="w-full rounded-xl font-bold" onClick={() => setViewUser(null)}>
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Assign Vendor Dialog - Existing ... */}
             <Dialog open={!!assignInquiry} onOpenChange={(open) => !open && setAssignInquiry(null)}>
+                {/* ... existing dialog content ... */}
                 <DialogContent className="max-w-lg rounded-3xl shadow-2xl border-0 ring-1 ring-black/5">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-gray-900">Assign vendor to lead</DialogTitle>

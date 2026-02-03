@@ -114,10 +114,32 @@ export default function VendorPaymentsPage() {
             ? (Number(formData.dealValue) * Number(formData.commissionPercent)) / 100
             : Number(formData.payableAmount)
         
+
         recordPayoutMutation.mutate({
             ...formData,
             payableAmount: calculatedPayable
         })
+    }
+
+    const updateStatusMutation = useMutation({
+        mutationFn: async ({ id, status }: { id: number, status: string }) => {
+            const response = await api.put(`/vendor-payouts/${id}`, { status })
+            return response.data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vendor-payouts'] })
+            queryClient.invalidateQueries({ queryKey: ['payout-stats'] })
+            toast.success('Payout status updated!')
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to update status')
+        }
+    })
+
+    const handlePay = (id: number) => {
+        if (confirm('Are you sure you want to mark this payout as PAID?')) {
+            updateStatusMutation.mutate({ id, status: 'PAID' })
+        }
     }
 
     return (
@@ -354,12 +376,13 @@ export default function VendorPaymentsPage() {
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Payable Amt</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Date</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-8 py-12 text-center">
+                                    <td colSpan={7} className="px-8 py-12 text-center">
                                         <div className="flex items-center justify-center">
                                             <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                                         </div>
@@ -398,11 +421,22 @@ export default function VendorPaymentsPage() {
                                     <td className="px-8 py-6 text-right text-sm text-gray-500 font-medium">
                                         {new Date(log.date).toLocaleDateString()}
                                     </td>
+                                    <td className="px-8 py-6 text-right">
+                                        {log.status !== 'PAID' && (
+                                            <Button
+                                                size="sm"
+                                                className="bg-green-600 hover:bg-green-700 text-white font-bold h-8 px-4 rounded-xl shadow-lg shadow-green-100"
+                                                onClick={() => handlePay(log.id)}
+                                            >
+                                                PAY
+                                            </Button>
+                                        )}
+                                    </td>
                                 </motion.tr>
                             ))}
                             {!isLoading && payouts.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-8 py-12 text-center text-gray-400 font-medium">
+                                    <td colSpan={7} className="px-8 py-12 text-center text-gray-400 font-medium">
                                         No payments recorded yet
                                     </td>
                                 </tr>

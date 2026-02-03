@@ -44,7 +44,7 @@ export default function LoginPage() {
     { role: 'Admin', email: 'admin@society.com', password: 'admin123', icon: '👨‍💼', color: 'from-teal-500 to-cyan-500' },
     { role: 'Resident', email: 'resident1@society.com', password: 'resident123', icon: '🏠', color: 'from-blue-500 to-indigo-500' },
     { role: 'Guard', email: 'guard@society.com', password: 'guard123', icon: '🛡️', color: 'from-orange-500 to-amber-500' },
-    { role: 'Vendor', email: 'vendor@society.com', password: 'vendor123', icon: '🛠️', color: 'from-blue-600 to-indigo-600' },
+    { role: 'Vendor', email: 'test4@gmail.com', password: '11111111', icon: '🛠️', color: 'from-blue-600 to-indigo-600' },
     { role: 'Individual', email: 'individual@example.com', password: 'user123', icon: '👤', color: 'from-pink-500 to-rose-500' },
   ]
 

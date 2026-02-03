@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +70,14 @@ export default function SocietiesPage() {
     queryFn: async () => {
       const response = await api.get('/society/all')
       return response.data
+    }
+  })
+
+  const { data: plans = [] } = useQuery<any[]>({
+    queryKey: ['billing-plans'],
+    queryFn: async () => {
+      const response = await api.get('/billing-plans')
+      return Array.isArray(response.data) ? response.data : (response.data?.data ?? [])
     }
   })
 
@@ -171,12 +180,6 @@ export default function SocietiesPage() {
             <h1 className="text-2xl font-bold text-gray-900">Societies Management</h1>
             <p className="text-gray-600">Manage all registered societies on the platform</p>
           </div>
-          <Link href="/dashboard/super-admin/societies/new">
-            <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-purple-500/25 transition-all">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Society
-            </Button>
-          </Link>
         </div>
 
         {/* Stats */}
@@ -401,10 +404,11 @@ export default function SocietiesPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
-                  <Input
+                  <Textarea
                     id="address"
-                    value={editingSociety.address}
+                    value={editingSociety.address || ''}
                     onChange={(e) => setEditingSociety({ ...editingSociety, address: e.target.value })}
+                    rows={3}
                   />
                 </div>
                 <div className="space-y-2">
@@ -416,13 +420,37 @@ export default function SocietiesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="plan">Subscription Plan</Label>
+                  <Label htmlFor="billingPlan">Billing Plan</Label>
+                  <Select
+                    value={editingSociety.billingPlanId?.toString()}
+                    onValueChange={(value) => setEditingSociety({ ...editingSociety, billingPlanId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select billing plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans.map((plan: any) => {
+                        const price = parseFloat(plan.price) || 0;
+                        const disk = parseFloat(editingSociety.discount || '0');
+                        const finalPrice = disk > 0 ? Math.round(price * (1 - disk / 100)) : price;
+                        return (
+                          <SelectItem key={plan.id} value={plan.id.toString()}>
+                            {plan.name} ({plan.planType}) - ₹{finalPrice.toLocaleString()} 
+                            {disk > 0 && ` (-${disk}%)`}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plan">Subscription Tier (Manual Override)</Label>
                   <Select
                     value={editingSociety.subscriptionPlan}
                     onValueChange={(value) => setEditingSociety({ ...editingSociety, subscriptionPlan: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select plan" />
+                      <SelectValue placeholder="Select tier" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="BASIC">Basic</SelectItem>
@@ -431,6 +459,35 @@ export default function SocietiesPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-discount">Discount Percentage (%)</Label>
+                  <Input
+                    id="edit-discount"
+                    type="number"
+                    value={editingSociety.discount ?? 0}
+                    onChange={(e) => setEditingSociety({ ...editingSociety, discount: e.target.value })}
+                  />
+                </div>
+                {editingSociety.billingPlanId && (
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-100 flex justify-between items-center">
+                    <span className="text-sm font-medium text-purple-700">Calculated Final Price:</span>
+                    <div className="text-right">
+                      {(() => {
+                        const plan = plans.find((p: any) => p.id.toString() === editingSociety.billingPlanId?.toString());
+                        if (!plan) return null;
+                        const price = parseFloat(plan.price) || 0;
+                        const disk = parseFloat(editingSociety.discount || '0');
+                        const finalPrice = disk > 0 ? Math.round(price * (1 - disk / 100)) : price;
+                        return (
+                          <>
+                            <span className="text-lg font-bold text-purple-600">₹{finalPrice.toLocaleString()}</span>
+                            {disk > 0 && <span className="ml-2 text-xs text-gray-400 line-through">₹{price.toLocaleString()}</span>}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <DialogFooter>
@@ -445,7 +502,9 @@ export default function SocietiesPage() {
                     city: editingSociety.city,
                     state: editingSociety.state,
                     pincode: editingSociety.pincode,
-                    subscriptionPlan: editingSociety.subscriptionPlan
+                    subscriptionPlan: editingSociety.subscriptionPlan,
+                    billingPlanId: editingSociety.billingPlanId,
+                    discount: editingSociety.discount
                   }
                 })}
                 disabled={updateSocietyMutation.isPending}

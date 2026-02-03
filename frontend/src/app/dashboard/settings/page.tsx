@@ -474,7 +474,11 @@ export default function SettingsPage() {
                             ? "Security Guard"
                             : user?.role === "individual"
                               ? "Individual User"
-                              : "Resident"}
+                              : user?.role === "vendor"
+                                ? "Service Provider"
+                                : user?.role === "resident"
+                                  ? "Resident"
+                                  : user?.role || "User"}
                     </Badge>
                   </div>
                   

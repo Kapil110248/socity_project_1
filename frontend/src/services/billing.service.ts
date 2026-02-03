@@ -53,4 +53,14 @@ export const BillingService = {
     const response = await api.get(API_CONFIG.BILLING.DEFAULTER_STATS);
     return response.data;
   },
+  
+  getPlatformInvoices: async () => {
+    const response = await api.get(API_CONFIG.BILLING.PLATFORM_INVOICES);
+    return response.data;
+  },
+
+  deleteInvoice: async (id: number) => {
+    const response = await api.delete(`${API_CONFIG.BILLING.INVOICES}/${id}`);
+    return response.data;
+  },
 };

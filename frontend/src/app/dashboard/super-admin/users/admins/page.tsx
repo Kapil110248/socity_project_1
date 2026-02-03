@@ -74,6 +74,9 @@ interface Admin {
   phone?: string;
   designation?: string;
   societyId?: number;
+  isPaid?: boolean;
+  subscriptionPlan?: string;
+  role?: string;
   profileImg?: string | null;
 }
 
@@ -242,6 +245,20 @@ export default function SocietyAdminsPage() {
     }
   };
 
+  const getPaymentBadge = (isPaid: boolean) => {
+    return isPaid ? (
+      <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-100 border-teal-200">
+        <CheckCircle className="h-3 w-3 mr-1" />
+        Paid
+      </Badge>
+    ) : (
+      <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">
+        <XCircle className="h-3 w-3 mr-1" />
+        Unpaid
+      </Badge>
+    );
+  };
+
   return (
     <RoleGuard allowedRoles={["super_admin"]}>
       <motion.div
@@ -358,6 +375,8 @@ export default function SocietyAdminsPage() {
                 <TableRow>
                   <TableHead>Admin</TableHead>
                   <TableHead>Society</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead>Last Login</TableHead>
@@ -429,6 +448,12 @@ export default function SocietyAdminsPage() {
                             {admin.society}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>{getPaymentBadge(admin.isPaid ?? false)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          {admin.role || 'admin'}
+                        </Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(admin.status)}</TableCell>
                       <TableCell className="text-sm text-gray-500">
@@ -525,6 +550,10 @@ export default function SocietyAdminsPage() {
                   <div className="space-y-1">
                     <Label className="text-gray-500 text-xs">Society</Label>
                     <p className="font-medium">{viewAdmin.society}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-gray-500 text-xs">Payment Status</Label>
+                    <div className="mt-1">{getPaymentBadge(viewAdmin.isPaid ?? false)}</div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-gray-500 text-xs">Joined Date</Label>

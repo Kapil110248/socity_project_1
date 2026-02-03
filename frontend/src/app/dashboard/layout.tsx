@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { SocietyPaymentFlow } from '@/components/society/SocietyPaymentFlow'
 
 export default function DashboardLayout({
   children,
@@ -34,6 +35,11 @@ export default function DashboardLayout({
   }
 
   const isAdmin = user?.role === 'admin'
+
+  // Payment Guard for Society Admins
+  if (isAdmin && user?.society && !user.society.isPaid) {
+    return <SocietyPaymentFlow />
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">

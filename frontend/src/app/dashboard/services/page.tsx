@@ -125,15 +125,31 @@ export default function ServicesPage() {
 
   const createInquiryMutation = useMutation({
     mutationFn: residentService.createServiceInquiry,
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["services"] });
-      setIsBookingOpen(false);
-      setIsCallbackOpen(false);
-      setNotes("");
-      setPreferredDate("");
-      setPreferredTime("");
-      setSelectedVariants([]);
-      toast.success("Service request submitted successfully!");
+      
+      // If it was a booking (not callback), trigger payment immediately
+      if (data && data.type === 'BOOKING' && paymentMethod) {
+          // Calculate total from variants locally if backend returns 0/null (just in case)
+          const localTotal = selectedVariants.reduce((sum: number, v: any) => sum + (v.price || 0), 0);
+          const finalAmount = (data.payableAmount && Number(data.payableAmount) > 0) 
+              ? data.payableAmount 
+              : localTotal;
+
+          initiatePaymentMutation.mutate({
+              id: data.id,
+              data: {
+                  paymentMethod: paymentMethod,
+                  amount: finalAmount
+              }
+          });
+      } else {
+          // For callbacks, just close and toast
+          setIsCallbackOpen(false);
+          setIsBookingOpen(false);
+          setNotes("");
+          toast.success("Callback request submitted successfully!");
+      }
     },
     onError: (err: any) =>
       toast.error(err.message || "Failed to submit request"),
@@ -144,11 +160,20 @@ export default function ServicesPage() {
       residentService.initiatePayment(id, data),
     onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["services"] });
+      // Final Success Flow
       setIsPaymentOpen(false);
+      setIsBookingOpen(false); // Close the booking dialog which is still open
       setSelectedRequest(null);
+      
+      // Reset Form
       setPaymentMethod("");
       setPaymentAmount("");
-      toast.success(res?.message || "Payment initiated successfully!");
+      setNotes("");
+      setPreferredDate("");
+      setPreferredTime("");
+      setSelectedVariants([]);
+      
+      toast.success("Booking confirmed & Payment successful!");
     },
     onError: (err: any) =>
       toast.error(err?.response?.data?.error || err.message || "Payment failed"),
@@ -550,7 +575,7 @@ export default function ServicesPage() {
                 Book {selectedCategory?.name}
               </DialogTitle>
               <DialogDescription className="text-indigo-100">
-                Schedule a professional service for your home
+                Schedule a professional service for your home. Payment is required to confirm booking.
               </DialogDescription>
             </DialogHeader>
             <div className="p-8 space-y-6 bg-white max-h-[60vh] overflow-y-auto">
@@ -561,6 +586,7 @@ export default function ServicesPage() {
                   </Label>
                   <Input
                     type="date"
+                    min={new Date().toISOString().split("T")[0]}
                     value={preferredDate}
                     onChange={(e) => setPreferredDate(e.target.value)}
                     className="h-12 rounded-xl border-gray-200 focus:ring-indigo-500"
@@ -578,10 +604,35 @@ export default function ServicesPage() {
                       <SelectValue placeholder="Select Slot" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="9am">9:00 AM - 12:00 PM</SelectItem>
-                      <SelectItem value="12pm">12:00 PM - 3:00 PM</SelectItem>
-                      <SelectItem value="3pm">3:00 PM - 6:00 PM</SelectItem>
-                      <SelectItem value="6pm">6:00 PM - 9:00 PM</SelectItem>
+                      {[
+                        { value: "9am", label: "9:00 AM - 12:00 PM", endHour: 12 },
+                        { value: "12pm", label: "12:00 PM - 3:00 PM", endHour: 15 },
+                        { value: "3pm", label: "3:00 PM - 6:00 PM", endHour: 18 },
+                        { value: "6pm", label: "6:00 PM - 9:00 PM", endHour: 21 },
+                      ].map((slot) => {
+                          let isDisabled = false;
+                          if (preferredDate) {
+                              const selected = new Date(preferredDate);
+                              const today = new Date();
+                              // Reset time parts for accurate date comparison
+                              selected.setHours(0,0,0,0);
+                              const current = new Date();
+                              current.setHours(0,0,0,0);
+
+                              if (selected.getTime() === current.getTime()) {
+                                  // If today, check hour
+                                  const nowHour = new Date().getHours();
+                                  if (nowHour >= slot.endHour) {
+                                      isDisabled = true;
+                                  }
+                              }
+                          }
+                          return (
+                              <SelectItem key={slot.value} value={slot.value} disabled={isDisabled}>
+                                  {slot.label} {isDisabled && "(Passed)"}
+                              </SelectItem>
+                          );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -656,22 +707,35 @@ export default function ServicesPage() {
                   </div>
                 )}
                 
-                {/* Total Estimate */}
-                {selectedVariants.length > 0 && (
-                   <div className="p-4 bg-indigo-50 rounded-xl flex items-center justify-between border border-indigo-100">
-                     <span className="text-indigo-900 font-bold">Estimated Total</span>
+              <div className="p-4 bg-indigo-50 rounded-xl flex flex-col gap-4 mt-4 border border-indigo-100">
+                <div className="flex items-center justify-between">
+                     <span className="text-indigo-900 font-bold">Total to Pay</span>
                      <span className="text-indigo-700 font-black text-xl">
                        ₹{selectedVariants.reduce((sum: number, v: any) => sum + (v.price || 0), 0)}
                      </span>
-                   </div>
-                )}
-
-              <div className="p-4 bg-indigo-50 rounded-xl flex items-start gap-3 mt-4">
-                <CheckCircle2 className="h-5 w-5 text-indigo-600 mt-0.5" />
-                <p className="text-sm text-indigo-700">
-                  Our vendor will confirm the appointment and contact you for
-                  final details.
-                </p>
+                </div>
+                
+                {/* Payment Method Selection */}
+                <div className="pt-4 border-t border-indigo-200">
+                    <Label className="text-indigo-900 font-bold mb-2 block">Select Payment Method</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                        {['Online', 'Cash'].map((method) => (
+                            <div
+                                key={method}
+                                onClick={() => setPaymentMethod(method)}
+                                className={`
+                                    cursor-pointer p-3 rounded-xl border-2 flex items-center justify-center font-bold transition-all
+                                    ${paymentMethod === method 
+                                        ? 'bg-indigo-600 border-indigo-600 text-white' 
+                                        : 'bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50'}
+                                `}
+                            >
+                                {method === 'Online' ? <CreditCard className="w-4 h-4 mr-2" /> : <Banknote className="w-4 h-4 mr-2" />}
+                                {method}
+                            </div>
+                        ))}
+                    </div>
+                </div>
               </div>
             </div>
             <DialogFooter className="p-8 pt-0 bg-white">
@@ -685,11 +749,11 @@ export default function ServicesPage() {
               <Button
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg h-12 px-10 rounded-xl font-bold"
                 onClick={handleBookService}
-                disabled={createInquiryMutation.isPending || (isIndividual && !pincodeValid)}
+                disabled={createInquiryMutation.isPending || initiatePaymentMutation.isPending || (isIndividual && !pincodeValid) || selectedVariants.length === 0 || !paymentMethod}
               >
-                {createInquiryMutation.isPending
-                  ? "Processing..."
-                  : "Confirm Appointment"}
+                {createInquiryMutation.isPending || initiatePaymentMutation.isPending
+                  ? "Processing Payment..."
+                  : "Pay & Book"}
               </Button>
             </DialogFooter>
           </DialogContent>

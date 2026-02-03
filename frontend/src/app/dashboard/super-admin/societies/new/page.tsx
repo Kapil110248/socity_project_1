@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { RoleGuard } from '@/components/auth/role-guard'
+import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -29,7 +30,7 @@ import api from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { INDIAN_STATES, STATE_CITY_MAPPING } from '@/lib/constants'
 
-type BillingPlan = { id: number; name: string; type: string; price: string; description?: string; status: string }
+type BillingPlan = { id: number; name: string; type: string; planType: string; price: string; description?: string; status: string }
 
 export default function AddSocietyPage() {
   const router = useRouter()
@@ -47,6 +48,7 @@ export default function AddSocietyPage() {
     adminEmail: '',
     adminPassword: '',
     adminPhone: '',
+    discount: '',
   })
 
   const { data: plans = [], isLoading: plansLoading } = useQuery<BillingPlan[]>({
@@ -75,6 +77,7 @@ export default function AddSocietyPage() {
       if (data.adminEmail) payload.adminEmail = data.adminEmail
       if (data.adminPassword) payload.adminPassword = data.adminPassword
       if (data.adminPhone) payload.adminPhone = data.adminPhone
+      if (data.discount) payload.discount = Number(data.discount)
       const response = await api.post('/society', payload)
       return response.data
     },
@@ -157,6 +160,16 @@ export default function AddSocietyPage() {
                     value={formData.units}
                     onChange={(e) => handleChange('units', e.target.value)}
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discount">Discount Percentage (%)</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    placeholder="e.g., 10"
+                    value={formData.discount}
+                    onChange={(e) => handleChange('discount', e.target.value)}
                   />
                 </div>
               </div>
@@ -245,17 +258,41 @@ export default function AddSocietyPage() {
                       key={plan.id}
                       type="button"
                       onClick={() => selectPlan(String(plan.id))}
-                      className={`p-4 border-2 rounded-lg text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
+                      className={`p-4 border-2 rounded-xl text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 relative ${
                         formData.billingPlanId === String(plan.id)
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-purple-500 bg-purple-50 shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'
                       }`}
                     >
-                      <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-                      <p className="text-lg font-bold text-purple-600 mt-1">₹{Number(plan.price).toLocaleString()}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">{plan.type}</p>
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-gray-900 line-clamp-1">{plan.name}</h4>
+                        <Badge className={`text-[10px] px-1.5 py-0 h-4 ${
+                          plan.planType === 'ENTERPRISE' ? 'bg-purple-100 text-purple-700' :
+                          plan.planType === 'PROFESSIONAL' ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {plan.planType || 'BASIC'}
+                        </Badge>
+                      </div>
+                      <div className="mt-1">
+                        {formData.discount && parseFloat(formData.discount) > 0 ? (
+                          <div className="space-y-0.5">
+                            <p className="text-xl font-bold text-purple-600">
+                              ₹{Math.round(parseFloat(plan.price) * (1 - parseFloat(formData.discount) / 100)).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-gray-400 line-through">
+                              ₹{Number(plan.price).toLocaleString()}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xl font-bold text-purple-600">
+                            ₹{Number(plan.price).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-0.5 mb-2">{plan.type}</p>
                       {plan.description && (
-                        <p className="text-xs text-gray-400 mt-2 line-clamp-2">{plan.description}</p>
+                        <p className="text-xs text-gray-400 line-clamp-2 italic">{plan.description}</p>
                       )}
                     </button>
                   ))}

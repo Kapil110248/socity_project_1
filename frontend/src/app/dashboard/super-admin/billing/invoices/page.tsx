@@ -3,17 +3,26 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  FileText,
-  Search,
-  Filter,
-  Download,
+  AlertTriangle,
   Building2,
+  Calendar,
   CheckCircle,
   Clock,
-  AlertTriangle,
+  DollarSign,
+  Download,
   Eye,
+  FileText,
+  Filter,
+  Mail,
+  MessageSquare,
+  MoreHorizontal,
+  Plus,
+  Printer,
+  Search,
   Send,
-  Calendar,
+  Trash2,
+  TrendingUp,
+  Users,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -52,6 +61,8 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null)
+  const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState<any>(null)
   const queryClient = useQueryClient()
 
   const { data: invoices = [], isLoading } = useQuery<any[]>({
@@ -75,10 +86,24 @@ export default function InvoicesPage() {
     try {
       await api.patch(`/platform-invoices/${id}/status`, { status })
       toast.success(`Invoice marked as ${status}`)
+      setInvoiceToMarkPaid(null)
       queryClient.invalidateQueries({ queryKey: ['platform-invoices'] })
       queryClient.invalidateQueries({ queryKey: ['platform-invoices-stats'] })
     } catch (error) {
       toast.error('Failed to update status')
+    }
+  }
+ 
+  const deleteInvoiceMutation = async (id: number) => {
+    try {
+      await api.delete(`/platform-invoices/${id}`)
+      toast.success('Invoice deleted successfully')
+      setInvoiceToDelete(null)
+      queryClient.invalidateQueries({ queryKey: ['platform-invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['platform-invoices-stats'] })
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to delete invoice'
+      toast.error(message)
     }
   }
 
@@ -444,16 +469,21 @@ export default function InvoicesPage() {
                                 variant="ghost" 
                                 size="icon" 
                                 className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                onClick={() => {
-                                  if (confirm('Mark this invoice as PAID?')) {
-                                    updateStatusMutation(inv.id, 'PAID')
-                                  }
-                                }}
+                                onClick={() => setInvoiceToMarkPaid(inv)}
                                 title="Mark as Paid"
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
                             )}
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => setInvoiceToDelete(inv)}
+                              title="Delete Invoice"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -530,6 +560,71 @@ export default function InvoicesPage() {
               )}
             </DialogContent>
           </Dialog>
+ 
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!invoiceToDelete} onOpenChange={() => setInvoiceToDelete(null)}>
+          <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl">
+            <div className="bg-red-50 p-6 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-red-900">Confirm Deletion</h3>
+              <p className="text-red-700 mt-2 text-sm">
+                Are you sure you want to delete invoice <span className="font-bold underline">{invoiceToDelete?.invoiceNo}</span>? 
+                This action is permanent and cannot be undone.
+              </p>
+            </div>
+ 
+            <div className="p-6 bg-white flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setInvoiceToDelete(null)}
+                className="hover:bg-gray-50 border-gray-200"
+              >
+                Nevermind, Keep it
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteInvoiceMutation(invoiceToDelete.id)}
+                className="bg-red-600 hover:bg-red-700 px-6 font-semibold shadow-lg shadow-red-200"
+              >
+                Yes, Delete Permanent
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+ 
+        {/* Paid Status Confirmation Dialog */}
+        <Dialog open={!!invoiceToMarkPaid} onOpenChange={() => setInvoiceToMarkPaid(null)}>
+          <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl">
+            <div className="bg-green-50 p-6 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-green-900">Record Payment</h3>
+              <p className="text-green-700 mt-2 text-sm">
+                Are you marking invoice <span className="font-bold">{invoiceToMarkPaid?.invoiceNo}</span> as <span className="underline font-bold text-green-900">PAID</span>? 
+                This will update the society's billing status and revenue reports.
+              </p>
+            </div>
+ 
+            <div className="p-6 bg-white flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setInvoiceToMarkPaid(null)}
+                className="hover:bg-gray-50 border-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => updateStatusMutation(invoiceToMarkPaid.id, 'PAID')}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 font-semibold shadow-lg shadow-green-100"
+              >
+                Mark as Paid
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </RoleGuard>
   )

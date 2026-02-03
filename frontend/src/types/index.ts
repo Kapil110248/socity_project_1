@@ -9,8 +9,36 @@ export interface User {
   phone?: string
   unit?: string
   pinCode?: string
+  society?: Society
   createdAt: Date
   updatedAt: Date
+}
+
+export interface Society {
+  id: number
+  name: string
+  code: string
+  address: string | null
+  city: string | null
+  state: string | null
+  pincode: string | null
+  status: string
+  subscriptionPlan: string
+  isPaid: boolean
+  discount: number
+  billingPlanId: number | null
+  billingPlan?: BillingPlan
+  expectedUnits: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BillingPlan {
+  id: number
+  name: string
+  price: number
+  planType: string
+  status: string
 }
 
 // Dashboard Types

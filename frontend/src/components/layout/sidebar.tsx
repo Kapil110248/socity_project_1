@@ -39,6 +39,7 @@ import {
   CreditCard,
   History as HistoryIcon,
   User,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -78,11 +79,6 @@ const allMenuItems = [
         title: "Pending Approvals",
         icon: ClipboardList,
         href: "/dashboard/super-admin/societies/pending",
-      },
-      {
-        title: "Add Society",
-        icon: Building2,
-        href: "/dashboard/super-admin/societies/new",
       },
       {
         title: "Guidelines",
@@ -149,6 +145,12 @@ const allMenuItems = [
     title: "Accounting",
     icon: BookOpen,
     href: "/dashboard/super-admin/accounting",
+    roles: ["super_admin"],
+  },
+  {
+    title: "Advertisements",
+    icon: Megaphone,
+    href: "/dashboard/super-admin/advertisements",
     roles: ["super_admin"],
   },
   // {
@@ -271,12 +273,6 @@ const allMenuItems = [
     href: "/dashboard/my-unit",
     roles: ["resident"],
   },
-  {
-    title: "Chat with Guard",
-    icon: MessageCircle,
-    href: "/dashboard/helpdesk/chat",
-    roles: ["resident"],
-  },
 
   // ==========================================
   // SHARED (Admin, Resident, Guard - NOT Super Admin)
@@ -348,6 +344,11 @@ const allMenuItems = [
         title: "Payments",
         icon: TrendingUp,
         href: "/dashboard/financial/payments",
+      },
+      {
+        title: "Platform Invoices",
+        icon: Receipt,
+        href: "/dashboard/financial/platform-invoices",
       },
     ],
   },

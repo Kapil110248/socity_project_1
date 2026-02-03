@@ -599,7 +599,20 @@ export function Header() {
                     <DropdownMenuItem
                       key={n.id}
                       className="flex items-start space-x-3 p-3 cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
-                      onClick={() => markOneNotificationRead.mutate(n.id)}
+                      onClick={() => {
+                        markOneNotificationRead.mutate(n.id)
+                        
+                        // Clickable logic based on type and metadata
+                        if (n.type === 'welcome' || n.type === 'society_activation') {
+                          if (n.metadata && typeof n.metadata === 'object' && (n.metadata as any).invoiceId) {
+                             if (user?.role === 'super_admin') {
+                                router.push('/dashboard/super-admin/billing/invoices')
+                             } else {
+                                router.push('/dashboard/financial/platform-invoices')
+                             }
+                          }
+                        }
+                      }}
                     >
                       <div
                         className={`p-2 rounded-lg flex-shrink-0 ${getNotificationIcon(n.type || '')}`}

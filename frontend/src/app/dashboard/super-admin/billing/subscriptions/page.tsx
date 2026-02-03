@@ -67,6 +67,7 @@ export default function SubscriptionsPage() {
   const [newPlan, setNewPlan] = useState({
     name: '',
     type: 'Monthly',
+    planType: 'BASIC',
     price: '',
     description: '',
     status: 'active'
@@ -92,6 +93,7 @@ export default function SubscriptionsPage() {
       setNewPlan({
         name: '',
         type: 'Monthly',
+        planType: 'BASIC',
         price: '',
         description: '',
         status: 'active'
@@ -245,6 +247,7 @@ export default function SubscriptionsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Plan Name</TableHead>
+                  <TableHead>Tier</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Description</TableHead>
@@ -270,6 +273,15 @@ export default function SubscriptionsPage() {
                     <TableRow key={plan.id}>
                     <TableCell>
                       <div className="font-bold text-gray-900">{plan.name}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={
+                        plan.planType === 'ENTERPRISE' ? 'bg-purple-100 text-purple-700' :
+                        plan.planType === 'PROFESSIONAL' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }>
+                        {plan.planType || 'BASIC'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 font-medium text-green-700">
@@ -343,22 +355,38 @@ export default function SubscriptionsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="type">Billing Type</Label>
+                  <Label htmlFor="planType">Plan Tier</Label>
                   <Select
-                    value={newPlan.type}
-                    onValueChange={(val) => setNewPlan({ ...newPlan, type: val })}
+                    value={newPlan.planType}
+                    onValueChange={(val) => setNewPlan({ ...newPlan, planType: val })}
                   >
-                    <SelectTrigger id="type">
+                    <SelectTrigger id="planType">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Monthly">Monthly</SelectItem>
-                      <SelectItem value="Quarterly">Quarterly</SelectItem>
-                      <SelectItem value="Yearly">Yearly</SelectItem>
-                      <SelectItem value="One-Time">One-Time</SelectItem>
+                      <SelectItem value="BASIC">Basic</SelectItem>
+                      <SelectItem value="PROFESSIONAL">Professional</SelectItem>
+                      <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Billing Type</Label>
+                <Select
+                  value={newPlan.type}
+                  onValueChange={(val) => setNewPlan({ ...newPlan, type: val })}
+                >
+                  <SelectTrigger id="type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Monthly">Monthly</SelectItem>
+                    <SelectItem value="Quarterly">Quarterly</SelectItem>
+                    <SelectItem value="Yearly">Yearly</SelectItem>
+                    <SelectItem value="One-Time">One-Time</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -384,23 +412,41 @@ export default function SubscriptionsPage() {
               <DialogTitle>Edit Plan</DialogTitle>
             </DialogHeader>
             {editPlan && (
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Plan Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={editPlan.name}
-                    onChange={(e) => setEditPlan({ ...editPlan, name: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              <>
+                <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="edit-price">Price</Label>
+                    <Label htmlFor="edit-name">Plan Name</Label>
                     <Input
-                      id="edit-price"
-                      value={editPlan.price}
-                      onChange={(e) => setEditPlan({ ...editPlan, price: e.target.value })}
+                      id="edit-name"
+                      value={editPlan.name}
+                      onChange={(e) => setEditPlan({ ...editPlan, name: e.target.value })}
                     />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-price">Price</Label>
+                      <Input
+                        id="edit-price"
+                        value={editPlan.price}
+                        onChange={(e) => setEditPlan({ ...editPlan, price: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-planType">Plan Tier</Label>
+                      <Select
+                        value={editPlan.planType}
+                        onValueChange={(val) => setEditPlan({ ...editPlan, planType: val })}
+                      >
+                        <SelectTrigger id="edit-planType">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="BASIC">Basic</SelectItem>
+                          <SelectItem value="PROFESSIONAL">Professional</SelectItem>
+                          <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-type">Billing Type</Label>
@@ -419,36 +465,36 @@ export default function SubscriptionsPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editPlan.description}
+                      onChange={(e) => setEditPlan({ ...editPlan, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-status">Status</Label>
+                    <Select
+                      value={editPlan.status}
+                      onValueChange={(val) => setEditPlan({ ...editPlan, status: val })}
+                    >
+                      <SelectTrigger id="edit-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={editPlan.description}
-                    onChange={(e) => setEditPlan({ ...editPlan, description: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select
-                    value={editPlan.status}
-                    onValueChange={(val) => setEditPlan({ ...editPlan, status: val })}
-                  >
-                    <SelectTrigger id="edit-status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditPlan(null)}>Cancel</Button>
+                  <Button onClick={handleUpdatePlan} className="bg-[#1e3a5f] text-white hover:bg-[#2d4a6f]">Save Changes</Button>
+                </DialogFooter>
+              </>
             )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditPlan(null)}>Cancel</Button>
-              <Button onClick={handleUpdatePlan} className="bg-[#1e3a5f] text-white hover:bg-[#2d4a6f]">Save Changes</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 

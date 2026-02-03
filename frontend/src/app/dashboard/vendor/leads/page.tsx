@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, CheckCircle2, Clock, ClipboardList, Calendar, Phone, User } from 'lucide-react'
+import { Search, CheckCircle2, Clock, ClipboardList, Calendar, Phone, User, CreditCard } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -162,7 +162,23 @@ export default function VendorLeadsPage() {
 
             <div className="grid grid-cols-1 gap-4">
                 <AnimatePresence mode="popLayout">
-                    {leads.map((lead, index) => (
+                    {leads.map((lead, index) => {
+                        // Calculate what to show as "Your Payout"
+                        // If vendorPrice is set (explicit agreement), show that.
+                        // If not set, show 90% of payableAmount (fallback) or nothing?
+                        // User wants "Vendor should not see what User paid". 
+                        // So we should ONLY show if vendorQuote/Price is set.
+                        
+                        const vendorShare = lead.vendorPrice 
+                            ? lead.vendorPrice 
+                            : (lead.payableAmount ? lead.payableAmount * 0.9 : 0);
+                            
+                        // Hide share if it's purely a User Payment (payableAmount) and vendor hasn't quoted yet?
+                        // Logic: If status is 'booked' (not confirmed), vendor hasn't quoted. Don't show implied share.
+                        // If status is 'confirmed' or 'done', show the share.
+                        const showShare = vendorShare > 0 && ['confirmed', 'done', 'completed', 'paid'].includes(lead.status?.toLowerCase());
+
+                        return (
                         <motion.div
                             key={lead.id}
                             initial={{ opacity: 0, y: 20 }}
@@ -198,7 +214,7 @@ export default function VendorLeadsPage() {
                                                     <Badge className="bg-purple-100 text-purple-700 border-purple-200 font-black">PLATFORM</Badge>
                                                 )}
                                                 {lead.status === 'confirmed' && (
-                                                    <Badge className="bg-green-100 text-green-700 border-green-200">Quote Sent</Badge>
+                                                    <Badge className="bg-green-100 text-green-700 border-green-200">Quote Accepted</Badge>
                                                 )}
                                                 {lead.paymentStatus === 'PAID' && (
                                                     <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-bold">PAID</Badge>
@@ -214,11 +230,15 @@ export default function VendorLeadsPage() {
                                                     <Clock className="h-3.5 w-3.5" />
                                                     Booked At: {new Date(lead.createdAt).toLocaleDateString()}
                                                 </div>
-                                                {lead.payableAmount && (
-                                                    <div className="flex items-center gap-1.5 text-xs text-green-600 font-bold">
-                                                        <span className="bg-green-50 px-2 py-0.5 rounded-md">
-                                                            Quote: ₹{lead.payableAmount}
-                                                        </span>
+                                                
+                                                {/* ONLY Show Vendor Share if Confirmed/Done. Hide User Bill completely as requested. */}
+                                                {showShare && (
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-1.5 text-xs text-green-600 font-bold">
+                                                            <span className="bg-green-50 px-2 py-0.5 rounded-md border border-green-200">
+                                                                Your Agreed Share: ₹{Number(vendorShare).toLocaleString()}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -248,7 +268,7 @@ export default function VendorLeadsPage() {
                                                 onClick={() => setConfirmDialog({ open: true, leadId: lead.id, amount: '' })}
                                             >
                                                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                                                Confirm & Quote
+                                                Accept & Quote
                                             </Button>
                                         )}
 
@@ -285,7 +305,7 @@ export default function VendorLeadsPage() {
                                 )}
                             </Card>
                         </motion.div>
-                    ))}
+                    )})}
                 </AnimatePresence>
 
                 {leads.length === 0 && (
@@ -304,19 +324,20 @@ export default function VendorLeadsPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl"
                          >
-                             <h3 className="text-2xl font-bold text-gray-900 mb-2">Confirm Booking</h3>
-                             <p className="text-gray-500 mb-6">Enter the final service amount to quote to the customer.</p>
+                             <h3 className="text-2xl font-bold text-gray-900 mb-2">Accept Job</h3>
+                             <p className="text-gray-500 mb-6">Enter your agreed service charge (this is what you will receive).</p>
                              
                              <div className="space-y-2 mb-6">
-                                 <label className="text-sm font-bold text-gray-700">Service Amount (₹)</label>
+                                 <label className="text-sm font-bold text-gray-700">Your Quote (₹)</label>
                                  <Input 
                                      type="number" 
-                                     placeholder="e.g. 500" 
+                                     placeholder="e.g. 800"
                                      className="h-12 rounded-xl text-lg font-bold"
                                      value={confirmDialog.amount}
                                      onChange={(e) => setConfirmDialog(prev => ({ ...prev, amount: e.target.value }))}
                                      autoFocus
                                  />
+                                 <p className="text-xs text-gray-400">Do not include platform fees. Enter net amount.</p>
                              </div>
                              
                              <div className="flex gap-3">
@@ -332,7 +353,7 @@ export default function VendorLeadsPage() {
                                      onClick={handleConfirmSubmit}
                                      disabled={!confirmDialog.amount}
                                  >
-                                     Send Quote
+                                     Submit Quote
                                  </Button>
                              </div>
                          </motion.div>

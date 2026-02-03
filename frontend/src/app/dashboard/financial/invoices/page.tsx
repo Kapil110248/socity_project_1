@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RoleGuard } from '@/components/auth/role-guard'
 import {
+  AlertTriangle,
   Plus,
   Search,
   Filter,
@@ -18,7 +19,7 @@ import {
   MessageSquare,
   Mail,
   Printer,
-  MoreHorizontal
+  MoreHorizontal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -88,6 +89,7 @@ export default function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [viewInvoice, setViewInvoice] = useState<any>(null)
+  const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null)
 
   // 1. Fetch Stats
   const { data: statsData, isLoading: statsLoading } = useQuery({
@@ -125,7 +127,22 @@ export default function InvoicesPage() {
     }
   })
 
-  // 5. Handle Export
+  // 5. Delete Invoice Mutation
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: BillingService.deleteInvoice,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['billing-stats'] })
+      toast.success('Invoice deleted successfully')
+      setInvoiceToDelete(null)
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || error.message || 'Failed to delete invoice'
+      toast.error(message)
+    }
+  })
+
+  // 6. Handle Export
   const handleExport = () => {
     if (!invoicesData || invoicesData.length === 0) {
       toast.error('No data to export');
@@ -476,6 +493,15 @@ export default function InvoicesPage() {
                         >
                           <MessageSquare className="h-4 w-4" />
                         </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Delete"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setInvoiceToDelete(invoice)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -540,6 +566,40 @@ export default function InvoicesPage() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+ 
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!invoiceToDelete} onOpenChange={() => setInvoiceToDelete(null)}>
+          <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+            <div className="bg-red-50 p-8 flex flex-col items-center text-center">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6 animate-pulse shadow-inner">
+                <AlertTriangle className="h-10 w-10 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-red-900 tracking-tight">Destructive Action</h3>
+              <p className="text-red-700 mt-4 text-sm leading-relaxed max-w-[280px]">
+                Are you sure you want to delete invoice <span className="font-extrabold text-red-900 underline decoration-2 offset-2">#{invoiceToDelete?.invoiceNo || invoiceToDelete?.id}</span>?
+                <br />
+                <span className="opacity-75 italic mt-2 block">This record will be permanently purged from all reports.</span>
+              </p>
+            </div>
+ 
+            <div className="p-6 bg-white flex justify-end gap-3 border-t border-gray-100">
+              <Button 
+                variant="outline" 
+                onClick={() => setInvoiceToDelete(null)}
+                className="hover:bg-gray-50 border-gray-200 transition-all duration-200 px-6"
+              >
+                No, Keep Record
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteInvoiceMutation.mutate(invoiceToDelete.id)}
+                className="bg-red-600 hover:bg-red-700 px-8 font-bold shadow-lg shadow-red-200 hover:shadow-red-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
+              >
+                Yes, Delete Permanent
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
