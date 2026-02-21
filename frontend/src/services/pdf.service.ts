@@ -40,11 +40,21 @@ export const PDFService = {
 
             // Table
             const tableColumn = ["Description", "Quantity", "Amount (INR)"];
-            const tableRows = [
-                ["Maintenance Charges", "1", (invoice.maintenance || invoice.amount || 0).toLocaleString()],
-                ["Utility Charges", "1", (invoice.utilities || 0).toLocaleString()],
-                ["Penalty / Late Fee", "1", (invoice.penalty || 0).toLocaleString()],
-            ];
+            let tableRows = [];
+
+            if (invoice.items && invoice.items.length > 0) {
+                tableRows = invoice.items.map((item: any) => [
+                    item.name,
+                    "1",
+                    item.amount.toLocaleString()
+                ]);
+            } else {
+                tableRows = [
+                    ["Maintenance Charges", "1", (invoice.maintenance || 0).toLocaleString()],
+                    ["Utility Charges", "1", (invoice.utilities || 0).toLocaleString()],
+                    ["Penalty / Late Fee", "1", (invoice.penalty || 0).toLocaleString()],
+                ];
+            }
 
             autoTable(doc, {
                 startY: 80,

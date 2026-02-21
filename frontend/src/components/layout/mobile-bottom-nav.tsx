@@ -34,6 +34,7 @@ import {
   Phone,
   Headphones,
   ShoppingBag,
+  CreditCard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useAuthStore } from '@/lib/stores/auth-store'
@@ -104,6 +105,13 @@ export function MobileBottomNav() {
       href: '/dashboard/marketplace',
       color: 'text-orange-500',
       bgColor: 'bg-orange-50',
+    },
+    {
+      icon: CreditCard,
+      label: 'Dues',
+      href: '/dashboard/residents/dues',
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-50',
     },
     {
       icon: Building,
@@ -398,6 +406,13 @@ export function MobileBottomNav() {
       color: 'text-indigo-500',
       bgColor: 'bg-indigo-50',
     },
+    {
+      icon: FileText,
+      label: 'Rental Agreements',
+      href: '/dashboard/super-admin/rental-agreements',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+    },
   ]
 
   // Vendor navigation
@@ -486,24 +501,24 @@ export function MobileBottomNav() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl md:hidden"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-card rounded-t-3xl shadow-2xl md:hidden"
             >
               {/* Handle Bar */}
               <div className="flex justify-center py-3">
-                <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+                <div className="w-12 h-1.5 bg-gray-300 dark:bg-muted rounded-full" />
               </div>
 
               {/* Header */}
-              <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100">
+              <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100 dark:border-border">
                 <div>
-                  <h3 className="text-lg font-bold text-[#1e3a5f]">More Options</h3>
-                  <p className="text-xs text-gray-500">Quick access to all features</p>
+                  <h3 className="text-lg font-bold text-[#1e3a5f] dark:text-foreground">More Options</h3>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground">Quick access to all features</p>
                 </div>
                 <button
                   onClick={() => setIsMoreOpen(false)}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="p-2 rounded-full bg-gray-100 dark:bg-muted hover:bg-gray-200 dark:hover:bg-muted/80 transition-colors"
                 >
-                  <X className="h-5 w-5 text-gray-600" />
+                  <X className="h-5 w-5 text-gray-600 dark:text-muted-foreground" />
                 </button>
               </div>
 
@@ -521,21 +536,21 @@ export function MobileBottomNav() {
                         className={cn(
                           'flex flex-col items-center justify-center p-3 rounded-2xl transition-all',
                           isActive
-                            ? 'bg-teal-50 ring-2 ring-teal-500'
-                            : 'hover:bg-gray-50 active:scale-95'
+                            ? 'bg-teal-50 dark:bg-teal-900/20 ring-2 ring-teal-500'
+                            : 'hover:bg-gray-50 dark:hover:bg-muted active:scale-95'
                         )}
                       >
                         <div
                           className={cn(
                             'p-3 rounded-xl mb-2 transition-colors',
-                            isActive ? 'bg-teal-500 text-white' : item.bgColor
+                            isActive ? 'bg-teal-500 text-white' : (item.bgColor + ' dark:bg-opacity-20')
                           )}
                         >
                           <Icon className={cn('h-5 w-5', isActive ? 'text-white' : item.color)} />
                         </div>
                         <span className={cn(
                           'text-xs font-medium',
-                          isActive ? 'text-teal-600' : 'text-gray-700'
+                          isActive ? 'text-teal-600 dark:text-teal-400' : 'text-gray-700 dark:text-muted-foreground'
                         )}>
                           {item.label}
                         </span>
@@ -545,21 +560,21 @@ export function MobileBottomNav() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
+                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-border">
+                  <p className="text-xs font-semibold text-gray-400 dark:text-muted-foreground uppercase tracking-wider mb-3 px-2">
                     Account
                   </p>
                   <div className="space-y-2">
                     <button
                       onClick={() => handleNavigation(isSuperAdmin ? '/dashboard/super-admin/settings' : '/dashboard/settings')}
-                      className="flex items-center w-full gap-3 py-3 px-4 rounded-xl hover:bg-gray-50 transition-colors"
+                      className="flex items-center w-full gap-3 py-3 px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-muted transition-colors"
                     >
-                      <div className="p-2 rounded-lg bg-blue-50">
-                        <User className="h-5 w-5 text-blue-500" />
+                      <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                        <User className="h-5 w-5 text-blue-500 dark:text-blue-400" />
                       </div>
                       <div className="flex-1 text-left">
-                        <span className="text-sm font-medium text-gray-900">My Profile</span>
-                        <p className="text-xs text-gray-500">View and edit your profile</p>
+                        <span className="text-sm font-medium text-gray-900 dark:text-foreground">My Profile</span>
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground">View and edit your profile</p>
                       </div>
                     </button>
                     {!isIndividual && (
@@ -569,27 +584,27 @@ export function MobileBottomNav() {
                             isAdmin ? '/dashboard/admin/complaints' :
                               '/dashboard/helpdesk/tickets'
                         )}
-                        className="flex items-center w-full gap-3 py-3 px-4 rounded-xl hover:bg-gray-50 transition-colors"
+                        className="flex items-center w-full gap-3 py-3 px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-muted transition-colors"
                       >
-                        <div className="p-2 rounded-lg bg-purple-50">
-                          <HelpCircle className="h-5 w-5 text-purple-500" />
+                        <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                          <HelpCircle className="h-5 w-5 text-purple-500 dark:text-purple-400" />
                         </div>
                         <div className="flex-1 text-left">
-                          <span className="text-sm font-medium text-gray-900">Help & Support</span>
-                          <p className="text-xs text-gray-500">Get help using the app</p>
+                          <span className="text-sm font-medium text-gray-900 dark:text-foreground">Help & Support</span>
+                          <p className="text-xs text-gray-500 dark:text-muted-foreground">Get help using the app</p>
                         </div>
                       </button>
                     )}
                     <button
                       onClick={handleLogout}
-                      className="flex items-center w-full gap-3 py-3 px-4 rounded-xl hover:bg-red-50 transition-colors"
+                      className="flex items-center w-full gap-3 py-3 px-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
-                      <div className="p-2 rounded-lg bg-red-50">
-                        <LogOut className="h-5 w-5 text-red-500" />
+                      <div className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20">
+                        <LogOut className="h-5 w-5 text-red-500 dark:text-red-400" />
                       </div>
                       <div className="flex-1 text-left">
-                        <span className="text-sm font-medium text-red-600">Logout</span>
-                        <p className="text-xs text-gray-500">Sign out of your account</p>
+                        <span className="text-sm font-medium text-red-600 dark:text-red-400">Logout</span>
+                        <p className="text-xs text-gray-500 dark:text-muted-foreground">Sign out of your account</p>
                       </div>
                     </button>
                   </div>
@@ -601,7 +616,7 @@ export function MobileBottomNav() {
       </AnimatePresence>
 
       {/* Mobile Bottom Navigation - IGATESECURITY Style */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-card md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-gray-100 dark:border-border">
         {/* Safe area padding for iOS */}
         <div className="grid grid-cols-5 h-16 pb-safe">
           {primaryNav.map((item) => {
@@ -620,7 +635,7 @@ export function MobileBottomNav() {
                   <div className="absolute -top-6 p-4 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 shadow-lg shadow-teal-500/30">
                     <Icon className="h-6 w-6 text-white" />
                   </div>
-                  <span className="text-[9px] font-bold text-teal-600 mt-8">
+                  <span className="text-[9px] font-bold text-teal-600 dark:text-teal-400 mt-8">
                     {item.label}
                   </span>
                 </button>
@@ -634,8 +649,8 @@ export function MobileBottomNav() {
                 className={cn(
                   'flex flex-col items-center justify-center space-y-0.5 transition-all relative',
                   isActive
-                    ? 'text-teal-600'
-                    : 'text-gray-400 hover:text-gray-600 active:bg-gray-50'
+                    ? 'text-teal-600 dark:text-teal-400'
+                    : 'text-gray-400 dark:text-muted-foreground hover:text-gray-600 dark:hover:text-foreground active:bg-gray-50 dark:active:bg-muted'
                 )}
               >
                 {isActive && (
@@ -645,10 +660,10 @@ export function MobileBottomNav() {
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
-                <Icon className={cn('h-5 w-5', isActive && 'text-teal-600')} />
+                <Icon className={cn('h-5 w-5', isActive && 'text-teal-600 dark:text-teal-400')} />
                 <span className={cn(
                   'text-[9px] font-bold tracking-wide',
-                  isActive ? 'text-teal-600' : 'text-gray-500'
+                  isActive ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-muted-foreground'
                 )}>
                   {item.label}
                 </span>
@@ -662,8 +677,8 @@ export function MobileBottomNav() {
             className={cn(
               'flex flex-col items-center justify-center space-y-0.5 transition-all relative',
               isMoreOpen
-                ? 'text-teal-600'
-                : 'text-gray-400 hover:text-gray-600 active:bg-gray-50'
+                ? 'text-teal-600 dark:text-teal-400'
+                : 'text-gray-400 dark:text-muted-foreground hover:text-gray-600 dark:hover:text-foreground active:bg-gray-50 dark:active:bg-muted'
             )}
           >
             {isMoreOpen && (
@@ -673,10 +688,10 @@ export function MobileBottomNav() {
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               />
             )}
-            <MoreHorizontal className={cn('h-5 w-5', isMoreOpen && 'text-teal-600')} />
+            <MoreHorizontal className={cn('h-5 w-5', isMoreOpen && 'text-teal-600 dark:text-teal-400')} />
             <span className={cn(
               'text-[9px] font-bold tracking-wide',
-              isMoreOpen ? 'text-teal-600' : 'text-gray-500'
+              isMoreOpen ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-muted-foreground'
             )}>
               MORE
             </span>

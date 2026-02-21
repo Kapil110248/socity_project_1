@@ -346,11 +346,11 @@ export function AdminDashboard() {
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-teal-600" />
+                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                   Guidelines & Announcements
                 </CardTitle>
-                <Badge variant="outline" className="bg-teal-50 text-teal-600 border-teal-200">
+                <Badge variant="outline" className="bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800">
                   {guidelines.length} item{guidelines.length !== 1 ? 's' : ''}
                 </Badge>
               </div>
@@ -361,23 +361,23 @@ export function AdminDashboard() {
                 {(guidelines as any[]).slice(0, 5).map((g: any) => (
                   <li
                     key={g.id}
-                    className="flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-100"
+                    className="flex flex-col gap-1 p-3 rounded-lg bg-muted border border-border"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-gray-900">{g.title}</span>
+                      <span className="font-semibold text-foreground">{g.title}</span>
                       {g.category && (
                         <Badge variant="secondary" className="text-xs">{g.category}</Badge>
                       )}
                       {g.society?.name && (
-                        <span className="text-xs text-gray-500">· {g.society.name}</span>
+                        <span className="text-xs text-muted-foreground">· {g.society.name}</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">{g.content}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{g.content}</p>
                   </li>
                 ))}
               </ul>
               {guidelines.length > 5 && (
-                <p className="text-sm text-gray-500 mt-3">+ {guidelines.length - 5} more</p>
+                <p className="text-sm text-muted-foreground mt-3">+ {guidelines.length - 5} more</p>
               )}
             </CardContent>
           </Card>
@@ -389,42 +389,42 @@ export function AdminDashboard() {
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-gray-800">Community Overview</CardTitle>
-              <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">Live Data</Badge>
+              <CardTitle className="text-lg font-bold text-foreground">Community Overview</CardTitle>
+              <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800">Live Data</Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Units Card */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/10 dark:to-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-blue-600 rounded-lg">
+                  <div className="p-2 bg-blue-600 dark:bg-blue-700 rounded-lg">
                     <Home className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Total Units</p>
-                    <p className="text-2xl font-bold text-gray-900">{communityOverview.totalUnits}</p>
+                    <p className="text-sm text-muted-foreground font-medium">Total Units</p>
+                    <p className="text-2xl font-bold text-foreground">{communityOverview.totalUnits}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
                       Occupied
                     </span>
-                    <span className="font-semibold text-green-600">{communityOverview.occupiedUnits}</span>
+                    <span className="font-semibold text-green-600 dark:text-green-500">{communityOverview.occupiedUnits}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Home className="h-3.5 w-3.5 text-orange-500" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Home className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
                       Vacant
                     </span>
-                    <span className="font-semibold text-orange-500">{communityOverview.vacantUnits}</span>
+                    <span className="font-semibold text-orange-500 dark:text-orange-400">{communityOverview.vacantUnits}</span>
                   </div>
-                  <div className="mt-2 pt-2 border-t border-blue-300">
+                  <div className="mt-2 pt-2 border-t border-blue-300 dark:border-blue-800">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">Occupancy Rate</span>
-                      <span className="font-bold text-blue-700">
+                      <span className="text-muted-foreground">Occupancy Rate</span>
+                      <span className="font-bold text-blue-700 dark:text-blue-400">
                         {((communityOverview.occupiedUnits / communityOverview.totalUnits) * 100).toFixed(1)}%
                       </span>
                     </div>
@@ -433,71 +433,71 @@ export function AdminDashboard() {
               </div>
 
               {/* Total Users Card */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/10 dark:to-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-purple-600 rounded-lg">
+                  <div className="p-2 bg-purple-600 dark:bg-purple-700 rounded-lg">
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Total Users</p>
-                    <p className="text-2xl font-bold text-gray-900">{communityOverview.totalUsers}</p>
+                    <p className="text-sm text-muted-foreground font-medium">Total Users</p>
+                    <p className="text-2xl font-bold text-foreground">{communityOverview.totalUsers}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <UserCheck className="h-3.5 w-3.5 text-green-600" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <UserCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
                       Active
                     </span>
-                    <span className="font-semibold text-green-600">{communityOverview.activeUsers}</span>
+                    <span className="font-semibold text-green-600 dark:text-green-500">{communityOverview.activeUsers}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <UserMinus className="h-3.5 w-3.5 text-gray-500" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <UserMinus className="h-3.5 w-3.5 text-muted-foreground" />
                       Inactive
                     </span>
-                    <span className="font-semibold text-gray-500">{communityOverview.inactiveUsers}</span>
+                    <span className="font-semibold text-muted-foreground">{communityOverview.inactiveUsers}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-orange-500" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
                       Pending
                     </span>
-                    <span className="font-semibold text-orange-500">{communityOverview.pendingApprovalUsers}</span>
+                    <span className="font-semibold text-orange-500 dark:text-orange-400">{communityOverview.pendingApprovalUsers}</span>
                   </div>
                 </div>
               </div>
 
               {/* Owners vs Tenants Card */}
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/10 dark:to-emerald-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-emerald-600 rounded-lg">
+                  <div className="p-2 bg-emerald-600 dark:bg-emerald-700 rounded-lg">
                     <Building2 className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Residents</p>
-                    <p className="text-2xl font-bold text-gray-900">{communityOverview.owners + communityOverview.tenants}</p>
+                    <p className="text-sm text-muted-foreground font-medium">Residents</p>
+                    <p className="text-2xl font-bold text-foreground">{communityOverview.owners + communityOverview.tenants}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <UserCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" />
                       Owners
                     </span>
-                    <span className="font-semibold text-emerald-700">{communityOverview.owners}</span>
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-500">{communityOverview.owners}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <UserPlus className="h-3.5 w-3.5 text-blue-600" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <UserPlus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-500" />
                       Tenants
                     </span>
-                    <span className="font-semibold text-blue-600">{communityOverview.tenants}</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-500">{communityOverview.tenants}</span>
                   </div>
-                  <div className="mt-2 pt-2 border-t border-emerald-300">
+                  <div className="mt-2 pt-2 border-t border-emerald-300 dark:border-emerald-800">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">Owner Ratio</span>
-                      <span className="font-bold text-emerald-700">
+                      <span className="text-muted-foreground">Owner Ratio</span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-500">
                         {((communityOverview.owners / (communityOverview.owners + communityOverview.tenants)) * 100).toFixed(1)}%
                       </span>
                     </div>
@@ -506,20 +506,20 @@ export function AdminDashboard() {
               </div>
 
               {/* Never Logged In Card */}
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4 border border-amber-200">
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/10 dark:to-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-amber-600 rounded-lg">
+                  <div className="p-2 bg-amber-600 dark:bg-amber-700 rounded-lg">
                     <UserX className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Never Logged In</p>
-                    <p className="text-2xl font-bold text-gray-900">{communityOverview.neverLoggedIn}</p>
+                    <p className="text-sm text-muted-foreground font-medium">Never Logged In</p>
+                    <p className="text-2xl font-bold text-foreground">{communityOverview.neverLoggedIn}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">% of Total Users</span>
-                    <span className="font-semibold text-amber-700">
+                    <span className="text-muted-foreground">% of Total Users</span>
+                    <span className="font-semibold text-amber-700 dark:text-amber-500">
                       {((communityOverview.neverLoggedIn / communityOverview.totalUsers) * 100).toFixed(1)}%
                     </span>
                   </div>
@@ -527,7 +527,7 @@ export function AdminDashboard() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-full border-amber-300 text-amber-700 hover:bg-amber-200"
+                      className="w-full border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-500 hover:bg-amber-200 dark:hover:bg-amber-900/20"
                       onClick={() => showNotification('Sending reminder emails...')}
                     >
                       <Mail className="h-3.5 w-3.5 mr-1" />
@@ -546,42 +546,42 @@ export function AdminDashboard() {
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-gray-800">Financial Overview</CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">This Month</Badge>
+              <CardTitle className="text-lg font-bold text-foreground">Financial Overview</CardTitle>
+              <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800">This Month</Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Maintenance Collection */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 border border-green-200">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/10 dark:to-emerald-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-green-600 rounded-lg">
+                  <div className="p-2 bg-green-600 dark:bg-green-700 rounded-lg">
                     <DollarSign className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Maintenance</p>
-                    <p className="text-xl font-bold text-gray-900">Rs. {(financialOverview.totalMaintenance / 100000).toFixed(2)}L</p>
+                    <p className="text-sm text-muted-foreground font-medium">Maintenance</p>
+                    <p className="text-xl font-bold text-foreground">Rs. {(financialOverview.totalMaintenance / 100000).toFixed(2)}L</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
                       Collected
                     </span>
-                    <span className="font-semibold text-green-600">Rs. {(financialOverview.maintenanceCollected / 100000).toFixed(2)}L</span>
+                    <span className="font-semibold text-green-600 dark:text-green-500">Rs. {(financialOverview.maintenanceCollected / 100000).toFixed(2)}L</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-orange-500" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
                       Pending
                     </span>
-                    <span className="font-semibold text-orange-500">Rs. {(financialOverview.maintenancePending / 100000).toFixed(2)}L</span>
+                    <span className="font-semibold text-orange-500 dark:text-orange-400">Rs. {(financialOverview.maintenancePending / 100000).toFixed(2)}L</span>
                   </div>
-                  <div className="mt-2 pt-2 border-t border-green-300">
+                  <div className="mt-2 pt-2 border-t border-green-300 dark:border-green-800">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">Collection Rate</span>
-                      <span className="font-bold text-green-700">
+                      <span className="text-muted-foreground">Collection Rate</span>
+                      <span className="font-bold text-green-700 dark:text-green-500">
                         {((financialOverview.maintenanceCollected / financialOverview.totalMaintenance) * 100).toFixed(1)}%
                       </span>
                     </div>
@@ -590,29 +590,29 @@ export function AdminDashboard() {
               </div>
 
               {/* Outstanding Amount */}
-              <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-xl p-4 border border-red-200">
+              <div className="bg-gradient-to-br from-red-50 to-rose-100 dark:from-red-900/10 dark:to-rose-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-red-600 rounded-lg">
+                  <div className="p-2 bg-red-600 dark:bg-red-700 rounded-lg">
                     <AlertCircle className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Outstanding</p>
-                    <p className="text-xl font-bold text-red-700">Rs. {(financialOverview.totalOutstanding / 100000).toFixed(2)}L</p>
+                    <p className="text-sm text-muted-foreground font-medium">Outstanding</p>
+                    <p className="text-xl font-bold text-red-700 dark:text-red-500">Rs. {(financialOverview.totalOutstanding / 100000).toFixed(2)}L</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Defaulters</span>
-                    <span className="font-semibold text-red-600">{financialOverview.defaultersCount} units</span>
+                    <span className="text-muted-foreground">Defaulters</span>
+                    <span className="font-semibold text-red-600 dark:text-red-500">{financialOverview.defaultersCount} units</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Late Fees</span>
-                    <span className="font-semibold text-orange-600">Rs. {(financialOverview.lateFees / 1000).toFixed(2)}K</span>
+                    <span className="text-muted-foreground">Late Fees</span>
+                    <span className="font-semibold text-orange-600 dark:text-orange-500">Rs. {(financialOverview.lateFees / 1000).toFixed(2)}K</span>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full mt-2 border-red-300 text-red-700 hover:bg-red-100"
+                    className="w-full mt-2 border-red-300 dark:border-red-800 text-red-700 dark:text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20"
                     onClick={() => router.push('/dashboard/admin/defaulters')}
                   >
                     View Defaulters
@@ -620,36 +620,37 @@ export function AdminDashboard() {
                 </div>
               </div>
 
+
               {/* Parking & Amenity Income */}
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-4 border border-blue-200">
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-900/10 dark:to-cyan-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-blue-600 rounded-lg">
+                  <div className="p-2 bg-blue-600 dark:bg-blue-700 rounded-lg">
                     <Car className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Other Income</p>
-                    <p className="text-xl font-bold text-gray-900">Rs. {((financialOverview.parkingIncome + financialOverview.amenityIncome) / 100000).toFixed(2)}L</p>
+                    <p className="text-sm text-muted-foreground font-medium">Other Income</p>
+                    <p className="text-xl font-bold text-foreground">Rs. {((financialOverview.parkingIncome + financialOverview.amenityIncome) / 100000).toFixed(2)}L</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Car className="h-3.5 w-3.5 text-blue-600" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Car className="h-3.5 w-3.5 text-blue-600 dark:text-blue-500" />
                       Parking
                     </span>
-                    <span className="font-semibold text-blue-600">Rs. {(financialOverview.parkingIncome / 1000).toFixed(0)}K</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-500">Rs. {(financialOverview.parkingIncome / 1000).toFixed(0)}K</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Building2 className="h-3.5 w-3.5 text-purple-600" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Building2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-500" />
                       Amenity
                     </span>
-                    <span className="font-semibold text-purple-600">Rs. {(financialOverview.amenityIncome / 1000).toFixed(0)}K</span>
+                    <span className="font-semibold text-purple-600 dark:text-purple-500">Rs. {(financialOverview.amenityIncome / 1000).toFixed(0)}K</span>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full mt-2 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="w-full mt-2 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/20"
                     onClick={() => router.push('/dashboard/parking/payments')}
                   >
                     View Parking
@@ -658,35 +659,35 @@ export function AdminDashboard() {
               </div>
 
               {/* Assets & Vendor Payments */}
-              <div className="bg-gradient-to-br from-purple-50 to-violet-100 rounded-xl p-4 border border-purple-200">
+              <div className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/10 dark:to-violet-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800/50">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-purple-600 rounded-lg">
+                  <div className="p-2 bg-purple-600 dark:bg-purple-700 rounded-lg">
                     <Package className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium">Assets & Expenses</p>
-                    <p className="text-xl font-bold text-gray-900">Rs. {(financialOverview.totalAssetValue / 10000000).toFixed(2)}Cr</p>
+                    <p className="text-sm text-muted-foreground font-medium">Assets & Expenses</p>
+                    <p className="text-xl font-bold text-foreground">Rs. {(financialOverview.totalAssetValue / 10000000).toFixed(2)}Cr</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Wrench className="h-3.5 w-3.5 text-orange-500" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Wrench className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />
                       Monthly Exp
                     </span>
-                    <span className="font-semibold text-orange-600">Rs. {(financialOverview.monthlyAssetExpense / 100000).toFixed(2)}L</span>
+                    <span className="font-semibold text-orange-600 dark:text-orange-500">Rs. {(financialOverview.monthlyAssetExpense / 100000).toFixed(2)}L</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <CreditCard className="h-3.5 w-3.5 text-red-500" />
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <CreditCard className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
                       Vendor Due
                     </span>
-                    <span className="font-semibold text-red-600">Rs. {(financialOverview.pendingVendorPayments / 1000).toFixed(0)}K</span>
+                    <span className="font-semibold text-red-600 dark:text-red-500">Rs. {(financialOverview.pendingVendorPayments / 1000).toFixed(0)}K</span>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full mt-2 border-purple-300 text-purple-700 hover:bg-purple-100"
+                    className="w-full mt-2 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-500 hover:bg-purple-100 dark:hover:bg-purple-900/20"
                     onClick={() => router.push('/dashboard/accounting/vendor-payments')}
                   >
                     Pay Vendors
@@ -710,7 +711,7 @@ export function AdminDashboard() {
                     <div className={`p-3 ${stat.bgColor} rounded-xl`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <Badge variant="outline" className={`text-xs ${stat.trendUp ? 'text-green-600 border-green-200 bg-green-50' : 'text-blue-600 border-blue-200 bg-blue-50'}`}>
+                    <Badge variant="outline" className={`text-xs ${stat.trendUp ? 'text-green-600 dark:text-green-400 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' : 'text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'}`}>
                       {stat.trendUp ? (
                         <ArrowUpRight className="h-3 w-3 mr-0.5" />
                       ) : (
@@ -720,8 +721,8 @@ export function AdminDashboard() {
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 font-medium mb-1">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground font-medium mb-1">{stat.title}</p>
+                    <p className="text-3xl font-bold text-foreground">{stat.value}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -736,19 +737,19 @@ export function AdminDashboard() {
         <motion.div variants={itemVariants}>
           <Card className="border-0 shadow-md h-full">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-bold text-gray-800">Purchase Requests</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Purchase Requests</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-emerald-50 rounded-xl p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-1">Open</p>
-                  <p className="text-3xl font-bold text-emerald-600">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Open</p>
+                  <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-500">
                     {String(stats?.activity.openPurchaseRequests || 0).padStart(2, '0')}
                   </p>
                 </div>
-                <div className="bg-orange-50 rounded-xl p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-1">Un-Finalized</p>
-                  <p className="text-3xl font-bold text-orange-500">
+                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Un-Finalized</p>
+                  <p className="text-3xl font-bold text-orange-500 dark:text-orange-400">
                     {String(stats?.activity.unfinalizedPurchaseRequests || 0).padStart(2, '0')}
                   </p>
                 </div>
@@ -768,15 +769,15 @@ export function AdminDashboard() {
           <Card className="border-0 shadow-md h-full">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-gray-800">Helpdesk Tickets</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">Helpdesk Tickets</CardTitle>
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
-                    <span className="text-blue-600 font-semibold">Open Tickets</span>
-                    <span className="text-blue-600 font-bold">{stats?.activity.openComplaints || 0}</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-semibold">Open Tickets</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">{stats?.activity.openComplaints || 0}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-red-500 font-semibold">Escalated Tickets</span>
-                    <span className="text-red-500 font-bold">{stats?.activity.escalatedComplaints || 0}</span>
+                    <span className="text-red-500 dark:text-red-400 font-semibold">Escalated Tickets</span>
+                    <span className="text-red-500 dark:text-red-400 font-bold">{stats?.activity.escalatedComplaints || 0}</span>
                   </div>
                 </div>
               </div>
@@ -787,7 +788,10 @@ export function AdminDashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
                   <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+                    itemStyle={{ color: 'var(--foreground)' }}
+                  />
                   <Bar dataKey="open" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Open" />
                   <Bar dataKey="resolved" fill="#ef4444" radius={[4, 4, 0, 0]} name="Escalated" />
                 </BarChart>

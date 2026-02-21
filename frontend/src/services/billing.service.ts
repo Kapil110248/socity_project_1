@@ -1,6 +1,40 @@
 import api from '@/lib/api';
 import { API_CONFIG } from '@/config/api.config';
 
+export interface InvoiceItem {
+  id: number;
+  invoiceId: number;
+  name: string;
+  amount: number;
+}
+
+export interface Invoice {
+  id: number;
+  invoiceNo: string;
+  societyId: number;
+  unitId: number;
+  residentId?: number;
+  amount: number;
+  maintenance: number;
+  utilities: number;
+  penalty: number;
+  description?: string;
+  dueDate: string;
+  status: string;
+  paidDate?: string;
+  paymentMode?: string;
+  items?: InvoiceItem[];
+  unit?: {
+    number: string;
+    block: string;
+    type: string;
+  };
+  resident?: {
+    name: string;
+    phone: string;
+  };
+}
+
 export const BillingService = {
   getInvoices: async (params?: {
     status?: string;
@@ -53,7 +87,7 @@ export const BillingService = {
     const response = await api.get(API_CONFIG.BILLING.DEFAULTER_STATS);
     return response.data;
   },
-  
+
   getPlatformInvoices: async () => {
     const response = await api.get(API_CONFIG.BILLING.PLATFORM_INVOICES);
     return response.data;

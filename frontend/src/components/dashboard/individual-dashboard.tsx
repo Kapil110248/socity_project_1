@@ -58,16 +58,16 @@ export function IndividualDashboard() {
             {/* Welcome Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+                    <h1 className="text-4xl font-black text-foreground tracking-tight">
                         Hello, {user?.name.split(' ')[0]}!
                     </h1>
-                    <p className="text-gray-500 mt-2 font-medium text-lg">
+                    <p className="text-muted-foreground mt-2 font-medium text-lg">
                         Welcome to your personal safety and services hub.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Link href="/dashboard/settings">
-                        <Button variant="outline" className="rounded-2xl h-12 border-0 ring-1 ring-black/5 shadow-sm px-6 font-bold gap-2">
+                        <Button variant="outline" className="rounded-2xl h-12 border-0 ring-1 ring-border shadow-sm px-6 font-bold gap-2">
                             <Settings className="h-4 w-4" />
                             Settings
                         </Button>
@@ -103,30 +103,30 @@ export function IndividualDashboard() {
                     </div>
                 </Card>
 
-                <Card className="p-8 border-0 shadow-xl bg-white rounded-[40px] ring-1 ring-black/5 relative overflow-hidden group">
-                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                        <Wrench className="h-6 w-6 text-blue-600" />
+                <Card className="p-8 border-0 shadow-xl bg-card rounded-[40px] ring-1 ring-border relative overflow-hidden group">
+                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-6">
+                        <Wrench className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Book Service</h3>
-                    <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                    <h3 className="text-2xl font-bold text-foreground mb-2">Book Service</h3>
+                    <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
                         Request pest control, plumbing, or electrical services instantly.
                     </p>
                     <Link href="/dashboard/services">
-                        <Button variant="outline" className="w-full h-14 rounded-2xl font-black border-2 border-gray-100 hover:bg-gray-50 tracking-tight text-[#1e3a5f]">
+                        <Button variant="outline" className="w-full h-14 rounded-2xl font-black border-2 border-muted hover:bg-muted tracking-tight text-[#1e3a5f] dark:text-foreground">
                             EXPLORE SERVICES
                         </Button>
                     </Link>
                 </Card>
 
-                <Card className="p-8 border-0 shadow-xl bg-white rounded-[40px] ring-1 ring-black/5 relative overflow-hidden group">
-                    <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
-                        <Shield className="h-6 w-6 text-red-600" />
+                <Card className="p-8 border-0 shadow-xl bg-card rounded-[40px] ring-1 ring-border relative overflow-hidden group">
+                    <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mb-6">
+                        <Shield className="h-6 w-6 text-red-600 dark:text-red-400" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Security Hub</h3>
-                    <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                    <h3 className="text-2xl font-bold text-foreground mb-2">Security Hub</h3>
+                    <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
                         Monitor scan logs and manage emergency contacts.
                     </p>
-                    <Button variant="outline" className="w-full h-14 rounded-2xl font-black border-2 border-gray-100 hover:bg-gray-50 tracking-tight text-[#1e3a5f]">
+                    <Button variant="outline" className="w-full h-14 rounded-2xl font-black border-2 border-muted hover:bg-muted tracking-tight text-[#1e3a5f] dark:text-foreground">
                         VIEW LOGS
                     </Button>
                 </Card>
@@ -134,48 +134,48 @@ export function IndividualDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Recent Emergency Alerts */}
-                <Card className="border-0 shadow-xl bg-white rounded-[40px] ring-1 ring-black/5 overflow-hidden">
-                    <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
+                <Card className="border-0 shadow-xl bg-card rounded-[40px] ring-1 ring-border overflow-hidden">
+                    <CardHeader className="p-8 border-b border-border flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-xl font-black text-gray-900">Recent Emergency Alerts</CardTitle>
-                            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Live Updates</p>
+                            <CardTitle className="text-xl font-black text-foreground">Recent Emergency Alerts</CardTitle>
+                            <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest mt-1">Live Updates</p>
                         </div>
-                        <Badge className="bg-red-50 text-red-700 border-0 rounded-full font-black px-3">{recentAlerts.length}</Badge>
+                        <Badge className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-0 rounded-full font-black px-3">{recentAlerts.length}</Badge>
                     </CardHeader>
                     <CardContent className="p-4">
                         <div className="space-y-2">
                             {isLoadingLogs ? (
                                 <div className="py-20 text-center">
-                                    <Loader2 className="h-8 w-8 text-gray-200 animate-spin mx-auto mb-4" />
-                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Retrieving Alert History...</p>
+                                    <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mx-auto mb-4" />
+                                    <p className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Retrieving Alert History...</p>
                                 </div>
                             ) : recentAlerts.map((log: any) => (
-                                <div key={log.id} className="p-6 rounded-3xl bg-gray-50 hover:bg-gray-100 transition-all group">
+                                <div key={log.id} className="p-6 rounded-3xl bg-muted/50 hover:bg-muted transition-all group">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center font-bold text-red-600 shadow-sm text-xl">
+                                            <div className="w-12 h-12 rounded-2xl bg-card flex items-center justify-center font-bold text-red-600 dark:text-red-400 shadow-sm text-xl">
                                                 {log.visitorName?.charAt(0) || '?'}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{log.visitorName || 'Unknown Scanner'}</p>
+                                                <p className="font-bold text-foreground">{log.visitorName || 'Unknown Scanner'}</p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <Clock className="h-3 w-3 text-gray-400" />
-                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
                                                         {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(log.timestamp).toLocaleDateString()}
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
                                         {log.isEmergency && (
-                                            <Badge className="bg-red-100 text-red-700 border-0 rounded-full text-[10px] font-black px-2 shadow-none">URGENT</Badge>
+                                            <Badge className="bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-0 rounded-full text-[10px] font-black px-2 shadow-none">URGENT</Badge>
                                         )}
                                     </div>
-                                    <p className="mt-4 text-sm text-gray-500 italic font-medium">"{log.reason || 'No specific reason provided.'}"</p>
+                                    <p className="mt-4 text-sm text-muted-foreground italic font-medium">"{log.reason || 'No specific reason provided.'}"</p>
                                     <div className="mt-6 flex gap-3">
-                                        <Button className="flex-1 h-12 bg-white hover:bg-gray-50 text-[#1e3a5f] font-bold rounded-2xl ring-1 ring-black/5 gap-2 border-0">
+                                        <Button className="flex-1 h-12 bg-card hover:bg-muted text-[#1e3a5f] dark:text-foreground font-bold rounded-2xl ring-1 ring-border gap-2 border-0">
                                             <Phone className="h-4 w-4" /> CALL
                                         </Button>
-                                        <Button className="flex-1 h-12 bg-white hover:bg-gray-50 text-[#1e3a5f] font-bold rounded-2xl ring-1 ring-black/5 gap-2 border-0">
+                                        <Button className="flex-1 h-12 bg-card hover:bg-muted text-[#1e3a5f] dark:text-foreground font-bold rounded-2xl ring-1 ring-border gap-2 border-0">
                                             <Video className="h-4 w-4" /> VIDEO
                                         </Button>
                                     </div>
@@ -183,8 +183,8 @@ export function IndividualDashboard() {
                             ))}
                             {!isLoadingLogs && recentAlerts.length === 0 && (
                                 <div className="py-20 text-center">
-                                    <Bell className="h-12 w-12 text-gray-100 mx-auto mb-4" />
-                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No Recent Alerts</p>
+                                    <Bell className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+                                    <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No Recent Alerts</p>
                                 </div>
                             )}
                         </div>
@@ -192,41 +192,41 @@ export function IndividualDashboard() {
                 </Card>
 
                 {/* Recent Service Bookings */}
-                <Card className="border-0 shadow-xl bg-white rounded-[40px] ring-1 ring-black/5 overflow-hidden">
-                    <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
+                <Card className="border-0 shadow-xl bg-card rounded-[40px] ring-1 ring-border overflow-hidden">
+                    <CardHeader className="p-8 border-b border-border flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-xl font-black text-gray-900">Recent Service Bookings</CardTitle>
-                            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Status Tracking</p>
+                            <CardTitle className="text-xl font-black text-foreground">Recent Service Bookings</CardTitle>
+                            <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest mt-1">Status Tracking</p>
                         </div>
-                        <Badge className="bg-blue-50 text-blue-700 border-0 rounded-full font-black px-3">{recentInquiries.length}</Badge>
+                        <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-0 rounded-full font-black px-3">{recentInquiries.length}</Badge>
                     </CardHeader>
                     <CardContent className="p-4">
                         <div className="space-y-2">
                             {isLoadingInquiries ? (
                                 <div className="py-20 text-center">
-                                    <Loader2 className="h-8 w-8 text-gray-200 animate-spin mx-auto mb-4" />
-                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Syncing service status...</p>
+                                    <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mx-auto mb-4" />
+                                    <p className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Syncing service status...</p>
                                 </div>
                             ) : recentInquiries.map((inquiry: any) => (
-                                <div key={inquiry.id} className="p-6 rounded-3xl bg-gray-50 hover:bg-gray-100 transition-all">
+                                <div key={inquiry.id} className="p-6 rounded-3xl bg-muted/50 hover:bg-muted transition-all">
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-4">
-                                            <div className="p-3 bg-white rounded-2xl shadow-sm">
-                                                <Wrench className="h-5 w-5 text-blue-600" />
+                                            <div className="p-3 bg-card rounded-2xl shadow-sm">
+                                                <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900">{inquiry.serviceName}</p>
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{inquiry.providerName}</p>
+                                                <p className="font-bold text-foreground">{inquiry.serviceName}</p>
+                                                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{inquiry.providerName}</p>
                                             </div>
                                         </div>
-                                        <Badge className={`border-0 rounded-full text-[10px] font-black px-3 py-1 shadow-none uppercase ${inquiry.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                            inquiry.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-yellow-100 text-yellow-700'
+                                        <Badge className={`border-0 rounded-full text-[10px] font-black px-3 py-1 shadow-none uppercase ${inquiry.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
+                                            inquiry.status === 'confirmed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
+                                                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
                                             }`}>
                                             {inquiry.status}
                                         </Badge>
                                     </div>
-                                    <div className="flex items-center justify-between text-[10px] font-black text-gray-400 uppercase tracking-widest pt-4 border-t border-gray-100">
+                                    <div className="flex items-center justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest pt-4 border-t border-border">
                                         <div className="flex items-center gap-2">
                                             <Calendar className="h-3 w-3" />
                                             {inquiry.preferredDate || 'TBD'}
@@ -240,14 +240,14 @@ export function IndividualDashboard() {
                             ))}
                             {!isLoadingInquiries && recentInquiries.length === 0 && (
                                 <div className="py-20 text-center">
-                                    <History className="h-12 w-12 text-gray-100 mx-auto mb-4" />
-                                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No Recent Service Requests</p>
+                                    <History className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+                                    <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No Recent Service Requests</p>
                                 </div>
                             )}
                         </div>
                         {!isLoadingInquiries && recentInquiries.length > 0 && (
                             <Link href="/dashboard/services">
-                                <Button variant="ghost" className="w-full mt-4 h-12 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-600">
+                                <Button variant="ghost" className="w-full mt-4 h-12 rounded-2xl text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
                                     VIEW ALL SERVICE HISTORY <ArrowRight className="h-3 w-3 ml-2" />
                                 </Button>
                             </Link>

@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import api from '@/lib/api'
+import { ModeToggle } from '@/components/mode-toggle'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -75,7 +76,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background">
+      <div className="absolute top-4 right-4 z-50">
+        <ModeToggle />
+      </div>
+
       {/* Left Side - Branding */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
@@ -149,63 +154,63 @@ export default function LoginPage() {
       </motion.div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-8 bg-gray-50">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-8 bg-background">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <Card className="p-6 md:p-8 shadow-xl border-0">
+          <Card className="p-6 md:p-8 shadow-xl border-border bg-card">
             <div className="mb-8 text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl mb-4 shadow-lg shadow-teal-500/30">
                 <Building2 className="h-8 w-8 text-white" />
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-[#1e3a5f] mb-2">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                 Welcome Back
               </h2>
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 Sign in to access your community dashboard
               </p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 font-medium">
+                <Label htmlFor="email" className="text-foreground font-medium">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="admin@society.com"
-                    className="pl-10 h-12 border-gray-200 focus:border-teal-500 focus:ring-teal-500/20"
+                    className="pl-10 h-12 border-input bg-background focus:border-teal-500 focus:ring-teal-500/20 text-foreground"
                     {...register('email')}
                   />
                 </div>
                 {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email.message}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-700 font-medium">
+                <Label htmlFor="password" className="text-foreground font-medium">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
-                    className="pl-10 pr-10 h-12 border-gray-200 focus:border-teal-500 focus:ring-teal-500/20"
+                    className="pl-10 pr-10 h-12 border-input bg-background focus:border-teal-500 focus:ring-teal-500/20 text-foreground"
                     {...register('password')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -215,7 +220,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-600">{errors.password.message}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
                 )}
               </div>
 
@@ -224,24 +229,24 @@ export default function LoginPage() {
                   <input
                     id="remember"
                     type="checkbox"
-                    className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    className="w-4 h-4 rounded border-input dark:bg-muted text-teal-600 focus:ring-teal-500"
                   />
-                  <label htmlFor="remember" className="text-sm text-gray-600">
+                  <label htmlFor="remember" className="text-sm text-muted-foreground">
                     Remember me for 30 days
                   </label>
                 </div>
                 <Link
                   href="/auth/forgot-password"
-                  className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                  className="text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium"
                 >
                   Forgot password?
                 </Link>
               </div>
 
               {/* Demo Credentials Section */}
-              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-xl p-4">
+              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 border border-teal-200 dark:border-teal-800 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-[#1e3a5f] flex items-center">
+                  <p className="text-sm font-semibold text-[#1e3a5f] dark:text-teal-100 flex items-center">
                     <Sparkles className="h-4 w-4 mr-2 text-teal-500" />
                     Quick Demo Login
                   </p>
@@ -252,18 +257,18 @@ export default function LoginPage() {
                       key={account.role}
                       type="button"
                       onClick={() => handleDemoLogin(account.email, account.password)}
-                      className="flex flex-col items-center justify-center p-3 bg-white border-2 border-teal-100 rounded-xl hover:border-teal-400 hover:bg-teal-50 transition-all group shadow-sm"
+                      className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-800 border-2 border-teal-100 dark:border-teal-900 rounded-xl hover:border-teal-400 dark:hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/50 transition-all group shadow-sm"
                     >
                       <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
                         {account.icon}
                       </span>
-                      <span className="text-xs font-semibold text-gray-700">
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                         {account.role}
                       </span>
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-teal-700 mt-2 text-center">
+                <p className="text-xs text-teal-700 dark:text-teal-400 mt-2 text-center">
                   Click any role to auto-fill credentials
                 </p>
               </div>
@@ -283,13 +288,7 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-
-
-
-
           </Card>
-
-
         </motion.div>
       </div>
     </div>

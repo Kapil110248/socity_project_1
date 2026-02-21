@@ -7,15 +7,16 @@ import { AdvertisementBanner } from '@/components/dashboard/advertisement-banner
 // Loading skeleton for dashboards
 const DashboardSkeleton = () => (
   <div className="w-full h-full p-6 space-y-6 animate-pulse">
-    <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+    <div className="h-8 bg-muted rounded w-1/4"></div>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="h-32 bg-gray-200 rounded-xl"></div>
-      <div className="h-32 bg-gray-200 rounded-xl"></div>
-      <div className="h-32 bg-gray-200 rounded-xl"></div>
+      <div className="h-32 bg-muted rounded-xl"></div>
+      <div className="h-32 bg-muted rounded-xl"></div>
+      <div className="h-32 bg-muted rounded-xl"></div>
     </div>
-    <div className="h-64 bg-gray-200 rounded-xl"></div>
+    <div className="h-64 bg-muted rounded-xl"></div>
   </div>
 )
+
 
 const SuperAdminDashboard = dynamic(
   () => import('@/components/dashboard/super-admin-dashboard').then(mod => mod.SuperAdminDashboard),
@@ -49,7 +50,7 @@ export default function DashboardPage() {
   return (
     <div className="w-full flex-1 md:p-6 space-y-6">
       <AdvertisementBanner />
-      
+
       {/* Role-specific dashboards */}
       {user?.role === 'super_admin' && <SuperAdminDashboard />}
       {user?.role === 'admin' && <AdminDashboard />}

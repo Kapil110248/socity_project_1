@@ -42,7 +42,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar - Hidden on mobile for all users */}
       <div className="hidden md:block">
         <Sidebar />
@@ -60,3 +60,4 @@ export default function DashboardLayout({
     </div>
   )
 }
+

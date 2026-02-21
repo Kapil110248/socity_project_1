@@ -297,14 +297,14 @@ export function SecurityDashboard() {
           return (
             <motion.div key={index} variants={itemVariants}>
               <Link href={feature.href}>
-                <Card className="border-0 shadow-md hover:shadow-lg transition-all cursor-pointer h-full">
+                <Card className="border-0 shadow-md hover:shadow-lg transition-all cursor-pointer h-full bg-card">
                   <CardContent className="p-4 text-center">
                     <div className={`w-12 h-12 rounded-xl ${feature.color} mx-auto mb-3 flex items-center justify-center`}>
                       <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <p className="text-xs text-gray-500 mb-1">{feature.label}</p>
-                    <p className="text-xl font-bold text-gray-900">{count}</p>
-                    <p className="text-[10px] text-gray-400">{feature.subtext}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{feature.label}</p>
+                    <p className="text-xl font-bold text-foreground">{count}</p>
+                    <p className="text-[10px] text-muted-foreground">{feature.subtext}</p>
                   </CardContent>
                 </Card>
               </Link>
@@ -317,18 +317,18 @@ export function SecurityDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Daily Visitor-In Chart - IGATESECURITY Style */}
         <motion.div variants={itemVariants}>
-          <Card className="border-0 shadow-md">
+          <Card className="border-0 shadow-md bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-lg font-bold text-gray-800">Daily Visitor-In</CardTitle>
-                  <CardDescription>Visitors Today: {stats?.visitorsToday || 0} | Still Inside: {stats?.vehiclesIn || 0}</CardDescription>
+                  <CardTitle className="text-lg font-bold text-foreground">Daily Visitor-In</CardTitle>
+                  <CardDescription className="text-muted-foreground">Visitors Today: {stats?.visitorsToday || 0} | Still Inside: {stats?.vehiclesIn || 0}</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="text-xs bg-teal-50 border-teal-200 text-teal-600" onClick={() => router.push('/dashboard/security/visitors')}>
+                  <Button variant="outline" size="sm" className="text-xs bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800 text-teal-600 dark:text-teal-400" onClick={() => router.push('/dashboard/security/visitors')}>
                     Check-Out
                   </Button>
-                  <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
+                  <Badge variant="outline" className="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800">
                     Parcel: {stats?.parcelsToDeliver || 0}
                   </Badge>
                 </div>
@@ -337,10 +337,13 @@ export function SecurityDashboard() {
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="day" stroke="#6b7280" fontSize={12} />
-                  <YAxis stroke="#6b7280" fontSize={12} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-slate-700" />
+                  <XAxis dataKey="day" stroke="#6b7280" fontSize={12} className="dark:text-muted-foreground" tick={{ fill: 'currentColor' }} />
+                  <YAxis stroke="#6b7280" fontSize={12} className="dark:text-muted-foreground" tick={{ fill: 'currentColor' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
                   <Line type="monotone" dataKey="visitors" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
                   <Line type="monotone" dataKey="avg" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" />
                 </LineChart>
@@ -348,11 +351,11 @@ export function SecurityDashboard() {
               <div className="flex items-center justify-center gap-6 mt-3 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                  <span className="text-gray-600">Visitors</span>
+                  <span className="text-gray-600 dark:text-muted-foreground">Visitors</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-0.5 bg-green-500"></span>
-                  <span className="text-gray-600">Average</span>
+                  <span className="text-gray-600 dark:text-muted-foreground">Average</span>
                 </div>
               </div>
             </CardContent>
@@ -361,10 +364,10 @@ export function SecurityDashboard() {
 
         {/* Recent Visitors - IGATESECURITY Style */}
         <motion.div variants={itemVariants}>
-          <Card className="border-0 shadow-md h-full">
+          <Card className="border-0 shadow-md h-full bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-gray-800">Recent Visitors</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">Recent Visitors</CardTitle>
                 <div className="flex gap-2">
                   <Badge
                     variant={activeCategory === 'visitor' ? 'default' : 'secondary'}
@@ -393,32 +396,32 @@ export function SecurityDashboard() {
             <CardContent>
               <div className="space-y-3 max-h-[280px] overflow-y-auto">
                 {activitiesLoading ? (
-                  <div className="text-center py-4 text-gray-500">Loading activity...</div>
+                  <div className="text-center py-4 text-muted-foreground">Loading activity...</div>
                 ) : activities?.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">No recent activity</div>
+                  <div className="text-center py-4 text-muted-foreground">No recent activity</div>
                 ) : (
                   activities?.filter((a: any) => a.id.startsWith(`${activeCategory}-`)).slice(0, 5).map((activity: any) => (
                     <div
                       key={activity.id}
-                      className="p-3 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors"
+                      className="p-3 rounded-xl border border-border hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 w-full">
                           <Avatar className="h-10 w-10 shrink-0">
-                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs text-[10px]">
+                            <AvatarFallback className="bg-muted text-muted-foreground text-xs text-[10px]">
                               {activity.name.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-gray-900 truncate text-sm">{activity.action}</p>
-                            <p className="text-xs text-blue-600 truncate">{activity.name} • {format(new Date(activity.time), 'h:mm a')}</p>
-                            <p className="text-[10px] text-green-600 flex items-center gap-1 mt-0.5">
+                            <p className="font-semibold text-foreground truncate text-sm">{activity.action}</p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 truncate">{activity.name} • {format(new Date(activity.time), 'h:mm a')}</p>
+                            <p className="text-[10px] text-green-600 dark:text-green-400 flex items-center gap-1 mt-0.5">
                               <CheckCircle className="h-3 w-3" />
                               {activeCategory === 'staff' ? activity.unit : `Unit ${activity.unit}`}
                             </p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2 text-gray-500">
+                        <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2 text-muted-foreground">
                           Details
                         </Button>
                       </div>
@@ -427,7 +430,7 @@ export function SecurityDashboard() {
                 )}
               </div>
               <Link href={activeCategory === 'parcel' ? '/dashboard/security/parcels' : '/dashboard/security/visitors'}>
-                <Button variant="outline" className="w-full mt-4 border-teal-200 text-teal-600 hover:bg-teal-50">
+                <Button variant="outline" className="w-full mt-4 border-teal-200 dark:border-teal-800 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20">
                   View All {activeCategory === 'visitor' ? 'Visitors' : activeCategory === 'parcel' ? 'Parcels' : 'Staff Activities'}
                 </Button>
               </Link>
@@ -440,44 +443,44 @@ export function SecurityDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Pending Vehicle Approvals */}
         <motion.div variants={itemVariants}>
-          <Card className="border-0 shadow-md">
+          <Card className="border-0 shadow-md bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-gray-800">Pending Approvals</CardTitle>
-                <Badge className="bg-orange-100 text-orange-600">{(visitors as any)?.length || 0} Pending</Badge>
+                <CardTitle className="text-lg font-bold text-foreground">Pending Approvals</CardTitle>
+                <Badge className="bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">{(visitors as any)?.length || 0} Pending</Badge>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {visitorsLoading ? (
-                  <div className="text-center py-4 text-gray-500">Loading pending approvals...</div>
+                  <div className="text-center py-4 text-muted-foreground">Loading pending approvals...</div>
                 ) : (visitors as any)?.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 italic">No pending approvals</div>
+                  <div className="text-center py-4 text-muted-foreground italic">No pending approvals</div>
                 ) : (
                   (visitors as any)?.slice(0, 3).map((item: any) => (
                     <div
                       key={item.id}
-                      className="p-4 rounded-xl border border-orange-100 bg-orange-50/30 hover:border-orange-300 transition-colors"
+                      className="p-4 rounded-xl border border-orange-100 dark:border-orange-800/50 bg-orange-50/30 dark:bg-orange-900/10 hover:border-orange-300 transition-colors"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-orange-600" />
-                            <h4 className="font-semibold text-gray-900">{item.name}</h4>
+                            <Users className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                            <h4 className="font-semibold text-foreground">{item.name}</h4>
                           </div>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             Unit: {item.unit?.block}-{item.unit?.number} • {item.purpose}
                           </p>
-                          <Badge variant="outline" className="mt-2 text-xs">{item.phone}</Badge>
+                          <Badge variant="outline" className="mt-2 text-xs text-muted-foreground">{item.phone}</Badge>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                        <div className="flex items-center text-xs text-gray-500">
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <div className="flex items-center text-xs text-muted-foreground">
                           <Clock className="h-3 w-3 mr-1" />
                           {format(new Date(item.createdAt), 'MMM d, h:mm a')}
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleReject(item.id)}>
+                          <Button size="sm" variant="outline" className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => handleReject(item.id)}>
                             <XCircle className="h-4 w-4 mr-1" />
                             Reject
                           </Button>
@@ -502,17 +505,17 @@ export function SecurityDashboard() {
 
         {/* Emergency Contacts - IGATESECURITY Style */}
         <motion.div variants={itemVariants}>
-          <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-orange-50">
+          <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-gray-800">Emergency Contacts</CardTitle>
-                <Phone className="h-5 w-5 text-red-600" />
+                <CardTitle className="text-lg font-bold text-foreground">Emergency Contacts</CardTitle>
+                <Phone className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">
                 {contactsLoading ? (
-                  <div className="col-span-2 text-center py-4 text-gray-500">Loading contacts...</div>
+                  <div className="col-span-2 text-center py-4 text-muted-foreground">Loading contacts...</div>
                 ) : (contacts as any)?.length === 0 ? (
                   <>
                     {emergencyContacts.map((contact, index) => {
@@ -521,15 +524,15 @@ export function SecurityDashboard() {
                         <a
                           key={index}
                           href={`tel:${contact.number}`}
-                          className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all"
+                          className="p-4 bg-white dark:bg-card rounded-xl border border-border hover:shadow-md transition-all"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-100 rounded-lg">
-                              <Icon className="h-5 w-5 text-red-600" />
+                            <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                              <Icon className="h-5 w-5 text-red-600 dark:text-red-400" />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{contact.name}</p>
-                              <p className="text-lg font-bold text-blue-600">{contact.number}</p>
+                              <p className="text-sm font-medium text-foreground">{contact.name}</p>
+                              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{contact.number}</p>
                             </div>
                           </div>
                         </a>
@@ -541,15 +544,15 @@ export function SecurityDashboard() {
                     <a
                       key={index}
                       href={`tel:${contact.phone}`}
-                      className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all"
+                      className="p-4 bg-white dark:bg-card rounded-xl border border-border hover:shadow-md transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 rounded-lg">
-                          <Phone className="h-5 w-5 text-red-600" />
+                        <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                          <Phone className="h-5 w-5 text-red-600 dark:text-red-400" />
                         </div>
                         <div className="overflow-hidden">
-                          <p className="text-sm font-medium text-gray-900 truncate">{contact.name}</p>
-                          <p className="text-lg font-bold text-blue-600 truncate">{contact.phone}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{contact.name}</p>
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400 truncate">{contact.phone}</p>
                         </div>
                       </div>
                     </a>
@@ -563,26 +566,26 @@ export function SecurityDashboard() {
 
       {/* Quick Actions Row */}
       <motion.div variants={itemVariants}>
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-md bg-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-bold text-gray-800">Quick Actions</CardTitle>
+            <CardTitle className="text-lg font-bold text-foreground">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => router.push('/dashboard/security/visitors')}>
-                <Users className="h-6 w-6 text-blue-600" />
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 <span className="text-sm">Check-in Visitor</span>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => router.push('/dashboard/security/vehicles')}>
-                <Car className="h-6 w-6 text-green-600" />
+                <Car className="h-6 w-6 text-green-600 dark:text-green-400" />
                 <span className="text-sm">Register Vehicle</span>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => router.push('/dashboard/security/parcels')}>
-                <Package className="h-6 w-6 text-orange-600" />
+                <Package className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 <span className="text-sm">Log Parcel</span>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => router.push('/dashboard/admin/complaints')}>
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
                 <span className="text-sm">Report Incident</span>
               </Button>
             </div>

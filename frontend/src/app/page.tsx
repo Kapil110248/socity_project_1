@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import CountUp from 'react-countup'
+import { ModeToggle } from '@/components/mode-toggle'
 
 const features = [
   {
@@ -154,9 +155,9 @@ export default function LandingPage() {
   const [statsRef, statsInView] = useInView({ triggerOnce: true, threshold: 0.1 })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-background dark:via-background dark:to-background">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-background/80 backdrop-blur-lg border-b border-gray-200 dark:border-border">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -171,17 +172,18 @@ export default function LandingPage() {
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <a href="#features" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Features
               </a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <a href="#pricing" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Pricing
               </a>
-              <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">
+              <a href="#testimonials" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Testimonials
               </a>
+              <ModeToggle />
               <Link href="/auth/login">
-                <Button variant="ghost">Login</Button>
+                <Button variant="ghost" className="text-gray-600 dark:text-gray-300">Login</Button>
               </Link>
               <Link href="/dashboard">
                 <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
@@ -191,11 +193,14 @@ export default function LandingPage() {
             </div>
 
             {/* Mobile Menu Button */}
-            <Link href="/dashboard" className="md:hidden">
-              <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                Login
-              </Button>
-            </Link>
+            <div className="md:hidden flex items-center gap-2">
+              <ModeToggle />
+              <Link href="/dashboard">
+                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                  Login
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -210,11 +215,11 @@ export default function LandingPage() {
               animate={heroInView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.6 }}
             >
-              <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-100">
+              <Badge className="mb-4 bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-200">
                 <Zap className="h-3 w-3 mr-1" />
                 Trusted by 500+ Societies
               </Badge>
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-foreground mb-6 leading-tight">
                 Modern Society
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {' '}
@@ -222,7 +227,7 @@ export default function LandingPage() {
                 </span>{' '}
                 Made Simple
               </h1>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              <p className="text-xl text-gray-600 dark:text-muted-foreground mb-8 leading-relaxed">
                 All-in-one platform for managing residential communities. From visitor tracking to
                 online billing, handle everything with ease.
               </p>
@@ -250,7 +255,7 @@ export default function LandingPage() {
                   <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
                   <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
                   <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                  <span className="ml-2 text-sm text-gray-600">4.9/5 from 500+ reviews</span>
+                  <span className="ml-2 text-sm text-gray-600 dark:text-muted-foreground">4.9/5 from 500+ reviews</span>
                 </div>
               </div>
             </motion.div>
@@ -264,7 +269,7 @@ export default function LandingPage() {
             >
               <div className="relative">
                 {/* Main Dashboard Image */}
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-border">
                   <img
                     src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&h=600&fit=crop"
                     alt="Modern Apartment Complex"
@@ -275,17 +280,17 @@ export default function LandingPage() {
                   {/* Overlay Stats */}
                   <div className="absolute bottom-4 left-4 right-4">
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-white/95 backdrop-blur p-3 rounded-lg">
+                      <div className="bg-white/95 dark:bg-background/95 backdrop-blur p-3 rounded-lg">
                         <p className="text-2xl font-bold text-blue-600">180</p>
-                        <p className="text-xs text-gray-600">Units</p>
+                        <p className="text-xs text-gray-600 dark:text-muted-foreground">Units</p>
                       </div>
-                      <div className="bg-white/95 backdrop-blur p-3 rounded-lg">
+                      <div className="bg-white/95 dark:bg-background/95 backdrop-blur p-3 rounded-lg">
                         <p className="text-2xl font-bold text-green-600">95%</p>
-                        <p className="text-xs text-gray-600">Occupied</p>
+                        <p className="text-xs text-gray-600 dark:text-muted-foreground">Occupied</p>
                       </div>
-                      <div className="bg-white/95 backdrop-blur p-3 rounded-lg">
+                      <div className="bg-white/95 dark:bg-background/95 backdrop-blur p-3 rounded-lg">
                         <p className="text-2xl font-bold text-purple-600">24/7</p>
-                        <p className="text-xs text-gray-600">Security</p>
+                        <p className="text-xs text-gray-600 dark:text-muted-foreground">Security</p>
                       </div>
                     </div>
                   </div>
@@ -295,15 +300,15 @@ export default function LandingPage() {
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 3, repeat: Infinity }}
-                  className="absolute -top-4 -right-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100"
+                  className="absolute -top-4 -right-4 bg-white dark:bg-card p-4 rounded-xl shadow-lg border border-gray-100 dark:border-border"
                 >
                   <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    <div className="p-2 bg-green-100 dark:bg-green-900/40 rounded-lg">
+                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">New Visitor</p>
-                      <p className="text-sm font-semibold">Check-in: A-205</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">New Visitor</p>
+                      <p className="text-sm font-semibold text-foreground">Check-in: A-205</p>
                     </div>
                   </div>
                 </motion.div>
@@ -311,15 +316,15 @@ export default function LandingPage() {
                 <motion.div
                   animate={{ y: [0, 10, 0] }}
                   transition={{ duration: 4, repeat: Infinity, delay: 0.5 }}
-                  className="absolute -bottom-4 -left-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100"
+                  className="absolute -bottom-4 -left-4 bg-white dark:bg-card p-4 rounded-xl shadow-lg border border-gray-100 dark:border-border"
                 >
                   <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Wallet className="h-4 w-4 text-blue-600" />
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                      <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Payment Received</p>
-                      <p className="text-sm font-semibold text-green-600">+₹8,500</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Payment Received</p>
+                      <p className="text-sm font-semibold text-green-600 dark:text-green-400">+₹8,500</p>
                     </div>
                   </div>
                 </motion.div>
@@ -370,20 +375,20 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" ref={featuresRef} className="py-20 px-4 md:px-6">
+      <section id="features" ref={featuresRef} className="py-20 px-4 md:px-6 bg-white dark:bg-background">
         <div className="container mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={featuresInView ? { opacity: 1, y: 0 } : {}}
             className="text-center mb-16"
           >
-            <Badge className="mb-4 bg-purple-100 text-purple-700 hover:bg-purple-100">
+            <Badge className="mb-4 bg-purple-100 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/40 dark:text-purple-200">
               Features
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-foreground mb-4">
               Everything You Need in One Place
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-muted-foreground max-w-2xl mx-auto">
               Powerful features designed to simplify society management and enhance resident experience
             </p>
           </motion.div>
@@ -398,16 +403,16 @@ export default function LandingPage() {
                   animate={featuresInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <Card className="p-6 h-full hover:shadow-xl transition-shadow duration-300 border-0 shadow-md group cursor-pointer">
+                  <Card className="p-6 h-full hover:shadow-xl transition-shadow duration-300 border-border shadow-md group cursor-pointer bg-card">
                     <div
                       className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${feature.color} mb-4 group-hover:scale-110 transition-transform`}
                     >
                       <Icon className="h-6 w-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-foreground mb-2">
                       {feature.title}
                     </h3>
-                    <p className="text-gray-600">{feature.description}</p>
+                    <p className="text-gray-600 dark:text-muted-foreground">{feature.description}</p>
                   </Card>
                 </motion.div>
               )
@@ -417,16 +422,16 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 md:px-6 bg-gray-50">
+      <section id="pricing" className="py-20 px-4 md:px-6 bg-gray-50 dark:bg-muted/10">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-green-100 text-green-700 hover:bg-green-100">
+            <Badge className="mb-4 bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-200">
               Pricing
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-foreground mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-muted-foreground max-w-2xl mx-auto">
               Choose the perfect plan for your society. No hidden fees.
             </p>
           </div>
@@ -441,9 +446,9 @@ export default function LandingPage() {
                 viewport={{ once: true }}
               >
                 <Card
-                  className={`p-8 h-full relative ${plan.popular
+                  className={`p-8 h-full relative bg-card ${plan.popular
                     ? 'border-2 border-blue-600 shadow-xl'
-                    : 'border-0 shadow-md'
+                    : 'border-border shadow-md'
                     }`}
                 >
                   {plan.popular && (
@@ -453,25 +458,25 @@ export default function LandingPage() {
                     </Badge>
                   )}
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-foreground mb-2">
                       {plan.name}
                     </h3>
-                    <p className="text-gray-600 mb-4">{plan.description}</p>
+                    <p className="text-gray-600 dark:text-muted-foreground mb-4">{plan.description}</p>
                     <div className="flex items-baseline justify-center">
                       {plan.price !== 'Custom' && (
-                        <span className="text-gray-500 mr-1">₹</span>
+                        <span className="text-gray-500 dark:text-gray-400 mr-1">₹</span>
                       )}
-                      <span className="text-5xl font-bold text-gray-900">
+                      <span className="text-5xl font-bold text-gray-900 dark:text-foreground">
                         {plan.price}
                       </span>
-                      <span className="text-gray-500 ml-1">{plan.period}</span>
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">{plan.period}</span>
                     </div>
                   </div>
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-green-600 mr-2 flex-shrink-0" />
-                        <span className="text-gray-600">{feature}</span>
+                        <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-2 flex-shrink-0" />
+                        <span className="text-gray-600 dark:text-muted-foreground">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -479,7 +484,7 @@ export default function LandingPage() {
                     <Button
                       className={`w-full ${plan.popular
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                        : 'bg-white border-2 border-gray-300'
+                        : 'bg-white dark:bg-secondary border-2 border-gray-300 dark:border-accent text-foreground'
                         }`}
                     >
                       {plan.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
@@ -493,16 +498,16 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 px-4 md:px-6">
+      <section id="testimonials" className="py-20 px-4 md:px-6 bg-white dark:bg-background">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-orange-100 text-orange-700 hover:bg-orange-100">
+            <Badge className="mb-4 bg-orange-100 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/40 dark:text-orange-200">
               Testimonials
             </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-foreground mb-4">
               Loved by Society Managers
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-muted-foreground max-w-2xl mx-auto">
               See what our customers have to say about IGATESECURITY
             </p>
           </div>
@@ -516,7 +521,7 @@ export default function LandingPage() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <Card className="p-6 h-full border-0 shadow-md hover:shadow-xl transition-shadow">
+                <Card className="p-6 h-full border-border shadow-md hover:shadow-xl transition-shadow bg-card">
                   <div className="flex items-center mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <Star
@@ -525,16 +530,16 @@ export default function LandingPage() {
                       />
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-6 italic">"{testimonial.text}"</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-6 italic">"{testimonial.text}"</p>
                   <div className="flex items-center">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold">
                       {testimonial.name.charAt(0)}
                     </div>
                     <div className="ml-3">
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-gray-900 dark:text-foreground">
                         {testimonial.name}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-muted-foreground">
                         {testimonial.role} • {testimonial.society}
                       </p>
                     </div>

@@ -71,10 +71,10 @@ export function VendorDashboard() {
     const closedStatuses = ['done', 'completed']
 
     const stats = [
-        { label: 'Total Leads', value: vendorLeads.length, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Active', value: vendorLeads.filter((l: any) => activeStatuses.includes(String(l.status).toLowerCase())).length, icon: Users, color: 'text-teal-600', bg: 'bg-teal-50' },
-        { label: 'Contacted', value: vendorLeads.filter((l: any) => contactedStatuses.includes(String(l.status).toLowerCase())).length, icon: TrendingUp, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        { label: 'Completed', value: vendorLeads.filter((l: any) => closedStatuses.includes(String(l.status).toLowerCase())).length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+        { label: 'Total Leads', value: vendorLeads.length, icon: ClipboardList, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+        { label: 'Active', value: vendorLeads.filter((l: any) => activeStatuses.includes(String(l.status).toLowerCase())).length, icon: Users, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-900/20' },
+        { label: 'Contacted', value: vendorLeads.filter((l: any) => contactedStatuses.includes(String(l.status).toLowerCase())).length, icon: TrendingUp, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-900/20' },
+        { label: 'Completed', value: vendorLeads.filter((l: any) => closedStatuses.includes(String(l.status).toLowerCase())).length, icon: CheckCircle2, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' },
     ]
 
     if (isLoading) {
@@ -91,11 +91,11 @@ export function VendorDashboard() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Vendor Dashboard</h1>
-                    <p className="text-gray-500 mt-1">Manage your service inquiries and leads</p>
+                    <h1 className="text-3xl font-bold text-foreground">Vendor Dashboard</h1>
+                    <p className="text-muted-foreground mt-1">Manage your service inquiries and leads</p>
                 </div>
                 <Link href="/dashboard/vendor/leads">
-                    <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f] rounded-xl font-bold h-11 px-6">
+                    <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f] dark:bg-blue-900/50 dark:hover:bg-blue-900/70 rounded-xl font-bold h-11 px-6">
                         View All Leads
                     </Button>
                 </Link>
@@ -109,14 +109,14 @@ export function VendorDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                     >
-                        <Card className="p-6 border-0 shadow-sm bg-white rounded-3xl ring-1 ring-black/5">
+                        <Card className="p-6 border-0 shadow-sm bg-card rounded-3xl ring-1 ring-border">
                             <div className="flex items-center gap-4">
                                 <div className={`p-3 rounded-2xl ${stat.bg}`}>
                                     <stat.icon className={`h-6 w-6 ${stat.color}`} />
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
-                                    <p className="text-2xl font-black text-gray-900">{stat.value}</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                                    <p className="text-2xl font-black text-foreground">{stat.value}</p>
                                 </div>
                             </div>
                         </Card>
@@ -125,60 +125,59 @@ export function VendorDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 p-6 border-0 shadow-sm bg-white rounded-3xl ring-1 ring-black/5">
-                    <h2 className="text-lg font-bold text-gray-900 mb-6">Recent Enquiries</h2>
+                <Card className="lg:col-span-2 p-6 border-0 shadow-sm bg-card rounded-3xl ring-1 ring-border">
+                    <h2 className="text-lg font-bold text-foreground mb-6">Recent Enquiries</h2>
                     <div className="space-y-4">
                         {vendorLeads.slice(0, 5).map((lead: any) => {
                             const name = lead.residentName || '—'
                             const unit = lead.unit ?? '—'
                             const st = String(lead.status || '').toLowerCase()
                             return (
-                                <div key={lead.id} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <div key={lead.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/50 hover:bg-muted/80 transition-colors">
                                     <div className="flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center font-bold text-teal-600 shadow-sm">
+                                        <div className="h-10 w-10 rounded-full bg-background flex items-center justify-center font-bold text-teal-600 shadow-sm">
                                             {name.charAt(0) || '?'}
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-gray-900">{name} ({unit})</h4>
-                                            <p className="text-xs text-gray-500">{lead.serviceName || '—'} • {lead.type || 'booking'}</p>
+                                            <h4 className="text-sm font-bold text-foreground">{name} ({unit})</h4>
+                                            <p className="text-xs text-muted-foreground">{lead.serviceName || '—'} • {lead.type || 'booking'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <div className="text-right">
-                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
-                                                activeStatuses.includes(st) ? 'bg-blue-100 text-blue-700' :
-                                                contactedStatuses.includes(st) ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
-                                            }`}>
+                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${activeStatuses.includes(st) ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
+                                                    contactedStatuses.includes(st) ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                                }`}>
                                                 {st || '—'}
                                             </span>
-                                            <p className="text-[10px] text-gray-400 font-bold mt-1">
+                                            <p className="text-[10px] text-muted-foreground font-bold mt-1">
                                                 {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '—'}
                                             </p>
                                         </div>
 
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white shadow-sm">
-                                                    <MoreVertical className="h-4 w-4 text-gray-400" />
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background shadow-sm">
+                                                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 shadow-2xl border-0 ring-1 ring-black/5">
+                                            <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 shadow-2xl border-border ring-1 ring-border bg-card">
                                                 <DropdownMenuItem
                                                     onClick={() => handleStatusUpdate(lead.id, 'booked')}
-                                                    className="rounded-xl font-bold text-[10px] uppercase p-3"
+                                                    className="rounded-xl font-bold text-[10px] uppercase p-3 focus:bg-muted focus:text-foreground"
                                                 >
                                                     <AlertCircle className="h-4 w-4 mr-2 text-blue-500" /> Mark Pending
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => !isContacted(lead) && contactMutation.mutate(lead.id)}
                                                     disabled={isContacted(lead) || contactMutation.isPending}
-                                                    className="rounded-xl font-bold text-[10px] uppercase p-3"
+                                                    className="rounded-xl font-bold text-[10px] uppercase p-3 focus:bg-muted focus:text-foreground"
                                                 >
                                                     <Clock className="h-4 w-4 mr-2 text-yellow-500" /> Mark Contacted
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => handleStatusUpdate(lead.id, 'done')}
-                                                    className="rounded-xl font-bold text-[10px] uppercase p-3"
+                                                    className="rounded-xl font-bold text-[10px] uppercase p-3 focus:bg-muted focus:text-foreground"
                                                 >
                                                     <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" /> Mark Complete
                                                 </DropdownMenuItem>
@@ -190,16 +189,16 @@ export function VendorDashboard() {
                         })}
                     </div>
                     {vendorLeads.length === 0 && (
-                        <p className="text-sm text-gray-400 text-center py-8">No assigned leads yet. When Super Admin assigns a service to you, it will appear here.</p>
+                        <p className="text-sm text-muted-foreground text-center py-8">No assigned leads yet. When Super Admin assigns a service to you, it will appear here.</p>
                     )}
                 </Card>
 
-                <Card className="p-6 border-0 shadow-sm bg-white rounded-3xl ring-1 ring-black/5">
-                    <h2 className="text-lg font-bold text-gray-900 mb-6">Performance</h2>
+                <Card className="p-6 border-0 shadow-sm bg-card rounded-3xl ring-1 ring-border">
+                    <h2 className="text-lg font-bold text-foreground mb-6">Performance</h2>
                     <div className="space-y-6">
                         <div className="text-center py-8">
-                            <TrendingUp className="h-12 w-12 text-gray-200 mx-auto mb-4" />
-                            <p className="text-sm font-medium text-gray-400 italic">Advanced analytics coming soon...</p>
+                            <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-sm font-medium text-muted-foreground italic">Advanced analytics coming soon...</p>
                         </div>
                     </div>
                 </Card>

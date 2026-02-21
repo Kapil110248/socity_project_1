@@ -198,14 +198,14 @@ export function ResidentDashboard() {
         </div>
 
         {/* My Dues Card - IGATESECURITY Style */}
-        <div className="mt-4 bg-white rounded-xl p-3 sm:p-4 text-gray-900">
+        <div className="mt-4 bg-white dark:bg-card rounded-xl p-3 sm:p-4 text-gray-900 dark:text-foreground">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <CreditCard className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">My Dues</p>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground">My Dues</p>
                 <p className="text-xl sm:text-2xl font-bold">Rs. {dues?.amount?.toLocaleString() || '0'}</p>
               </div>
             </div>
@@ -221,7 +221,7 @@ export function ResidentDashboard() {
       <motion.div variants={itemVariants}>
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-bold text-gray-800">Shortcuts</CardTitle>
+            <CardTitle className="text-lg font-bold text-foreground">Shortcuts</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
@@ -230,10 +230,10 @@ export function ResidentDashboard() {
                 return (
                   <Link key={index} href={shortcut.href} className="flex-shrink-0">
                     <div className="flex flex-col items-center gap-2 w-16 sm:w-20">
-                      <div className={`p-3 sm:p-4 rounded-xl ${shortcut.color}`}>
-                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
+                      <div className={`p-3 sm:p-4 rounded-xl ${shortcut.color} dark:bg-muted/50`}>
+                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700 dark:text-foreground" />
                       </div>
-                      <span className="text-xs text-gray-600 text-center">{shortcut.label}</span>
+                      <span className="text-xs text-muted-foreground text-center">{shortcut.label}</span>
                     </div>
                   </Link>
                 )
@@ -248,50 +248,50 @@ export function ResidentDashboard() {
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-gray-800">My Unit</CardTitle>
-              <Badge variant="outline" className="bg-gray-100 text-gray-700">
+              <CardTitle className="text-lg font-bold text-foreground">My Unit</CardTitle>
+              <Badge variant="outline" className="bg-muted text-foreground">
                 Unit No : {unit?.unitNo || 'N/A'}
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-blue-50 rounded-xl p-3 sm:p-4 text-center">
+              <div className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-3 sm:p-4 text-center">
                 <div className="flex justify-center mb-2">
                   <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{unit?.members?.toString().padStart(2, '0') || '00'}</p>
-                <p className="text-xs text-gray-500">Members</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{unit?.members?.toString().padStart(2, '0') || '00'}</p>
+                <p className="text-xs text-muted-foreground">Members</p>
               </div>
-              <div className="bg-pink-50 rounded-xl p-3 sm:p-4 text-center">
+              <div className="bg-pink-50 dark:bg-pink-900/10 rounded-xl p-3 sm:p-4 text-center">
                 <div className="flex justify-center mb-2">
                   <Dog className="h-6 w-6 sm:h-8 sm:w-8 text-pink-500" />
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{unit?.pets?.toString().padStart(2, '0') || '00'}</p>
-                <p className="text-xs text-gray-500">Pets</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{unit?.pets?.toString().padStart(2, '0') || '00'}</p>
+                <p className="text-xs text-muted-foreground">Pets</p>
               </div>
-              <div className="bg-green-50 rounded-xl p-3 sm:p-4 text-center">
+              <div className="bg-green-50 dark:bg-green-900/10 rounded-xl p-3 sm:p-4 text-center">
                 <div className="flex justify-center mb-2">
                   <Car className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
                 </div>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{unit?.vehicles?.toString().padStart(2, '0') || '00'}</p>
-                <p className="text-xs text-gray-500">Vehicles</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{unit?.vehicles?.toString().padStart(2, '0') || '00'}</p>
+                <p className="text-xs text-muted-foreground">Vehicles</p>
               </div>
             </div>
 
             {/* Gate Updates Section */}
-            <div className="mt-4 pt-4 border-t">
-              <h4 className="font-semibold text-gray-800 mb-3">Gate Updates</h4>
+            <div className="mt-4 pt-4 border-t border-border">
+              <h4 className="font-semibold text-foreground mb-3">Gate Updates</h4>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {(apiGateUpdates || gateUpdates).map((item: any, index: number) => {
                   const Icon = item.type === 'Visitor' ? Users : item.type === 'Helper' ? User : Package
-                  const colorParts = (item.color || 'bg-gray-100 text-gray-600').split(' ')
+                  const colorParts = (item.color || 'bg-muted text-muted-foreground').replace('bg-purple-100', 'bg-purple-100 dark:bg-purple-900/20').replace('bg-pink-100', 'bg-pink-100 dark:bg-pink-900/20').replace('bg-blue-100', 'bg-blue-100 dark:bg-blue-900/20').split(' ')
                   return (
                     <div key={index} className={`rounded-xl p-3 ${colorParts[0]} text-center`}>
-                      <Icon className={`h-5 w-5 mx-auto mb-1 ${colorParts[1] || 'text-gray-600'}`} />
-                      <p className="text-xs font-medium text-gray-700">{item.type}</p>
-                      <p className="text-lg font-bold text-gray-900">{item.count}</p>
-                      <p className="text-[10px] text-gray-500">{item.label}</p>
+                      <Icon className={`h-5 w-5 mx-auto mb-1 ${colorParts[1] || 'text-muted-foreground'}`} />
+                      <p className="text-xs font-medium text-foreground">{item.type}</p>
+                      <p className="text-lg font-bold text-foreground">{item.count}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.label}</p>
                     </div>
                   )
                 })}
@@ -299,18 +299,18 @@ export function ResidentDashboard() {
             </div>
 
             {/* My Dues Detail */}
-            <div className="mt-4 pt-4 border-t">
-              <h4 className="font-semibold text-gray-800 mb-3">My Dues</h4>
+            <div className="mt-4 pt-4 border-t border-border">
+              <h4 className="font-semibold text-foreground mb-3">My Dues</h4>
               {dues?.penalty > 0 && dues?.penaltyLabel && (
-                <div className="bg-red-50 text-red-600 text-xs font-medium px-3 py-1 rounded-full inline-block mb-2">
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-medium px-3 py-1 rounded-full inline-block mb-2">
                   {dues.penaltyLabel} Rs. {dues.penalty}
                 </div>
               )}
-              <div className="bg-red-50 rounded-xl p-4">
+              <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Maintenance Fee</p>
-                    <p className="text-2xl font-bold text-gray-900">Rs. {dues?.amount?.toLocaleString() || '0'}</p>
+                    <p className="text-sm text-gray-600 dark:text-red-300">Maintenance Fee</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-red-100">Rs. {dues?.amount?.toLocaleString() || '0'}</p>
                   </div>
                   <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white">PAY</Button>
                 </div>
@@ -333,7 +333,7 @@ export function ResidentDashboard() {
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-gray-800">Announcements</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Announcements</CardTitle>
               <Button variant="ghost" size="sm" className="text-teal-600 hover:text-teal-700 text-sm">
                 View All
               </Button>
@@ -344,22 +344,22 @@ export function ResidentDashboard() {
               {(apiAnnouncements && apiAnnouncements.length > 0) ? apiAnnouncements.map((announcement: any) => (
                 <div
                   key={announcement.id}
-                  className="flex-shrink-0 w-[280px] sm:w-[320px] p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors bg-white"
+                  className="flex-shrink-0 w-[280px] sm:w-[320px] p-4 rounded-xl border border-border hover:border-blue-200 transition-colors bg-card"
                 >
-                  <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">{announcement.title}</h4>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{announcement.description}</p>
+                  <h4 className="font-semibold text-foreground mb-2 line-clamp-2">{announcement.title}</h4>
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{announcement.description}</p>
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
+                      <AvatarFallback className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
                         {(announcement.author || '').charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs text-gray-500">{announcement.author}</span>
-                    <span className="text-xs text-gray-400">• {announcement.time ? new Date(announcement.time).toLocaleDateString() : '—'}</span>
+                    <span className="text-xs text-muted-foreground">{announcement.author}</span>
+                    <span className="text-xs text-muted-foreground">• {announcement.time ? new Date(announcement.time).toLocaleDateString() : '—'}</span>
                   </div>
                 </div>
               )) : (
-                <p className="text-sm text-gray-500 py-4">No announcements yet.</p>
+                <p className="text-sm text-muted-foreground py-4">No announcements yet.</p>
               )}
             </div>
           </CardContent>
@@ -371,7 +371,7 @@ export function ResidentDashboard() {
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-gray-800">Community Buzz</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Community Buzz</CardTitle>
               <Button variant="ghost" size="sm" className="text-teal-600 hover:text-teal-700 text-sm">
                 View All
               </Button>
@@ -382,7 +382,7 @@ export function ResidentDashboard() {
               {(apiBuzz && apiBuzz.length > 0) ? apiBuzz.map((item: any) => (
                 <div
                   key={item.id}
-                  className="p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors"
+                  className="p-4 rounded-xl border border-border hover:border-blue-200 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -391,21 +391,21 @@ export function ResidentDashboard() {
                           View Result
                         </Badge>
                       )}
-                      <h4 className="font-medium text-gray-900 mb-1">{item.title}</h4>
+                      <h4 className="font-medium text-foreground mb-1">{item.title}</h4>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-[10px] bg-gray-100 text-gray-600">
+                          <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
                             {(item.author || '').charAt(0)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-500">{item.author}</span>
+                        <span className="text-xs text-muted-foreground">{item.author}</span>
                       </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>
               )) : (
-                <p className="text-sm text-gray-500 py-4">No community buzz yet.</p>
+                <p className="text-sm text-muted-foreground py-4">No community buzz yet.</p>
               )}
             </div>
           </CardContent>
@@ -418,8 +418,8 @@ export function ResidentDashboard() {
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-gray-800">Community Guidelines</CardTitle>
-                <Badge variant="outline" className="bg-purple-100 text-purple-700">
+                <CardTitle className="text-lg font-bold text-foreground">Community Guidelines</CardTitle>
+                <Badge variant="outline" className="bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400">
                   {guidelines.length} {guidelines.length === 1 ? 'Guideline' : 'Guidelines'}
                 </Badge>
               </div>
@@ -429,20 +429,20 @@ export function ResidentDashboard() {
                 {guidelines.slice(0, 3).map((guideline: any) => (
                   <div
                     key={guideline.id}
-                    className="p-4 rounded-xl border border-purple-100 bg-purple-50/30 hover:bg-purple-50/60 transition-colors"
+                    className="p-4 rounded-xl border border-purple-100 dark:border-purple-800/50 bg-purple-50/30 dark:bg-purple-900/10 hover:bg-purple-50/60 transition-colors"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
-                        <FileText className="h-5 w-5 text-purple-600" />
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex-shrink-0">
+                        <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 mb-1">{guideline.title}</h4>
-                        <p className="text-sm text-gray-600 line-clamp-2">{guideline.content}</p>
+                        <h4 className="font-semibold text-foreground mb-1">{guideline.title}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{guideline.content}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs bg-white">
+                          <Badge variant="outline" className="text-xs bg-card">
                             {guideline.category || 'General'}
                           </Badge>
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-muted-foreground">
                             {guideline.createdAt ? new Date(guideline.createdAt).toLocaleDateString() : ''}
                           </span>
                         </div>
@@ -452,7 +452,7 @@ export function ResidentDashboard() {
                 ))}
                 {guidelines.length > 3 && (
                   <Link href="/dashboard/resident/guidelines">
-                    <Button variant="outline" className="w-full border-purple-200 text-purple-600 hover:bg-purple-50">
+                    <Button variant="outline" className="w-full border-purple-200 dark:border-purple-800 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20">
                       View All {guidelines.length} Guidelines
                     </Button>
                   </Link>
@@ -468,7 +468,7 @@ export function ResidentDashboard() {
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold text-gray-800">Upcoming Events</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Upcoming Events</CardTitle>
               <Calendar className="h-5 w-5 text-green-600" />
             </div>
           </CardHeader>
@@ -477,31 +477,31 @@ export function ResidentDashboard() {
               {(apiEvents && apiEvents.length > 0) ? apiEvents.map((event: any) => (
                 <div
                   key={event.id}
-                  className="p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
+                  className="p-4 rounded-xl border border-border hover:border-teal-300 hover:shadow-md transition-all cursor-pointer"
                   onClick={() => router.push('/dashboard/residents/events')}
                 >
-                  <h4 className="font-semibold text-gray-900 mb-2">{event.title}</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
+                  <h4 className="font-semibold text-foreground mb-2">{event.title}</h4>
+                  <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                       {event.date}
                     </div>
                     <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
                       {event.time}
                     </div>
                     <div className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                      <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                       {event.location}
                     </div>
                   </div>
                 </div>
               )) : (
-                <p className="text-sm text-gray-500 col-span-full py-4">No upcoming events.</p>
+                <p className="text-sm text-muted-foreground col-span-full py-4">No upcoming events.</p>
               )}
             </div>
             <Link href="/dashboard/residents/events">
-              <Button variant="outline" className="w-full mt-4 border-teal-200 text-teal-600 hover:bg-teal-50">
+              <Button variant="outline" className="w-full mt-4 border-teal-200 dark:border-teal-800 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20">
                 View All Events
               </Button>
             </Link>

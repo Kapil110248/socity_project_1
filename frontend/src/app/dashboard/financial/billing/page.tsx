@@ -270,8 +270,9 @@ export default function BillingPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [blockFilter, setBlockFilter] = useState('all')
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([])
-  const [viewInvoice, setViewInvoice] = useState<typeof invoices[0] | null>(null)
+  const [viewInvoice, setViewInvoice] = useState<any | null>(null)
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
+  const [isBulkGenerateDialogOpen, setIsBulkGenerateDialogOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState<string | null>(null)
 
   // Form State for Single Invoice Creation
@@ -281,6 +282,13 @@ export default function BillingPage() {
     issueDate: new Date().toISOString().split('T')[0],
     dueDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString().split('T')[0],
     description: ''
+  });
+
+  // Form State for Bulk Generation
+  const [bulkConfig, setBulkConfig] = useState({
+    month: new Date().toLocaleString('en-US', { month: 'short' }).toLowerCase() + '-' + new Date().getFullYear(),
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString().split('T')[0],
+    block: 'all'
   });
 
   // Fetch units for dropdown
@@ -321,10 +329,21 @@ export default function BillingPage() {
         dueDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString().split('T')[0],
         description: ''
       });
-      showNotification('Invoice created successfully!');
+      toast.success('Invoice created successfully');
+    }
+  });
+
+  // Bulk generate bills mutation
+  const generateBillsMutation = useMutation({
+    mutationFn: BillingService.generateInvoices,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-stats'] });
+      setIsBulkGenerateDialogOpen(false);
+      toast.success(data.message || 'Bills generated successfully');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create invoice');
+      toast.error(error.response?.data?.error || 'Failed to generate bills');
     }
   });
 
@@ -347,7 +366,7 @@ export default function BillingPage() {
   }
 
   const handleCreateInvoice = () => {
-   
+
 
     const amount = parseFloat(newInvoice.amount);
 
@@ -368,6 +387,21 @@ export default function BillingPage() {
       issueDate: newInvoice.issueDate,
       dueDate: newInvoice.dueDate,
       description: newInvoice.description
+    });
+  }
+
+  const handleBulkGenerate = () => {
+    if (!bulkConfig.month || !bulkConfig.dueDate) {
+      toast.error('Please fill in required fields');
+      return;
+    }
+
+    generateBillsMutation.mutate({
+      month: bulkConfig.month,
+      dueDate: bulkConfig.dueDate,
+      block: bulkConfig.block === 'all' ? undefined : bulkConfig.block,
+      maintenanceAmount: 0,
+      utilityAmount: 0
     });
   }
 
@@ -492,11 +526,77 @@ export default function BillingPage() {
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Export</span>
             </Button>
+            <Dialog open={isBulkGenerateDialogOpen} onOpenChange={setIsBulkGenerateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 text-xs sm:text-sm">
+                  <Sparkles className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Generate Monthly Bills</span>
+                  <span className="sm:hidden">Generate</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Generate Monthly Bills</DialogTitle>
+                  <DialogDescription>
+                    Automatically calculate and generate bills for all units based on your set rules.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Billing Month</Label>
+                    <Input
+                      placeholder="e.g. feb-2025"
+                      value={bulkConfig.month}
+                      onChange={(e) => setBulkConfig({ ...bulkConfig, month: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Due Date</Label>
+                    <Input
+                      type="date"
+                      value={bulkConfig.dueDate}
+                      onChange={(e) => setBulkConfig({ ...bulkConfig, dueDate: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Block (Optional)</Label>
+                    <Select
+                      value={bulkConfig.block}
+                      onValueChange={(val) => setBulkConfig({ ...bulkConfig, block: val })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Blocks</SelectItem>
+                        <SelectItem value="A">Block A</SelectItem>
+                        <SelectItem value="B">Block B</SelectItem>
+                        <SelectItem value="C">Block C</SelectItem>
+                        <SelectItem value="D">Block D</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg text-xs text-blue-700 flex gap-2 items-start">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <p>This will use the maintenance and charge rules configured in "Billing Setup" to generate bills for all units in one click.</p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsBulkGenerateDialogOpen(false)}>Cancel</Button>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={handleBulkGenerate}
+                    disabled={generateBillsMutation.isPending}
+                  >
+                    {generateBillsMutation.isPending ? 'Generating...' : 'Generate Bills Now'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/25 text-xs sm:text-sm">
+                <Button size="sm" variant="outline" className="text-xs sm:text-sm">
                   <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Create Invoice</span>
+                  <span className="hidden sm:inline">Manual Invoice</span>
                   <span className="sm:hidden">Create</span>
                 </Button>
               </DialogTrigger>
@@ -918,23 +1018,35 @@ export default function BillingPage() {
                     <p className="text-sm text-gray-500">{viewInvoice.phone || getResidentPhone(viewInvoice.resident)}</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-gray-500">Maintenance Charges</span>
-                      <span className="font-medium">₹{viewInvoice.maintenance.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-gray-500">Utility Charges</span>
-                      <span className="font-medium">₹{viewInvoice.utilities.toLocaleString()}</span>
-                    </div>
-                    {viewInvoice.penalty > 0 && (
-                      <div className="flex justify-between py-2 border-b text-red-600">
-                        <span>Late Fee / Penalty</span>
-                        <span className="font-medium">₹{viewInvoice.penalty.toLocaleString()}</span>
-                      </div>
+                  <div className="space-y-0 text-sm">
+                    <p className="font-semibold text-gray-700 mb-2 uppercase text-xs tracking-wider">Charge Breakdown</p>
+                    {viewInvoice.items && viewInvoice.items.length > 0 ? (
+                      viewInvoice.items.map((item: any) => (
+                        <div key={item.id} className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+                          <span className="text-gray-600">{item.name}</span>
+                          <span className="font-medium text-gray-900">₹{item.amount.toLocaleString()}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div className="flex justify-between py-2 border-b border-gray-100">
+                          <span className="text-gray-600">Maintenance Charges</span>
+                          <span className="font-medium text-gray-900">₹{viewInvoice.maintenance.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b border-gray-100">
+                          <span className="text-gray-600">Utility Charges</span>
+                          <span className="font-medium text-gray-900">₹{viewInvoice.utilities.toLocaleString()}</span>
+                        </div>
+                        {viewInvoice.penalty > 0 && (
+                          <div className="flex justify-between py-2 border-b border-gray-100 text-red-600">
+                            <span>Late Fee / Penalty</span>
+                            <span className="font-medium">₹{viewInvoice.penalty.toLocaleString()}</span>
+                          </div>
+                        )}
+                      </>
                     )}
-                    <div className="flex justify-between py-3 text-lg font-bold">
-                      <span>Total Amount</span>
+                    <div className="flex justify-between py-4 text-lg font-bold text-blue-900 border-t-2 border-blue-100 mt-2">
+                      <span>Total Payable</span>
                       <span>₹{viewInvoice.amount.toLocaleString()}</span>
                     </div>
                   </div>
