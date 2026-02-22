@@ -10,6 +10,7 @@ import EmergencyNotificationListener from "@/components/emergency/EmergencyNotif
 import ComplaintNotificationListener from "@/components/complaints/ComplaintNotificationListener";
 import ChatNotificationListener from "@/components/chat/ChatNotificationListener";
 import ProfileUpdateNotificationListener from "@/components/profile/ProfileUpdateNotificationListener";
+import VisitorNotificationListener from "@/components/visitors/VisitorNotificationListener";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
             <ComplaintNotificationListener />
             <ChatNotificationListener />
             <ProfileUpdateNotificationListener />
+            <VisitorNotificationListener />
             {children}
             <Toaster position="top-right" />
             <SonnerToaster position="top-right" richColors />

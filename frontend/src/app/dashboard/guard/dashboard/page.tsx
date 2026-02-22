@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Users,
@@ -56,8 +56,11 @@ import { toast } from 'sonner'
 import { ParcelService } from '@/services/parcel.service'
 import { VehicleService } from '@/services/vehicle.service'
 import { UnitService } from '@/services/unit.service'
+import { useAuthStore } from '@/lib/stores/auth-store'
+import { connectSocket, disconnectSocket } from '@/lib/socket'
 
 export default function GuardDashboardPage() {
+  const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [visitorSearch, setVisitorSearch] = useState('')
   const [helperSearch, setHelperSearch] = useState('')
@@ -148,16 +151,54 @@ export default function GuardDashboardPage() {
   })
 
   const reportIncidentMutation = useMutation({
-    mutationFn: GuardService.reportIncident,
+    mutationFn: (data: any) => GuardService.reportIncident(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guard-activity'] })
       setShowIncidentDialog(false)
-      setIncidentDescription('')
-      setIncidentSeverity('medium')
-      setIncidentAssignee('')
       toast.success('Incident reported successfully')
+      setIncidentDescription('')
+      setIncidentPhoto(null)
     }
   })
+
+  // Socket setup for real-time notifications
+  useEffect(() => {
+    if (user?.societyId) {
+      const socket = connectSocket(user.societyId)
+
+      socket.on('new_visitor_request', (data) => {
+        toast.info(`New Entry Request: ${data.name} at ${data.gateName || 'Gate'}`, {
+          description: `Purpose: ${data.purpose}${data.unit ? ` • Unit: ${data.unit}` : ''}`,
+          duration: 10000,
+          action: {
+            label: 'View',
+            onClick: () => {
+              // Scroll to pending visitors or switch tab if needed
+              const pendingTab = document.querySelector('[data-value="pending"]') as HTMLButtonElement
+              if (pendingTab) pendingTab.click()
+            }
+          }
+        })
+
+        // play a sound if you want
+        try {
+          const audio = new Audio('/sounds/notification.mp3')
+          audio.play()
+        } catch (err) {
+          // ignore sound error
+        }
+
+        // Refresh data
+        queryClient.invalidateQueries({ queryKey: ['visitors'] })
+        queryClient.invalidateQueries({ queryKey: ['guard-stats'] })
+      })
+
+      return () => {
+        socket.off('new_visitor_request')
+        disconnectSocket()
+      }
+    }
+  }, [user?.societyId, queryClient])
 
   const createEmergencyMutation = useMutation({
     mutationFn: GuardService.createEmergencyAlert,
@@ -245,10 +286,6 @@ export default function GuardDashboardPage() {
           <p className="text-gray-600 mt-1">Main Gate - Shift: Morning (6 AM - 2 PM)</p>
         </div>
         <div className="flex gap-2 mt-4 md:mt-0">
-          <Button variant="outline" className="gap-2">
-            <QrCode className="h-4 w-4" />
-            Scan QR
-          </Button>
           <Button
             className="gap-2 bg-red-600 hover:bg-red-700"
             onClick={() => createEmergencyMutation.mutate({

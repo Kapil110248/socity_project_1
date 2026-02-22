@@ -8,6 +8,8 @@ import {
     CheckCircle2, AlertCircle, Loader2, Building2, ChevronDown
 } from 'lucide-react'
 import { GatePublicService } from '@/services/gate.service'
+import { getSocket } from '@/lib/socket'
+import { Badge } from '@/components/ui/badge'
 
 export default function VisitorEntryPage() {
     const searchParams = useSearchParams()
@@ -42,6 +44,8 @@ export default function VisitorEntryPage() {
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const [submitError, setSubmitError] = useState('')
+    const [visitorId, setVisitorId] = useState<number | null>(null)
+    const [visitorStatus, setVisitorStatus] = useState<string>('PENDING')
 
     // Validate gate on load
     useEffect(() => {
@@ -137,7 +141,8 @@ export default function VisitorEntryPage() {
             if (fromLocation.trim()) formData.append('fromLocation', fromLocation.trim())
             if (photoBlob) formData.append('photo', photoBlob, 'visitor-photo.jpg')
 
-            await GatePublicService.submitEntry(gateId, formData)
+            const response = await GatePublicService.submitEntry(gateId, formData)
+            setVisitorId(response.visitorId)
             setSubmitted(true)
         } catch (err: any) {
             setSubmitError(err.message || 'Submission failed')
@@ -146,7 +151,32 @@ export default function VisitorEntryPage() {
         }
     }
 
-    // ─── Loading ───
+    // Listen for status updates if submitted
+    useEffect(() => {
+        if (submitted && visitorId) {
+            const socket = getSocket()
+            if (!socket.connected) socket.connect()
+
+            socket.emit('join-user', `visitor_${visitorId}`)
+            console.log(`Joined room visitor_${visitorId}`)
+
+            socket.on('visitor_status_updated', (data) => {
+                console.log('Status updated:', data)
+                setVisitorStatus(data.status)
+                if (data.status === 'APPROVED' || data.status === 'CHECKED_IN') {
+                    // Play success sound
+                    try { new Audio('/sounds/success.mp3').play() } catch { }
+                }
+            })
+
+            return () => {
+                socket.off('visitor_status_updated')
+            }
+        }
+    }, [submitted, visitorId])
+
+    const isApproved = visitorStatus === 'APPROVED' || visitorStatus === 'CHECKED_IN'
+    const isRejected = visitorStatus === 'REJECTED'
     if (validating) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
@@ -180,22 +210,42 @@ export default function VisitorEntryPage() {
     // ─── Success ───
     if (submitted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900/50 to-slate-900 flex items-center justify-center p-4">
+            <div className={`min-h-screen bg-gradient-to-br flex items-center justify-center p-4 transition-colors duration-500 ${isApproved ? 'from-slate-900 via-emerald-900/50 to-slate-900' :
+                isRejected ? 'from-slate-900 via-red-900/50 to-slate-900' :
+                    'from-slate-900 via-blue-900/50 to-slate-900'
+                }`}>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
                     className="bg-white/10 backdrop-blur-xl rounded-3xl p-10 max-w-md w-full text-center border border-white/20"
                 >
                     <motion.div
                         initial={{ scale: 0 }} animate={{ scale: 1 }}
+                        key={visitorStatus}
                         transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
                     >
-                        <CheckCircle2 className="h-20 w-20 text-emerald-400 mx-auto mb-6" />
+                        {isApproved ? (
+                            <CheckCircle2 className="h-20 w-20 text-emerald-400 mx-auto mb-6" />
+                        ) : isRejected ? (
+                            <AlertCircle className="h-20 w-20 text-red-400 mx-auto mb-6" />
+                        ) : (
+                            <Loader2 className="h-20 w-20 text-blue-400 animate-spin mx-auto mb-6" />
+                        )}
                     </motion.div>
-                    <h2 className="text-3xl font-bold text-white mb-3">Entry Requested!</h2>
+
+                    <h2 className="text-3xl font-bold text-white mb-3">
+                        {isApproved ? 'Entry Approved!' : isRejected ? 'Entry Rejected' : 'Entry Requested!'}
+                    </h2>
+
                     <p className="text-gray-300 text-lg leading-relaxed">
-                        Please wait for security approval.
-                        <br />The guard will verify your details shortly.
+                        {isApproved ? (
+                            <>Welcome! Your entry has been approved.<br />Please proceed to the gate.</>
+                        ) : isRejected ? (
+                            <>Sorry, your entry request was rejected.<br />Please contact the resident or security.</>
+                        ) : (
+                            <>Please wait for security approval.<br />The guard will verify your details shortly.</>
+                        )}
                     </p>
+
                     <div className="mt-8 px-6 py-4 bg-white/5 rounded-2xl border border-white/10">
                         <p className="text-sm text-gray-400">
                             Gate: <span className="text-white font-semibold">{gateInfo?.name}</span>
@@ -203,7 +253,25 @@ export default function VisitorEntryPage() {
                         <p className="text-sm text-gray-400 mt-1">
                             Society: <span className="text-white font-semibold">{gateInfo?.society?.name}</span>
                         </p>
+                        <p className="text-sm text-gray-400 mt-1">
+                            Status: <Badge variant="outline" className={`ml-1 text-[10px] ${isApproved ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50' :
+                                isRejected ? 'bg-red-500/10 text-red-400 border-red-500/50' :
+                                    'bg-blue-500/10 text-blue-400 border-blue-500/50'
+                                }`}>
+                                {visitorStatus}
+                            </Badge>
+                        </p>
                     </div>
+
+                    {isApproved && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-6 text-sm text-emerald-400 font-medium"
+                        >
+                            You can now enter the society Premise.
+                        </motion.div>
+                    )}
                 </motion.div>
             </div>
         )

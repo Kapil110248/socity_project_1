@@ -135,6 +135,7 @@ export default function VisitorsPage() {
   const [newPhone, setNewPhone] = useState('')
   const [newUnitId, setNewUnitId] = useState('')
   const [newPurpose, setNewPurpose] = useState('')
+  const [newWhomToMeet, setNewWhomToMeet] = useState('')
   const [newVehicleNo, setNewVehicleNo] = useState('')
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -238,6 +239,7 @@ export default function VisitorsPage() {
     setNewPhone('')
     setNewUnitId('')
     setNewPurpose('')
+    setNewWhomToMeet('')
     setNewVehicleNo('')
     setPhotoFile(null)
     setPhotoPreview(null)
@@ -253,6 +255,7 @@ export default function VisitorsPage() {
       phone: newPhone,
       visitingUnitId: newUnitId,
       purpose: newPurpose,
+      whomToMeet: newWhomToMeet,
       vehicleNo: newVehicleNo,
       photo: photoFile
     })
@@ -268,6 +271,7 @@ export default function VisitorsPage() {
       phone: newPhone,
       visitingUnitId: newUnitId || null,
       purpose: newPurpose,
+      whomToMeet: newWhomToMeet,
       vehicleNo: newVehicleNo,
       photo: photoFile
     })
@@ -428,11 +432,19 @@ export default function VisitorsPage() {
                     <div className="space-y-2">
                       <Label>Vehicle Number</Label>
                       <Input
-                        placeholder="e.g., DL 01 AB 1234"
+                        placeholder="MH 01 AB 1234"
                         value={newVehicleNo}
                         onChange={(e) => setNewVehicleNo(e.target.value)}
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Whom to Meet</Label>
+                    <Input
+                      placeholder="Resident name or reason"
+                      value={newWhomToMeet}
+                      onChange={(e) => setNewWhomToMeet(e.target.value)}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
