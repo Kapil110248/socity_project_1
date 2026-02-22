@@ -161,45 +161,6 @@ export default function GuardDashboardPage() {
     }
   })
 
-  // Socket setup for real-time notifications
-  useEffect(() => {
-    if (user?.societyId) {
-      const socket = connectSocket(user.societyId)
-
-      socket.on('new_visitor_request', (data) => {
-        toast.info(`New Entry Request: ${data.name} at ${data.gateName || 'Gate'}`, {
-          description: `Purpose: ${data.purpose}${data.unit ? ` • Unit: ${data.unit}` : ''}`,
-          duration: 10000,
-          action: {
-            label: 'View',
-            onClick: () => {
-              // Scroll to pending visitors or switch tab if needed
-              const pendingTab = document.querySelector('[data-value="pending"]') as HTMLButtonElement
-              if (pendingTab) pendingTab.click()
-            }
-          }
-        })
-
-        // play a sound if you want
-        try {
-          const audio = new Audio('/sounds/notification.mp3')
-          audio.play()
-        } catch (err) {
-          // ignore sound error
-        }
-
-        // Refresh data
-        queryClient.invalidateQueries({ queryKey: ['visitors'] })
-        queryClient.invalidateQueries({ queryKey: ['guard-stats'] })
-      })
-
-      return () => {
-        socket.off('new_visitor_request')
-        disconnectSocket()
-      }
-    }
-  }, [user?.societyId, queryClient])
-
   const createEmergencyMutation = useMutation({
     mutationFn: GuardService.createEmergencyAlert,
     onSuccess: () => {

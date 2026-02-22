@@ -19,6 +19,7 @@ import {
   Video,
   HelpCircle,
   User,
+  UserCheck,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Input } from '@/components/ui/input'
@@ -214,6 +215,8 @@ export function Header() {
         return 'bg-teal-100 text-teal-600'
       case 'chat_message':
         return 'bg-indigo-100 text-indigo-600'
+      case 'visitor':
+        return 'bg-blue-100 text-blue-600'
       default:
         return 'bg-gray-100 text-gray-600'
     }
@@ -610,13 +613,19 @@ export function Header() {
                               router.push('/dashboard/financial/platform-invoices')
                             }
                           }
+                        } else if (n.type === 'visitor') {
+                          router.push('/dashboard/guard/dashboard')
                         }
                       }}
                     >
                       <div
                         className={`p-2 rounded-lg flex-shrink-0 ${getNotificationIcon(n.type || '')}`}
                       >
-                        <Bell className="h-4 w-4" />
+                        {n.type === 'visitor' ? (
+                          <UserCheck className="h-4 w-4" />
+                        ) : (
+                          <Bell className="h-4 w-4" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
