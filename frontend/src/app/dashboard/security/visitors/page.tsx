@@ -62,9 +62,8 @@ function VisitorDetailDialog({ visitor, onCheckIn, onCheckOut }: { visitor: any,
             <div className="flex-1">
               <h3 className="text-lg font-semibold">{visitor.name}</h3>
               <p className="text-sm text-muted-foreground">{visitor.phone}</p>
-              <Badge className={`mt-2 ${
-                  visitor.status === 'CHECKED_IN' ? 'bg-green-100 text-green-700' :
-                  visitor.status === 'CHECKED_OUT' ? 'bg-gray-100 text-gray-700' :
+              <Badge className={`mt-2 ${visitor.status === 'CHECKED_IN' ? 'bg-green-100 text-green-700' :
+                visitor.status === 'CHECKED_OUT' ? 'bg-gray-100 text-gray-700' :
                   'bg-blue-100 text-blue-700'
                 }`}>
                 {visitor.status === 'CHECKED_IN' && <span className="mr-1 h-2 w-2 rounded-full bg-green-500 animate-pulse inline-block" />}
@@ -113,7 +112,7 @@ function VisitorDetailDialog({ visitor, onCheckIn, onCheckOut }: { visitor: any,
                 Check Out
               </Button>
             )}
-             <Button variant="outline" className="flex-1" onClick={() => setIsOpen(false)}>
+            <Button variant="outline" className="flex-1" onClick={() => setIsOpen(false)}>
               Close
             </Button>
           </div>
@@ -154,11 +153,11 @@ export default function VisitorsPage() {
   // Fetch Visitors
   const { data: visitorsData = [], isLoading } = useQuery({
     queryKey: ['visitors', activeTab, searchQuery, dateFilter, blockFilter],
-    queryFn: () => VisitorService.getAll({ 
-        status: activeTab, 
-        search: searchQuery,
-        date: dateFilter,
-        block: blockFilter
+    queryFn: () => VisitorService.getAll({
+      status: activeTab,
+      search: searchQuery,
+      date: dateFilter,
+      block: blockFilter
     })
   })
 
@@ -166,8 +165,8 @@ export default function VisitorsPage() {
   const { data: unitsData = [] } = useQuery({
     queryKey: ['units'],
     queryFn: async () => {
-         const res = await api.get('/units') // Assuming this endpoint exists, or we might need to create it
-         return res.data
+      const res = await api.get('/units') // Assuming this endpoint exists, or we might need to create it
+      return res.data
     }
   })
 
@@ -196,7 +195,7 @@ export default function VisitorsPage() {
 
   const preApproveMutation = useMutation({
     mutationFn: VisitorService.preApprove,
-     onSuccess: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['visitors'] })
       queryClient.invalidateQueries({ queryKey: ['visitorStats'] })
       setIsAddDialogOpen(false)
@@ -204,6 +203,19 @@ export default function VisitorsPage() {
       resetForm()
     },
     onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to pre-approve')
+  })
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+      const res = await api.patch(`/visitors/${id}/status`, { status })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['visitors'] })
+      queryClient.invalidateQueries({ queryKey: ['visitorStats'] })
+      toast.success('Status updated successfully!')
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to update status')
   })
 
   // useRef for file input
@@ -233,8 +245,8 @@ export default function VisitorsPage() {
 
   const handleCheckInNow = () => {
     if (!newName || !newPhone || !newUnitId || !newPurpose) {
-        toast.error('Please fill all required fields')
-        return
+      toast.error('Please fill all required fields')
+      return
     }
     checkInMutation.mutate({
       name: newName,
@@ -247,9 +259,9 @@ export default function VisitorsPage() {
   }
 
   const handlePreApprove = () => {
-     if (!newName || !newPhone || !newPurpose) {
-        toast.error('Please fill name, phone and purpose')
-        return
+    if (!newName || !newPhone || !newPurpose) {
+      toast.error('Please fill name, phone and purpose')
+      return
     }
     preApproveMutation.mutate({
       name: newName,
@@ -304,19 +316,16 @@ export default function VisitorsPage() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-             <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500">
-                <Users className="h-6 w-6 text-white" />
-              </div>
+            <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500">
+              <Users className="h-6 w-6 text-white" />
+            </div>
             <div>
               <h1 className="text-2xl font-bold text-[#1e3a5f]">Visitor Management</h1>
               <p className="text-muted-foreground text-sm">Track and manage visitor entries</p>
             </div>
           </div>
-          
-           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => toast.success('QR Scan placeholder')}>
-              <Scan className="h-4 w-4 mr-2" /> Scan QR
-            </Button>
+
+          <div className="flex gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white">
@@ -324,7 +333,7 @@ export default function VisitorsPage() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
-                 <DialogHeader>
+                <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <UserCheck className="h-5 w-5 text-blue-600" />
                     Register New Visitor
@@ -339,9 +348,9 @@ export default function VisitorsPage() {
                     <div className="relative">
                       <div className="h-32 w-32 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden">
                         {photoPreview ? (
-                            <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                          <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
                         ) : (
-                            <Camera className="h-10 w-10 text-gray-400" />
+                          <Camera className="h-10 w-10 text-gray-400" />
                         )}
                       </div>
                       <Button
@@ -351,11 +360,11 @@ export default function VisitorsPage() {
                       >
                         <Camera className="h-5 w-5" />
                       </Button>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
                         onChange={handleFileChange}
                       />
                     </div>
@@ -364,16 +373,16 @@ export default function VisitorsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Visitor Name *</Label>
-                      <Input 
-                        placeholder="Enter full name" 
+                      <Input
+                        placeholder="Enter full name"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>Phone Number *</Label>
-                      <Input 
-                        placeholder="+91 XXXXX XXXXX" 
+                      <Input
+                        placeholder="+91 XXXXX XXXXX"
                         value={newPhone}
                         onChange={(e) => setNewPhone(e.target.value)}
                       />
@@ -387,11 +396,11 @@ export default function VisitorsPage() {
                           <SelectValue placeholder="Select unit" />
                         </SelectTrigger>
                         <SelectContent>
-                           {unitsData.map((u: any) => (
-                                <SelectItem key={u.id} value={u.id.toString()}>
-                                    {u.block}-{u.number}
-                                </SelectItem>
-                            ))}
+                          {unitsData.map((u: any) => (
+                            <SelectItem key={u.id} value={u.id.toString()}>
+                              {u.block}-{u.number}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -418,8 +427,8 @@ export default function VisitorsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Vehicle Number</Label>
-                      <Input 
-                        placeholder="e.g., DL 01 AB 1234" 
+                      <Input
+                        placeholder="e.g., DL 01 AB 1234"
                         value={newVehicleNo}
                         onChange={(e) => setNewVehicleNo(e.target.value)}
                       />
@@ -475,7 +484,7 @@ export default function VisitorsPage() {
                 </div>
               </DialogContent>
             </Dialog>
-           </div>
+          </div>
         </div>
 
         {/* Stats */}
@@ -492,8 +501,8 @@ export default function VisitorsPage() {
                       <h3 className="text-3xl font-bold mt-2">{stat.value}</h3>
                     </div>
                     <div className={`p-3 rounded-xl ${stat.bgColor} relative`}>
-                        {stat.pulse && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-green-500 animate-pulse" />}
-                        <Icon className={`h-6 w-6 ${stat.textColor}`} />
+                      {stat.pulse && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-green-500 animate-pulse" />}
+                      <Icon className={`h-6 w-6 ${stat.textColor}`} />
                     </div>
                   </div>
                 </CardContent>
@@ -504,131 +513,168 @@ export default function VisitorsPage() {
 
         {/* Filters */}
         <Card className="border-0 shadow-lg p-4">
-            <div className="flex flex-col lg:flex-row gap-4">
-               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Search visitors..." 
-                    className="pl-10" 
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                />
-               </div>
-               <Select value={dateFilter} onValueChange={setDateFilter}>
-                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="yesterday">Yesterday</SelectItem>
-                    <SelectItem value="week">This Week</SelectItem>
-                    <SelectItem value="month">This Month</SelectItem>
-                  </SelectContent>
-               </Select>
-               <Select value={blockFilter} onValueChange={setBlockFilter}>
-                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-blocks">All Blocks</SelectItem>
-                    <SelectItem value="A">Block A</SelectItem>
-                    <SelectItem value="B">Block B</SelectItem>
-                    <SelectItem value="C">Block C</SelectItem>
-                  </SelectContent>
-               </Select>
-               <Button variant="outline" size="icon" onClick={() => { setSearchQuery(''); setDateFilter('today'); setBlockFilter('all-blocks'); }}>
-                  <RefreshCw className="h-4 w-4" />
-               </Button>
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search visitors..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
             </div>
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={blockFilter} onValueChange={setBlockFilter}>
+              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-blocks">All Blocks</SelectItem>
+                <SelectItem value="A">Block A</SelectItem>
+                <SelectItem value="B">Block B</SelectItem>
+                <SelectItem value="C">Block C</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={() => { setSearchQuery(''); setDateFilter('today'); setBlockFilter('all-blocks'); }}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </Card>
 
         {/* Table */}
         <Card className="border-0 shadow-lg">
-           <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="border-b px-6">
-                 <TabsList className="bg-transparent h-auto p-0 space-x-6">
-                    {['all', 'checked-in', 'checked-out', 'pending', 'approved'].map(tab => (
-                        <TabsTrigger 
-                            key={tab} 
-                            value={tab}
-                            className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-0 pb-3 capitalize"
-                        >
-                            {tab.replace('-', ' ')}
-                        </TabsTrigger>
-                    ))}
-                 </TabsList>
-              </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="border-b px-6">
+              <TabsList className="bg-transparent h-auto p-0 space-x-6">
+                {['all', 'checked-in', 'checked-out', 'pending', 'approved'].map(tab => (
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none px-0 pb-3 capitalize"
+                  >
+                    {tab.replace('-', ' ')}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
-               <div className="p-0">
-                  <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Visitor</TableHead>
-                            <TableHead>Visiting</TableHead>
-                            <TableHead>Purpose</TableHead>
-                            <TableHead>Time</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></TableCell></TableRow>
-                        ) : visitorsData.length === 0 ? (
-                            <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No visitors found</TableCell></TableRow>
-                        ) : (
-                            visitorsData.map((visitor: any) => (
-                                <TableRow key={visitor.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar>
-                                                <AvatarImage src={visitor.photo} />
-                                                <AvatarFallback>{visitor.name?.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-medium">{visitor.name}</p>
-                                                <p className="text-xs text-muted-foreground">{visitor.phone}</p>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                                            <span>
-                                                {visitor.unit ? `${visitor.unit.block}-${visitor.unit.number}` : 'N/A'}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{visitor.purpose}</TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            <p className="text-green-600">In: {visitor.entryTime ? new Date(visitor.entryTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</p>
-                                            <p className="text-red-600">Out: {visitor.exitTime ? new Date(visitor.exitTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '-'}</p>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                       <Badge className={
-                                          visitor.status === 'CHECKED_IN' ? 'bg-green-100 text-green-700' :
-                                          visitor.status === 'CHECKED_OUT' ? 'bg-gray-100 text-gray-700' :
-                                          'bg-blue-100 text-blue-700'
-                                       }>
-                                          {visitor.status?.replace('_', ' ')}
-                                       </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-2">
-                                            <VisitorDetailDialog 
-                                                visitor={visitor} 
-                                                onCheckOut={(id) => checkOutMutation.mutate(id)}
-                                            />
-                                            {visitor.status === 'APPROVED' && (
-                                                <Button size="sm" variant="outline" onClick={() => toast.success('Check In logic here for approved')}>In</Button>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                  </Table>
-               </div>
-           </Tabs>
+            <div className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Visitor</TableHead>
+                    <TableHead>Visiting</TableHead>
+                    <TableHead>Purpose</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto" /></TableCell></TableRow>
+                  ) : visitorsData.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No visitors found</TableCell></TableRow>
+                  ) : (
+                    visitorsData.map((visitor: any) => (
+                      <TableRow key={visitor.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={visitor.photo} />
+                              <AvatarFallback>{visitor.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{visitor.name}</p>
+                              <p className="text-xs text-muted-foreground">{visitor.phone}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <span>
+                              {visitor.unit ? `${visitor.unit.block}-${visitor.unit.number}` : 'N/A'}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{visitor.purpose}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p className="text-green-600">In: {visitor.entryTime ? new Date(visitor.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
+                            <p className="text-red-600">Out: {visitor.exitTime ? new Date(visitor.exitTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={
+                            visitor.status === 'CHECKED_IN' ? 'bg-green-100 text-green-700' :
+                              visitor.status === 'CHECKED_OUT' ? 'bg-gray-100 text-gray-700' :
+                                'bg-blue-100 text-blue-700'
+                          }>
+                            {visitor.status?.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <VisitorDetailDialog
+                              visitor={visitor}
+                              onCheckOut={(id) => checkOutMutation.mutate(id)}
+                            />
+                            {visitor.status === 'PENDING' && (
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 text-xs text-red-600 border-red-200"
+                                  onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'REJECTED' })}
+                                >
+                                  <UserX className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                  onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'CHECKED_IN' })}
+                                >
+                                  <UserCheck className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                              </div>
+                            )}
+                            {visitor.status === 'APPROVED' && (
+                              <Button
+                                size="sm"
+                                className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'CHECKED_IN' })}
+                              >
+                                In
+                              </Button>
+                            )}
+                            {visitor.status === 'CHECKED_IN' && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-8 text-xs"
+                                onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'EXITED' })}
+                              >
+                                Exit
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Tabs>
         </Card>
       </div>
     </RoleGuard>

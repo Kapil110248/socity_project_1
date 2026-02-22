@@ -665,9 +665,9 @@ export default function LandingPage() {
               <h4 className="font-semibold text-white mb-4">Legal</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link href="/privacy-policy" className="hover:text-white transition-colors">
                     Privacy Policy
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <a href="#" className="hover:text-white transition-colors">
@@ -685,7 +685,7 @@ export default function LandingPage() {
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-400">
-              © 2024 IGATESECURITY. All rights reserved.
+              © 2026 igate. All rights reserved.
             </p>
             <div className="flex items-center space-x-6 mt-4 md:mt-0">
               <a href="#" className="hover:text-white transition-colors">

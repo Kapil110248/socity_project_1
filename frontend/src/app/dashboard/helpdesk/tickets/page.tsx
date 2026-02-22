@@ -156,7 +156,7 @@ export default function HelpdeskTicketsPage() {
               <Ticket className="h-8 w-8 text-[#1e3a5f]" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Support & Ticketing</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Help & Support</h1>
               <p className="text-sm font-medium text-gray-400">Manage society issues and private consultations</p>
             </div>
           </div>

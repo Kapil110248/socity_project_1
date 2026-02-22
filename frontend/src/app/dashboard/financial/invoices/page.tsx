@@ -493,15 +493,15 @@ export default function InvoicesPage() {
                         >
                           <MessageSquare className="h-4 w-4" />
                         </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Delete"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => setInvoiceToDelete(invoice)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Delete"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setInvoiceToDelete(invoice)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -549,6 +549,24 @@ export default function InvoicesPage() {
                   </div>
                 </div>
 
+                {viewInvoice.items && viewInvoice.items.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium border-b pb-1">Invoice Breakdown</h4>
+                    <div className="space-y-1">
+                      {viewInvoice.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span className="text-gray-600 truncate mr-4">{item.name}</span>
+                          <span className="font-medium whitespace-nowrap">₹{item.amount.toLocaleString()}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-sm pt-2 border-t mt-2 font-bold">
+                        <span>Grand Total</span>
+                        <span>₹{viewInvoice.amount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button className="flex-1" variant="outline" onClick={() => {
                     PDFService.generateInvoicePDF(viewInvoice);
@@ -568,7 +586,7 @@ export default function InvoicesPage() {
             )}
           </DialogContent>
         </Dialog>
- 
+
         {/* Delete Confirmation Dialog */}
         <Dialog open={!!invoiceToDelete} onOpenChange={() => setInvoiceToDelete(null)}>
           <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
@@ -583,17 +601,17 @@ export default function InvoicesPage() {
                 <span className="opacity-75 italic mt-2 block">This record will be permanently purged from all reports.</span>
               </p>
             </div>
- 
+
             <div className="p-6 bg-white flex justify-end gap-3 border-t border-gray-100">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setInvoiceToDelete(null)}
                 className="hover:bg-gray-50 border-gray-200 transition-all duration-200 px-6"
               >
                 No, Keep Record
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => deleteInvoiceMutation.mutate(invoiceToDelete.id)}
                 className="bg-red-600 hover:bg-red-700 px-8 font-bold shadow-lg shadow-red-200 hover:shadow-red-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
               >

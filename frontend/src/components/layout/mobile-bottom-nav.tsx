@@ -73,7 +73,7 @@ export function MobileBottomNav() {
   const residentMoreNav = [
     {
       icon: Headphones,
-      label: 'Helpdesk',
+      label: 'Help & Support',
       href: '/dashboard/helpdesk/tickets',
       color: 'text-blue-500',
       bgColor: 'bg-blue-50',

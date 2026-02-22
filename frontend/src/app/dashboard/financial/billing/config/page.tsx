@@ -43,6 +43,7 @@ import {
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { billingConfigService, MaintenanceRule, ChargeMaster, LateFeeConfig } from "@/services/billing-config.service"
+import { BillingService } from "@/services/billing.service"
 
 export default function BillingConfigPage() {
     const queryClient = useQueryClient()
@@ -55,6 +56,17 @@ export default function BillingConfigPage() {
     })
 
     // Mutations
+    const finalizeMutation = useMutation({
+        mutationFn: () => BillingService.finalizeSetup(),
+        onSuccess: (data) => {
+            toast.success(data.message || "Setup finalized and initial bills generated!");
+            router.push('/dashboard/financial/billing');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || "Failed to finalize setup");
+        }
+    })
+
     const updateRuleMutation = useMutation({
         mutationFn: ({ id, data }: { id: number | 'new', data: Partial<MaintenanceRule> }) =>
             billingConfigService.updateMaintenanceRule(id, data),
@@ -119,6 +131,14 @@ export default function BillingConfigPage() {
                         <p className="text-muted-foreground text-sm">Configure how dues and penalties are calculated.</p>
                     </div>
                 </div>
+                <Button
+                    className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20"
+                    onClick={() => finalizeMutation.mutate()}
+                    disabled={finalizeMutation.isPending}
+                >
+                    <Check className="h-4 w-4 mr-2" />
+                    {finalizeMutation.isPending ? "Finalizing..." : "Finalize & Generate Bills"}
+                </Button>
             </div>
 
             <Tabs defaultValue="maintenance" className="space-y-4">

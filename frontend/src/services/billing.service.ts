@@ -97,4 +97,9 @@ export const BillingService = {
     const response = await api.delete(`${API_CONFIG.BILLING.INVOICES}/${id}`);
     return response.data;
   },
+
+  finalizeSetup: async () => {
+    const response = await api.post(API_CONFIG.BILLING.FINALIZE);
+    return response.data;
+  },
 };

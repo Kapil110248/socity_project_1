@@ -256,12 +256,6 @@ export function SecurityDashboard() {
               <p className="text-white/70 text-sm">IGATESECURITY Gatekeeper</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button className="bg-white/20 hover:bg-white/30 text-white" onClick={() => router.push('/dashboard/security/visitors')}>
-              <QrCode className="h-4 w-4 mr-2" />
-              Scan QR
-            </Button>
-          </div>
         </div>
 
         {/* Quick Stats Row */}
@@ -310,13 +304,14 @@ export function SecurityDashboard() {
               </Link>
             </motion.div>
           )
-        })}
-      </motion.div>
+        })
+        }
+      </motion.div >
 
       {/* Daily Visitor Chart & Recent Visitors */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      < div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6" >
         {/* Daily Visitor-In Chart - IGATESECURITY Style */}
-        <motion.div variants={itemVariants}>
+        < motion.div variants={itemVariants} >
           <Card className="border-0 shadow-md bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -360,10 +355,10 @@ export function SecurityDashboard() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </motion.div >
 
         {/* Recent Visitors - IGATESECURITY Style */}
-        <motion.div variants={itemVariants}>
+        < motion.div variants={itemVariants} >
           <Card className="border-0 shadow-md h-full bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -436,13 +431,13 @@ export function SecurityDashboard() {
               </Link>
             </CardContent>
           </Card>
-        </motion.div>
-      </div>
+        </motion.div >
+      </div >
 
       {/* Pending Approvals & Emergency Contacts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      < div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6" >
         {/* Pending Vehicle Approvals */}
-        <motion.div variants={itemVariants}>
+        < motion.div variants={itemVariants} >
           <Card className="border-0 shadow-md bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -501,10 +496,10 @@ export function SecurityDashboard() {
               </Link>
             </CardContent>
           </Card>
-        </motion.div>
+        </motion.div >
 
         {/* Emergency Contacts - IGATESECURITY Style */}
-        <motion.div variants={itemVariants}>
+        < motion.div variants={itemVariants} >
           <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -561,11 +556,11 @@ export function SecurityDashboard() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
-      </div>
+        </motion.div >
+      </div >
 
       {/* Quick Actions Row */}
-      <motion.div variants={itemVariants}>
+      < motion.div variants={itemVariants} >
         <Card className="border-0 shadow-md bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-bold text-foreground">Quick Actions</CardTitle>
@@ -591,7 +586,7 @@ export function SecurityDashboard() {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
-    </motion.div>
+      </motion.div >
+    </motion.div >
   )
 }

@@ -210,8 +210,12 @@ export function ResidentDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="text-xs sm:text-sm">History</Button>
-              <Button size="sm" className="bg-teal-500 hover:bg-teal-600 text-white text-xs sm:text-sm">Pay</Button>
+              <Link href="/dashboard/residents/dues">
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm">History</Button>
+              </Link>
+              <Link href="/dashboard/residents/dues">
+                <Button size="sm" className="bg-teal-500 hover:bg-teal-600 text-white text-xs sm:text-sm">Pay</Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -312,15 +316,21 @@ export function ResidentDashboard() {
                     <p className="text-sm text-gray-600 dark:text-red-300">Maintenance Fee</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-red-100">Rs. {dues?.amount?.toLocaleString() || '0'}</p>
                   </div>
-                  <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white">PAY</Button>
+                  <Link href="/dashboard/residents/dues">
+                    <Button className="bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white">PAY</Button>
+                  </Link>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <Button variant="outline" size="sm" className="flex-1 text-xs">
-                    <Clock className="h-3 w-3 mr-1" /> History
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1 text-xs">
-                    <CreditCard className="h-3 w-3 mr-1" /> Advance / Deposit
-                  </Button>
+                  <Link href="/dashboard/residents/dues" className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full text-xs">
+                      <Clock className="h-3 w-3 mr-1" /> History
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard/residents/dues?tab=wallet" className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full text-xs">
+                      <CreditCard className="h-3 w-3 mr-1" /> Advance / Deposit
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

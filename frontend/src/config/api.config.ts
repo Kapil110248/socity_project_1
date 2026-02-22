@@ -234,6 +234,7 @@ export const API_CONFIG = {
   BILLING: {
     INVOICES: "/invoices",
     GENERATE: "/invoices/generate",
+    FINALIZE: "/invoices/finalize",
     STATS: "/invoices/stats",
     DEFAULTERS: "/invoices/defaulters",
     DEFAULTER_STATS: "/invoices/defaulters/stats",

@@ -309,9 +309,14 @@ export default function GuardDashboardPage() {
 
           <Tabs defaultValue="pending" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="pending">
+              <TabsTrigger value="pending" className="relative">
                 <Clock className="h-4 w-4 mr-2" />
                 Pending
+                {pendingVisitors.length > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white font-bold animate-pulse">
+                    {pendingVisitors.length}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="all">
                 <Users className="h-4 w-4 mr-2" />
@@ -335,15 +340,29 @@ export default function GuardDashboardPage() {
                     className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback className="bg-yellow-200">{visitor.name[0]}</AvatarFallback>
-                      </Avatar>
+                      {visitor.photo ? (
+                        <img src={visitor.photo} alt={visitor.name} className="h-10 w-10 rounded-full object-cover border-2 border-yellow-300" />
+                      ) : (
+                        <Avatar>
+                          <AvatarFallback className="bg-yellow-200">{visitor.name[0]}</AvatarFallback>
+                        </Avatar>
+                      )}
                       <div>
                         <p className="font-medium">{visitor.name}</p>
                         <p className="text-sm text-gray-600">
                           Unit: {visitor.unit ? `${visitor.unit.block}-${visitor.unit.number}` : 'N/A'} • {visitor.purpose}
                         </p>
-                        <p className="text-xs text-gray-500">{new Date(visitor.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        {visitor.whomToMeet && (
+                          <p className="text-xs text-gray-500">Meeting: {visitor.whomToMeet}</p>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-gray-500">{new Date(visitor.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          {visitor.gate && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-cyan-50 text-cyan-700 border-cyan-200">
+                              QR: {visitor.gate.name}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -384,15 +403,26 @@ export default function GuardDashboardPage() {
                     className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarFallback>{visitor.name[0]}</AvatarFallback>
-                      </Avatar>
+                      {visitor.photo ? (
+                        <img src={visitor.photo} alt={visitor.name} className="h-10 w-10 rounded-full object-cover border" />
+                      ) : (
+                        <Avatar>
+                          <AvatarFallback>{visitor.name[0]}</AvatarFallback>
+                        </Avatar>
+                      )}
                       <div>
                         <p className="font-medium">{visitor.name}</p>
                         <p className="text-sm text-gray-600">
                           Unit: {visitor.unit ? `${visitor.unit.block}-${visitor.unit.number}` : 'N/A'} • {visitor.purpose}
                         </p>
-                        <p className="text-xs text-gray-500">{new Date(visitor.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-gray-500">{new Date(visitor.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          {visitor.gate && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-cyan-50 text-cyan-700 border-cyan-200">
+                              QR: {visitor.gate.name}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2 items-center">
@@ -401,14 +431,34 @@ export default function GuardDashboardPage() {
                         <Phone className="h-3 w-3" />
                         Call
                       </Button>
-                      {visitor.status === 'CHECKED_IN' && (
+                      {visitor.status === 'PENDING' && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs text-red-600 border-red-200"
+                            onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'REJECTED' })}
+                          >
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs bg-green-600 hover:bg-green-700"
+                            onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'CHECKED_IN' })}
+                          >
+                            Approve
+                          </Button>
+                        </>
+                      )}
+                      {(visitor.status === 'CHECKED_IN' || visitor.status === 'APPROVED') && (
                         <Button
                           size="sm"
                           variant="destructive"
-                          className="h-8 text-xs"
-                          onClick={() => checkOutMutation.mutate(visitor.id)}
+                          className="h-8 text-xs gap-1"
+                          onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'EXITED' })}
                         >
-                          Check Out
+                          <LogOut className="h-3 w-3" />
+                          Exit
                         </Button>
                       )}
                     </div>

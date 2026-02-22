@@ -40,6 +40,7 @@ import {
   History as HistoryIcon,
   User,
   Megaphone,
+  QrCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -315,13 +316,13 @@ const allMenuItems = [
     roles: ["resident", "individual"],
   },
   {
-    title: "Helpdesk",
+    title: "Help & Support",
     icon: Headphones,
     href: "/dashboard/helpdesk",
     roles: ["super_admin", "admin", "resident", "committee"],
     submenu: [
       {
-        title: "Tickets",
+        title: "My Tickets",
         icon: ClipboardList,
         href: "/dashboard/helpdesk/tickets",
       },
@@ -445,6 +446,7 @@ const allMenuItems = [
       { title: "Visitors", icon: Users, href: "/dashboard/security/visitors" },
       { title: "Vehicles", icon: Car, href: "/dashboard/security/vehicles" },
       { title: "Parcels", icon: Package, href: "/dashboard/security/parcels" },
+      { title: "Gate QR", icon: QrCode, href: "/dashboard/security/gate-qr" },
       {
         title: "Incident Logs & Patrolling",
         icon: HistoryIcon,
@@ -531,7 +533,7 @@ const allMenuItems = [
     roles: ["resident"],
   },
   {
-    title: "My Complaints",
+    title: "My Complaints & Tickets",
     icon: ClipboardList,
     href: "/dashboard/helpdesk/tickets",
     roles: ["resident"],

@@ -23,6 +23,16 @@ import {
     CardTitle,
     CardFooter
 } from "@/components/ui/card"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -45,10 +55,12 @@ import { cn } from "@/lib/utils"
 import { societyReceiptService } from "@/services/society-receipt.service"
 import { BillingService } from "@/services/billing.service"
 import { residentService } from "@/services/resident.service"
+import { PDFService } from "@/services/pdf.service"
 import { RoleGuard } from "@/components/auth/role-guard"
 
 export default function SocietyDuesPage() {
     const [activeTab, setActiveTab] = useState("overview")
+    const [viewInvoice, setViewInvoice] = useState<any | null>(null)
     const queryClient = useQueryClient()
 
     // Fetch Dashboard Data (for summary)
@@ -219,7 +231,7 @@ export default function SocietyDuesPage() {
                                                         {invoice.status !== 'paid' ? (
                                                             <Button size="sm">Pay</Button>
                                                         ) : (
-                                                            <Button variant="outline" size="sm">View</Button>
+                                                            <Button variant="outline" size="sm" onClick={() => setViewInvoice(invoice)}>View</Button>
                                                         )}
                                                     </TableCell>
                                                 </TableRow>
@@ -331,6 +343,76 @@ export default function SocietyDuesPage() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            {/* Invoice Detail Dialog */}
+            <Dialog open={!!viewInvoice} onOpenChange={() => setViewInvoice(null)}>
+                <DialogContent className="max-w-lg">
+                    {viewInvoice && (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center justify-between">
+                                    <span>Invoice {viewInvoice.invoiceNo}</span>
+                                    <Badge
+                                        className={
+                                            viewInvoice.status === 'paid'
+                                                ? 'bg-green-100 text-green-700'
+                                                : viewInvoice.status === 'overdue'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-orange-100 text-orange-700'
+                                        }
+                                    >
+                                        {viewInvoice.status}
+                                    </Badge>
+                                </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <div className="space-y-0 text-sm">
+                                    <p className="font-semibold text-gray-700 mb-2 uppercase text-xs tracking-wider">Charge Breakdown</p>
+                                    {viewInvoice.items && viewInvoice.items.length > 0 ? (
+                                        viewInvoice.items.map((item: any) => (
+                                            <div key={item.id} className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+                                                <span className="text-gray-600">{item.name}</span>
+                                                <span className="font-medium text-gray-900">₹{item.amount.toLocaleString()}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <div className="flex justify-between py-2 border-b border-gray-100">
+                                                <span className="text-gray-600">Maintenance Charges</span>
+                                                <span className="font-medium text-gray-900">₹{viewInvoice.maintenance?.toLocaleString() || '0'}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-gray-100">
+                                                <span className="text-gray-600">Utility Charges</span>
+                                                <span className="font-medium text-gray-900">₹{viewInvoice.utilities?.toLocaleString() || '0'}</span>
+                                            </div>
+                                            {viewInvoice.penalty > 0 && (
+                                                <div className="flex justify-between py-2 border-b border-gray-100 text-red-600">
+                                                    <span>Late Fee / Penalty</span>
+                                                    <span className="font-medium">₹{viewInvoice.penalty?.toLocaleString() || '0'}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                    <div className="flex justify-between py-4 text-lg font-bold text-primary border-t-2 border-primary/10 mt-2">
+                                        <span>Total Payable</span>
+                                        <span>₹{viewInvoice.amount?.toLocaleString() || '0'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <Button className="flex-1" variant="outline" onClick={() => {
+                                        PDFService.generateInvoicePDF(viewInvoice);
+                                        toast.success('Invoice downloaded');
+                                    }}>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Download PDF
+                                    </Button>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </RoleGuard>
     )
 }
