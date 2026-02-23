@@ -5,8 +5,8 @@ export const PIN_CODE_LENGTH = parseInt(
 );
 
 export const API_CONFIG = {
-  // BASE_URL: "https://socity-backend-production.up.railway.app/api",
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api",
+  BASE_URL: "https://socity-backend-production.up.railway.app/api",
+  // BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api",
   //  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://02x4fc84-9000.inc1.devtunnels.ms/api',
 
   // Authentication & Users
@@ -87,6 +87,7 @@ export const API_CONFIG = {
     LIST: "/vehicles",
     STATS: "/vehicles/stats",
     REGISTER: "/vehicles/register",
+    SEARCH: "/vehicles/search",
     REMOVE: (id: number | string) => `/vehicles/${id}`,
   },
 
@@ -233,8 +234,10 @@ export const API_CONFIG = {
   // Billing
   BILLING: {
     INVOICES: "/invoices",
+    MY_INVOICES: "/invoices/my",
     GENERATE: "/invoices/generate",
     FINALIZE: "/invoices/finalize",
+    APPLY_LATE_FEES: "/invoices/apply-late-fees",
     STATS: "/invoices/stats",
     DEFAULTERS: "/invoices/defaulters",
     DEFAULTER_STATS: "/invoices/defaulters/stats",

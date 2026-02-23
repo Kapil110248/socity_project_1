@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { DashboardService, AdminStats } from '@/services/dashboard.service'
 import {
@@ -42,6 +43,7 @@ import {
   ClipboardCheck,
   Loader2,
   BookOpen,
+  Search,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -65,6 +67,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { SocietyService } from '@/services/society.service'
+import { VehicleSearchDialog } from '@/components/vehicles/VehicleSearchDialog'
 
 // Helpdesk tickets data - matches IGATESECURITY bar chart
 const helpdeskData = [
@@ -92,7 +95,9 @@ const quickActions = [
   { icon: Bell, label: 'Broadcast', description: 'App Notification', color: 'bg-blue-500', href: '/dashboard/residents/notices' },
   { icon: Send, label: 'Announcement', description: 'Post to residents', color: 'bg-purple-500', href: '/dashboard/residents/notices' },
   { icon: MessageSquare, label: 'Survey', description: 'Create questions', color: 'bg-green-500', href: '/dashboard/residents/events' },
+  { icon: Car, label: 'Search Vehicle', description: 'Find owner by number', color: 'bg-orange-500', isSearch: true },
 ]
+
 
 // Amenities data
 const amenities = [
@@ -307,7 +312,15 @@ export function AdminDashboard() {
               <p className="text-white/70 text-sm">{stats?.societyName || 'Sharlow Bay Community'}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <VehicleSearchDialog
+              trigger={
+                <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm gap-2">
+                  <Search className="h-4 w-4" />
+                  Search Vehicle
+                </Button>
+              }
+            />
             <Badge className="bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 border-0">
               <span className="w-2 h-2 bg-teal-400 rounded-full mr-1.5 animate-pulse" />
               Online
@@ -931,12 +944,11 @@ export function AdminDashboard() {
             <CardContent className="space-y-3">
               {quickActions.map((action, index) => {
                 const Icon = action.icon
-                return (
+                const actionButton = (
                   <Button
                     key={index}
                     variant="outline"
                     className="w-full justify-start h-auto py-3 hover:bg-gray-50"
-                    onClick={() => router.push(action.href)}
                   >
                     <div className={`p-2 rounded-xl ${action.color} mr-3`}>
                       <Icon className="h-4 w-4 text-white" />
@@ -947,6 +959,21 @@ export function AdminDashboard() {
                     </div>
                     <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
                   </Button>
+                )
+
+                if (action.isSearch) {
+                  return (
+                    <VehicleSearchDialog 
+                      key={index}
+                      trigger={actionButton}
+                    />
+                  )
+                }
+
+                return (
+                  <Link key={index} href={action.href as string} className="w-full block">
+                    {actionButton}
+                  </Link>
                 )
               })}
             </CardContent>

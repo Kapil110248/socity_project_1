@@ -8,7 +8,7 @@ import {
     CheckCircle2, AlertCircle, Loader2, Building2, ChevronDown
 } from 'lucide-react'
 import { GatePublicService } from '@/services/gate.service'
-import { getSocket } from '@/lib/socket'
+import { connectUser, getSocket } from '@/lib/socket'
 import { Badge } from '@/components/ui/badge'
 
 export default function VisitorEntryPage() {
@@ -142,7 +142,7 @@ export default function VisitorEntryPage() {
             if (photoBlob) formData.append('photo', photoBlob, 'visitor-photo.jpg')
 
             const response = await GatePublicService.submitEntry(gateId, formData)
-            setVisitorId(response.visitorId)
+            setVisitorId(response.id)
             setSubmitted(true)
         } catch (err: any) {
             setSubmitError(err.message || 'Submission failed')
@@ -154,11 +154,8 @@ export default function VisitorEntryPage() {
     // Listen for status updates if submitted
     useEffect(() => {
         if (submitted && visitorId) {
-            const socket = getSocket()
-            if (!socket.connected) socket.connect()
-
-            socket.emit('join-user', `visitor_${visitorId}`)
-            console.log(`Joined room visitor_${visitorId}`)
+            console.log(`Connecting for visitor_${visitorId}`)
+            const socket = connectUser(`visitor_${visitorId}`)
 
             socket.on('visitor_status_updated', (data) => {
                 console.log('Status updated:', data)

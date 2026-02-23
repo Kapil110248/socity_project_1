@@ -174,6 +174,19 @@ export default function InvoicesPage() {
     toast.success('Export downloaded');
   }
 
+  // 7. Apply Late Fees Mutation
+  const applyLateFeesMutation = useMutation({
+    mutationFn: BillingService.applyLateFees,
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['billing-stats'] })
+      toast.success(data.message || 'Late fees applied successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || error.message || 'Failed to apply late fees')
+    }
+  })
+
   // Helper to construct Stats Array
   const stats = [
     {
@@ -257,6 +270,19 @@ export default function InvoicesPage() {
             <Button variant="outline" className="space-x-2" onClick={handleExport}>
               <Download className="h-4 w-4" />
               <span>Export CSV</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="text-orange-600 border-orange-200 hover:bg-orange-50 space-x-2"
+              onClick={() => {
+                if(confirm('Are you sure you want to calculate and apply late fees to all overdue invoices?')) {
+                  applyLateFeesMutation.mutate()
+                }
+              }}
+              disabled={applyLateFeesMutation.isPending}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <span>{applyLateFeesMutation.isPending ? 'Applying...' : 'Apply Late Fees'}</span>
             </Button>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>

@@ -288,7 +288,9 @@ export default function BillingPage() {
   const [bulkConfig, setBulkConfig] = useState({
     month: new Date().toLocaleString('en-US', { month: 'short' }).toLowerCase() + '-' + new Date().getFullYear(),
     dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString().split('T')[0],
-    block: 'all'
+    block: 'all',
+    maintenanceAmount: '',
+    utilityAmount: ''
   });
 
   // Fetch units for dropdown
@@ -400,8 +402,8 @@ export default function BillingPage() {
       month: bulkConfig.month,
       dueDate: bulkConfig.dueDate,
       block: bulkConfig.block === 'all' ? undefined : bulkConfig.block,
-      maintenanceAmount: 0,
-      utilityAmount: 0
+      maintenanceAmount: parseFloat(bulkConfig.maintenanceAmount || '0'),
+      utilityAmount: parseFloat(bulkConfig.utilityAmount || '0')
     });
   }
 
@@ -573,6 +575,26 @@ export default function BillingPage() {
                         <SelectItem value="D">Block D</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Maintenance Amount (₹)</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={bulkConfig.maintenanceAmount}
+                        onChange={(e) => setBulkConfig({ ...bulkConfig, maintenanceAmount: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Utility Amount (₹)</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={bulkConfig.utilityAmount}
+                        onChange={(e) => setBulkConfig({ ...bulkConfig, utilityAmount: e.target.value })}
+                      />
+                    </div>
                   </div>
                   <div className="p-3 bg-blue-50 rounded-lg text-xs text-blue-700 flex gap-2 items-start">
                     <AlertTriangle className="h-4 w-4 shrink-0" />

@@ -4,90 +4,138 @@ import autoTable from 'jspdf-autotable';
 export const PDFService = {
     generateInvoicePDF: (invoice: any, societyName: string = 'SocietyHub Management') => {
         try {
-            console.log('PDFService: Starting PDF generation for invoice:', invoice.invoiceNo || invoice.id);
-
+            const isPaid = invoice.status === 'paid';
             const doc = new jsPDF();
-
-            // Add branding
-            doc.setFontSize(22);
-            doc.setTextColor(30, 58, 95); // #1e3a5f
-            doc.text(societyName, 14, 22);
-
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text('Smart Living, Simplified', 14, 28);
-
-            // Header Info
-            doc.setFontSize(16);
-            doc.setTextColor(0);
-            doc.text('INVOICE', 14, 45);
-
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(`Invoice No: ${invoice.invoiceNo || invoice.id}`, 14, 55);
-            doc.text(`Date: ${invoice.issueDate || new Date().toLocaleDateString()}`, 14, 60);
-            doc.text(`Due Date: ${invoice.dueDate || 'N/A'}`, 14, 65);
-
-            // Resident Info
-            doc.text('Bill To:', 120, 45);
+            
+            // --- Header branding ---
+            doc.setFillColor(30, 58, 95); // Dark Blue #1e3a5f
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
             doc.setFont('helvetica', 'bold');
-            const residentName = typeof invoice.resident === 'string' ? invoice.resident : (invoice.resident?.name || 'Resident');
-            doc.text(residentName, 120, 50);
+            doc.text(societyName.toUpperCase(), 14, 22);
+            
+            doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
-            const unitInfo = typeof invoice.unit === 'string' ? invoice.unit : (invoice.unit ? `${invoice.unit.block}-${invoice.unit.number}` : 'N/A');
-            doc.text(`Unit: ${unitInfo}`, 120, 55);
-            doc.text(`Phone: ${invoice.phone || invoice.resident?.phone || 'N/A'}`, 120, 60);
+            doc.text(`${isPaid ? 'PAYMENT RECEIPT' : 'MAINTENANCE INVOICE'}`, 14, 32);
+            
+            // Right Side Header (Modern lookup)
+            doc.setFontSize(10);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 150, 22);
+            doc.text(`Doc Type: ${isPaid ? 'Receipt' : 'Bill'}`, 150, 27);
 
-            // Table
-            const tableColumn = ["Description", "Quantity", "Amount (INR)"];
-            let tableRows = [];
+            // --- Billing Info Section ---
+            doc.setTextColor(30, 58, 95);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('BILL TO:', 14, 55);
+            
+            doc.setTextColor(0);
+            const residentName = typeof invoice.resident === 'string' ? invoice.resident : (invoice.resident?.name || 'Resident');
+            doc.text(residentName, 14, 62);
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            const unitInfo = typeof invoice.unit === 'object' ? `${invoice.unit.block}-${invoice.unit.number}` : (invoice.unit || 'N/A');
+            doc.text(`Unit: ${unitInfo}`, 14, 68);
+            doc.text(`Ref No: ${invoice.invoiceNo || invoice.id}`, 14, 74);
+            
+            // Top Right Corner Details
+            doc.setFont('helvetica', 'bold');
+            doc.text(isPaid ? 'PAID DATE:' : 'DUE DATE:', 140, 55);
+            doc.setFont('helvetica', 'normal');
+            const dateStr = isPaid 
+                ? (invoice.paidDate || 'N/A') 
+                : (invoice.dueDate || 'N/A');
+            doc.text(dateStr, 140, 62);
+            
+            doc.setFont('helvetica', 'bold');
+            doc.text('STATUS:', 140, 68);
+            if (isPaid) doc.setTextColor(0, 128, 0); else doc.setTextColor(255, 140, 0);
+            doc.text(invoice.status.toUpperCase(), 140, 74);
+            doc.setTextColor(0);
 
+            // --- Charges Table ---
+            const tableColumn = ["Charge Description", "Qty", "Amount (INR)"];
+            const tableRows: any[] = [];
+
+            const capitalize = (str: string) => {
+                if (!str) return '';
+                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+            }
+
+            if (invoice.maintenance > 0) {
+                tableRows.push(["Maintenance Charges", "1", invoice.maintenance.toLocaleString('en-IN')]);
+            }
+            if (invoice.utilities > 0) {
+                tableRows.push(["Utility Charges", "1", invoice.utilities.toLocaleString('en-IN')]);
+            }
             if (invoice.items && invoice.items.length > 0) {
-                tableRows = invoice.items.map((item: any) => [
-                    item.name,
-                    "1",
-                    item.amount.toLocaleString()
-                ]);
-            } else {
-                tableRows = [
-                    ["Maintenance Charges", "1", (invoice.maintenance || 0).toLocaleString()],
-                    ["Utility Charges", "1", (invoice.utilities || 0).toLocaleString()],
-                    ["Penalty / Late Fee", "1", (invoice.penalty || 0).toLocaleString()],
-                ];
+                invoice.items.forEach((item: any) => {
+                    tableRows.push([capitalize(item.name), "1", item.amount.toLocaleString('en-IN')]);
+                });
+            }
+            if (invoice.penalty > 0) {
+                tableRows.push(["Late Fee / Penalty", "1", invoice.penalty.toLocaleString('en-IN')]);
             }
 
             autoTable(doc, {
-                startY: 80,
+                startY: 85,
                 head: [tableColumn],
                 body: tableRows,
-                theme: 'striped',
-                headStyles: { fillColor: [30, 58, 95], textColor: [255, 255, 255] },
-                margin: { top: 80 },
+                theme: 'grid',
+                headStyles: { 
+                    fillColor: [30, 58, 95], 
+                    textColor: [255, 255, 255], 
+                    fontSize: 10,
+                    fontStyle: 'bold'
+                },
+                styles: { fontSize: 9, cellPadding: 4 },
+                columnStyles: {
+                    0: { cellWidth: 120 },
+                    1: { cellWidth: 20, halign: 'center' },
+                    2: { cellWidth: 40, halign: 'right' }
+                }
             });
 
-            // Summary
+            // --- Summary / Total Section ---
             const finalY = (doc as any).lastAutoTable.finalY + 10;
-            doc.setFontSize(12);
+            
+            doc.setFillColor(245, 245, 245);
+            doc.rect(125, finalY, 70, 20, 'F');
+            
+            doc.setTextColor(30, 58, 95);
+            doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
-            doc.text(`Total Amount: INR ${(invoice.amount || 0).toLocaleString()}`, 140, finalY);
+            doc.text('GRAND TOTAL', 130, finalY + 12);
+            
+            doc.setFontSize(14);
+            doc.text(`Rs. ${invoice.amount.toLocaleString('en-IN')}/-`, 190, finalY + 12, { align: 'right' });
 
-            if (invoice.status === 'paid') {
+            // --- Paid Stamp (For Receipts) ---
+            if (isPaid) {
+                doc.setDrawColor(0, 128, 0);
+                doc.setLineWidth(1);
+                doc.rect(15, finalY + 5, 40, 15);
                 doc.setTextColor(0, 128, 0);
-            } else {
-                doc.setTextColor(255, 140, 0);
+                doc.setFontSize(14);
+                doc.text('PAID', 35, finalY + 15, { align: 'center' });
             }
-            doc.text(`Status: ${(invoice.status || 'PENDING').toUpperCase()}`, 140, finalY + 7);
 
-            // Footer
-            doc.setFontSize(8);
+            // --- Footer ---
             doc.setTextColor(150);
-            doc.text('This is a computer generated invoice and does not require a signature.', 14, 280);
+            doc.setFontSize(8);
+            const footerY = 280;
+            doc.setDrawColor(200);
+            doc.line(14, footerY - 5, 196, footerY - 5);
+            doc.text('Thank you for being a valued resident of our society.', 14, footerY);
+            doc.text('This is a computer generated document and does not require a physical signature.', 14, footerY + 5);
+            doc.text('For queries, please contact your Society Office.', 196, footerY, { align: 'right' });
 
-            console.log('PDFService: Saving PDF...');
-            doc.save(`invoice_${invoice.invoiceNo || invoice.id}.pdf`);
-            console.log('PDFService: PDF generated successfully.');
+            doc.save(`${isPaid ? 'Receipt' : 'Invoice'}_${invoice.invoiceNo}.pdf`);
         } catch (error) {
-            console.error('PDFService: Error generating PDF:', error);
+            console.error('PDFService Error:', error);
             throw error;
         }
     }

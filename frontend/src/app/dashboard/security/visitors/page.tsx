@@ -31,6 +31,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { VisitorService } from '@/services/visitorService'
 import api from '@/lib/api'
+import { getSocket } from '@/lib/socket'
+import { useEffect } from 'react'
 
 const purposeOptions = [
   'Guest Visit', 'Delivery', 'Maintenance', 'Cab/Taxi', 'Food Delivery',
@@ -82,6 +84,24 @@ function VisitorDetailDialog({ visitor, onCheckIn, onCheckOut }: { visitor: any,
               <p className="font-medium">{visitor.unit ? `${visitor.unit.block}-${visitor.unit.number}` : 'N/A'}</p>
               <p className="text-sm text-muted-foreground">{visitor.resident?.name || 'Resident'}</p>
             </div>
+            {visitor.whomToMeet && (
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground">Whom to Meet</p>
+                <p className="font-medium">{visitor.whomToMeet}</p>
+              </div>
+            )}
+            {visitor.vehicleNo && (
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground">Vehicle Number</p>
+                <p className="font-medium uppercase">{visitor.vehicleNo}</p>
+              </div>
+            )}
+            {visitor.fromLocation && (
+              <div className="p-3 rounded-lg bg-muted/50 col-span-2">
+                <p className="text-xs text-muted-foreground">Coming From</p>
+                <p className="font-medium">{visitor.fromLocation}</p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -143,6 +163,32 @@ export default function VisitorsPage() {
 
   const { user } = useAuthStore()
   const isAdmin = user?.role === 'admin'
+
+  // Socket listener for real-time notifications
+  useEffect(() => {
+    if (!user?.societyId) return
+
+    const socket = getSocket()
+    
+    // Join society room
+    socket.emit('join-society', user.societyId)
+
+    // Listen for new visitor entries via QR scan
+    socket.on('new_visitor_request', (data) => {
+      toast.success(data.message || 'New visitor entry requested!', {
+        duration: 5000,
+        icon: '🔔'
+      })
+      
+      // Play a notification sound if possible, or just invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['visitors'] })
+      queryClient.invalidateQueries({ queryKey: ['visitorStats'] })
+    })
+
+    return () => {
+      socket.off('new_visitor_request')
+    }
+  }, [user?.societyId, queryClient])
 
   // Fetch Stats
   const { data: statsData } = useQuery({

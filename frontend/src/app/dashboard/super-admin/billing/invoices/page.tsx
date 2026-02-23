@@ -17,7 +17,6 @@ import {
   MessageSquare,
   MoreHorizontal,
   Plus,
-  Printer,
   Search,
   Send,
   Trash2,
@@ -28,6 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label as UILabel } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -63,7 +63,22 @@ export default function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null)
   const [invoiceToMarkPaid, setInvoiceToMarkPaid] = useState<any>(null)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newInvoiceData, setNewInvoiceData] = useState({
+    societyId: '',
+    amount: '',
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  })
   const queryClient = useQueryClient()
+
+  const { data: societies = [] } = useQuery<any[]>({
+    queryKey: ['societies-active'],
+    queryFn: async () => {
+      const response = await api.get('/society/all')
+      return response.data.filter((s: any) => s.status === 'active')
+    },
+    enabled: isAddModalOpen
+  })
 
   const { data: invoices = [], isLoading } = useQuery<any[]>({
     queryKey: ['platform-invoices'],
@@ -118,6 +133,35 @@ export default function InvoicesPage() {
     } catch (error: any) {
       toast.dismiss(t)
       toast.error(error.response?.data?.error || 'Failed to generate invoices')
+    }
+  }
+
+  const handleCreateManualInvoice = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newInvoiceData.societyId || !newInvoiceData.amount || !newInvoiceData.dueDate) {
+      return toast.error('Please fill all required fields')
+    }
+
+    const t = toast.loading('Creating manual invoice...')
+    try {
+      await api.post('/platform-invoices', {
+        societyId: parseInt(newInvoiceData.societyId),
+        amount: parseFloat(newInvoiceData.amount),
+        dueDate: new Date(newInvoiceData.dueDate),
+      })
+      toast.dismiss(t)
+      toast.success('Manual invoice created successfully')
+      setIsAddModalOpen(false)
+      setNewInvoiceData({
+        societyId: '',
+        amount: '',
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      })
+      queryClient.invalidateQueries({ queryKey: ['platform-invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['platform-invoices-stats'] })
+    } catch (error: any) {
+      toast.dismiss(t)
+      toast.error(error.response?.data?.error || 'Failed to create invoice')
     }
   }
 
@@ -301,6 +345,10 @@ export default function InvoicesPage() {
             <Button variant="outline" onClick={exportInvoices}>
               <Download className="h-4 w-4 mr-2" />
               Export
+            </Button>
+            <Button variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Invoice
             </Button>
             <Button className="bg-purple-600 hover:bg-purple-700" onClick={generateInvoices}>
               <FileText className="h-4 w-4 mr-2" />
@@ -558,6 +606,69 @@ export default function InvoicesPage() {
                   )}
                 </div>
               )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Invoice Modal */}
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create manual invoice</DialogTitle>
+                <DialogDescription>
+                  Enter details to generate a one-off invoice for a society.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateManualInvoice} className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <UILabel htmlFor="society">Select Society</UILabel>
+                  <Select 
+                    value={newInvoiceData.societyId} 
+                    onValueChange={(val) => setNewInvoiceData({ ...newInvoiceData, societyId: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a society" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {societies.map((s) => (
+                        <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <UILabel htmlFor="amount">Amount</UILabel>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
+                    <Input
+                      id="amount"
+                      type="number"
+                      placeholder="0.00"
+                      className="pl-7"
+                      value={newInvoiceData.amount}
+                      onChange={(e) => setNewInvoiceData({ ...newInvoiceData, amount: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <UILabel htmlFor="dueDate">Due Date</UILabel>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={newInvoiceData.dueDate}
+                    onChange={(e) => setNewInvoiceData({ ...newInvoiceData, dueDate: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button type="button" variant="ghost" onClick={() => setIsAddModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                    Create Invoice
+                  </Button>
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
  

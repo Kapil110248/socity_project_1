@@ -41,6 +41,7 @@ import {
   User,
   Megaphone,
   QrCode,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -66,7 +67,7 @@ const allMenuItems = [
     ],
   },
   {
-    title: "Societies",
+    title: "Society",
     icon: Building2,
     href: "/dashboard/super-admin/societies",
     roles: ["super_admin"],
@@ -75,6 +76,11 @@ const allMenuItems = [
         title: "All Societies",
         icon: Building2,
         href: "/dashboard/super-admin/societies",
+      },
+      {
+        title: "Add New Society",
+        icon: Plus,
+        href: "/dashboard/super-admin/societies/new",
       },
       {
         title: "Pending Approvals",

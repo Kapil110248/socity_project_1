@@ -184,6 +184,17 @@ export default function GuardDashboardPage() {
     }
   })
 
+  const updateStaffStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number, status: string }) => StaffService.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
+      queryClient.invalidateQueries({ queryKey: ['guard-activity'] })
+      queryClient.invalidateQueries({ queryKey: ['guard-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['residentDashboard'] }) // Also invalidate resident counts
+      toast.success('Helper status updated')
+    }
+  })
+
   const logParcelMutation = useMutation({
     mutationFn: ParcelService.create,
     onSuccess: () => {
@@ -662,6 +673,27 @@ export default function GuardDashboardPage() {
                         <LogIn className="h-3 w-3 text-green-600" />
                         Check-in: {staff.checkInTime || '-'}
                       </span>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      {staff.status !== 'ON_DUTY' ? (
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 h-8"
+                          onClick={() => updateStaffStatusMutation.mutate({ id: staff.id, status: 'ON_DUTY' })}
+                        >
+                          Check In
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="flex-1 h-8"
+                          onClick={() => updateStaffStatusMutation.mutate({ id: staff.id, status: 'OFF_DUTY' })}
+                        >
+                          Check Out
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" className="h-8">Details</Button>
                     </div>
                   </div>
                 </div>

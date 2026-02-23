@@ -65,7 +65,11 @@ const shortcuts = [
   { icon: FileText, label: 'Guidelines', href: '/dashboard/resident/guidelines', color: 'bg-yellow-50' },
   { icon: MessageSquare, label: 'Community', href: '/dashboard/resident/community', color: 'bg-purple-50' },
   { icon: ShoppingBag, label: 'Marketplace', href: '/dashboard/resident/market', color: 'bg-pink-50' },
+  { icon: User, label: 'Daily Help', href: '/dashboard/resident/daily-help', color: 'bg-teal-50' },
+  { icon: Car, label: 'Search Vehicle', isSearch: true, color: 'bg-orange-50' },
 ]
+
+import { VehicleSearchDialog } from '@/components/vehicles/VehicleSearchDialog'
 
 // Announcements - IGATESECURITY style
 const announcements = [
@@ -231,14 +235,27 @@ export function ResidentDashboard() {
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
               {shortcuts.map((shortcut, index) => {
                 const Icon = shortcut.icon
-                return (
-                  <Link key={index} href={shortcut.href} className="flex-shrink-0">
-                    <div className="flex flex-col items-center gap-2 w-16 sm:w-20">
-                      <div className={`p-3 sm:p-4 rounded-xl ${shortcut.color} dark:bg-muted/50`}>
-                        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700 dark:text-foreground" />
-                      </div>
-                      <span className="text-xs text-muted-foreground text-center">{shortcut.label}</span>
+                const shortcutContent = (
+                  <div className="flex flex-col items-center gap-2 w-16 sm:w-20 cursor-pointer group">
+                    <div className={`p-3 sm:p-4 rounded-xl ${shortcut.color} dark:bg-muted/50 transition-transform group-hover:scale-110`}>
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700 dark:text-foreground" />
                     </div>
+                    <span className="text-xs text-muted-foreground text-center">{shortcut.label}</span>
+                  </div>
+                )
+
+                if (shortcut.isSearch) {
+                  return (
+                    <VehicleSearchDialog 
+                      key={index} 
+                      trigger={shortcutContent} 
+                    />
+                  )
+                }
+
+                return (
+                  <Link key={index} href={shortcut.href as string} className="flex-shrink-0">
+                    {shortcutContent}
                   </Link>
                 )
               })}
@@ -291,12 +308,12 @@ export function ResidentDashboard() {
                   const Icon = item.type === 'Visitor' ? Users : item.type === 'Helper' ? User : Package
                   const colorParts = (item.color || 'bg-muted text-muted-foreground').replace('bg-purple-100', 'bg-purple-100 dark:bg-purple-900/20').replace('bg-pink-100', 'bg-pink-100 dark:bg-pink-900/20').replace('bg-blue-100', 'bg-blue-100 dark:bg-blue-900/20').split(' ')
                   return (
-                    <div key={index} className={`rounded-xl p-3 ${colorParts[0]} text-center`}>
+                    <Link key={index} href={item.type === 'Helper' ? '/dashboard/resident/daily-help' : '#'} className={`rounded-xl p-3 ${colorParts[0]} text-center hover:opacity-80 transition-opacity`}>
                       <Icon className={`h-5 w-5 mx-auto mb-1 ${colorParts[1] || 'text-muted-foreground'}`} />
                       <p className="text-xs font-medium text-foreground">{item.type}</p>
                       <p className="text-lg font-bold text-foreground">{item.count}</p>
                       <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                    </div>
+                    </Link>
                   )
                 })}
               </div>
