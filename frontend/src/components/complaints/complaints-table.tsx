@@ -12,9 +12,10 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Eye, Clock, CheckCircle2, AlertTriangle, Building2, User, Users } from 'lucide-react'
+import { Eye, Clock, CheckCircle2, AlertTriangle, Building2, User, Users, MessageSquare } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ViewComplaintDialog } from './view-complaint-dialog'
+import { cn } from '@/lib/utils/cn'
 
 interface ComplaintsTableProps {
     complaints: ServiceComplaint[]
@@ -56,14 +57,14 @@ export function ComplaintsTable({ complaints, showSource = true }: ComplaintsTab
     }
 
     return (
-        <div className="border rounded-xl bg-white shadow-sm overflow-hidden">
+        <div className="border-0 shadow-2xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 rounded-2xl overflow-hidden">
             <Table>
-                <TableHeader className="bg-gray-50/50">
-                    <TableRow>
-                        <TableHead className="w-[100px]">ID</TableHead>
+                <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800/50">
+                    <TableRow className="hover:bg-transparent border-0 font-bold uppercase tracking-wider text-[10px]">
+                        <TableHead className="w-[80px]">ID</TableHead>
                         {showSource && <TableHead>Source</TableHead>}
                         <TableHead>Society</TableHead>
-                        <TableHead>Complaint Details</TableHead>
+                        <TableHead className="min-w-[200px]">Complaint Details</TableHead>
                         <TableHead>Service</TableHead>
                         <TableHead>Reporter</TableHead>
                         <TableHead>Priority</TableHead>
@@ -74,80 +75,82 @@ export function ComplaintsTable({ complaints, showSource = true }: ComplaintsTab
                 <TableBody>
                     {complaints.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                                No complaints found.
+                            <TableCell colSpan={9} className="text-center py-20 text-slate-400 font-medium">
+                                <div className="flex flex-col items-center gap-3">
+                                    <MessageSquare className="h-10 w-10 opacity-20" />
+                                    No complaints recorded.
+                                </div>
                             </TableCell>
                         </TableRow>
                     ) : (
                         complaints.map((complaint) => (
-                            <TableRow key={complaint.id} className="hover:bg-gray-50/50">
-                                <TableCell className="font-medium text-xs text-muted-foreground">
-                                    {complaint.id}
+                            <TableRow key={complaint.id} className="hover:bg-white/50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-50 dark:border-slate-800/50 last:border-0 group">
+                                <TableCell className="font-black text-[10px] text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                    #{complaint.id}
                                 </TableCell>
 
                                 {showSource && (
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <div className="p-1.5 rounded-lg bg-gray-100">
+                                            <div className="p-2 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 shadow-inner group-hover:bg-white dark:group-hover:bg-slate-800 transition-colors">
                                                 {getSourceIcon(complaint.source)}
                                             </div>
-                                            <span className="capitalize text-sm font-medium">{complaint.source}</span>
+                                            <span className="capitalize text-xs font-bold text-slate-700 dark:text-slate-300">{complaint.source}</span>
                                         </div>
                                     </TableCell>
                                 )}
 
                                 <TableCell>
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-indigo-600">
-                                        <div className="p-1.5 rounded-lg bg-indigo-50">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/20">
                                             <Building2 className="h-4 w-4" />
                                         </div>
-                                        {complaint.society?.name || 'Platform'}
+                                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{complaint.society?.name || 'Platform'}</span>
                                     </div>
                                 </TableCell>
 
                                 <TableCell>
-                                    <div>
-                                        <p className="font-semibold text-gray-900">{complaint.title}</p>
-                                        <p className="text-sm text-gray-500 truncate max-w-[200px]">
+                                    <div className="max-w-[250px]">
+                                        <p className="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-0.5">{complaint.title}</p>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                                             {complaint.description}
                                         </p>
                                     </div>
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge variant="outline" className="bg-slate-50">
+                                    <Badge variant="outline" className="bg-slate-50/50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800 text-[10px] font-bold tracking-tight">
                                         {complaint.serviceName}
                                     </Badge>
                                 </TableCell>
 
                                 <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        <Avatar className="h-6 w-6">
-                                            <AvatarFallback className="text-[10px] bg-indigo-100 text-indigo-700">
+                                    <div className="flex items-center gap-2.5">
+                                        <Avatar className="h-8 w-8 rounded-xl ring-2 ring-white dark:ring-slate-800 shadow-sm">
+                                            <AvatarFallback className="text-[10px] font-black bg-gradient-to-br from-indigo-500 to-purple-600 text-white leading-none">
                                                 {complaint.reportedBy.charAt(0)}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-medium">{complaint.reportedBy}</span>
-                                            {complaint.unit && <span className="text-xs text-muted-foreground">Unit: {complaint.unit}</span>}
-                                            {complaint.reportedByOriginal && (
-                                                <span className="text-[10px] text-slate-400">{complaint.reportedByOriginal.email}</span>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate leading-none mb-1">{complaint.reportedBy}</span>
+                                            {complaint.unit && (
+                                                <span className="text-[10px] text-slate-400 font-medium">Unit: {complaint.unit}</span>
                                             )}
                                         </div>
                                     </div>
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge className={`${getPriorityColor(complaint.priority)} border-0`}>
+                                    <Badge className={`${getPriorityColor(complaint.priority)} border-0 text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-lg shadow-sm`}>
                                         {complaint.priority}
                                     </Badge>
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge variant="outline" className={getStatusColor(complaint.status)}>
+                                    <Badge variant="outline" className={cn("rounded-full px-3 py-1 text-[10px] font-black border-0 uppercase tracking-tighter shadow-sm", getStatusColor(complaint.status))}>
                                         {complaint.status.toLowerCase() === 'resolved' && <CheckCircle2 className="h-3 w-3 mr-1" />}
                                         {complaint.status.toLowerCase() === 'open' && <AlertTriangle className="h-3 w-3 mr-1" />}
-                                        {complaint.status.replace('_', ' ').toUpperCase()}
+                                        {complaint.status.replace('_', ' ')}
                                     </Badge>
                                 </TableCell>
 
@@ -155,13 +158,13 @@ export function ComplaintsTable({ complaints, showSource = true }: ComplaintsTab
                                     <Button 
                                         variant="ghost" 
                                         size="icon" 
-                                        className="h-8 w-8 hover:bg-blue-50 text-blue-600"
+                                        className="h-10 w-10 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all group-hover:scale-110"
                                         onClick={() => {
                                             setSelectedComplaint(complaint)
                                             setViewOpen(true)
                                         }}
                                     >
-                                        <Eye className="h-4 w-4" />
+                                        <Eye className="h-5 w-5" />
                                     </Button>
                                 </TableCell>
                             </TableRow>

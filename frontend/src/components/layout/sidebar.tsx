@@ -496,7 +496,7 @@ const allMenuItems = [
     title: "Move In/Out",
     icon: Truck,
     href: "/dashboard/move-management",
-    roles: ["admin"],
+    roles: ["admin", "resident"],
   },
 
   // ==========================================
@@ -797,6 +797,41 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Support Link - Bottom of sidebar */}
+      {(user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'resident') && (
+        <div className="px-3 pb-2">
+          <Link
+            href="/dashboard/admin/support"
+            className={cn(
+              "flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
+              pathname === '/dashboard/admin/support'
+                ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30"
+                : "text-white/70 dark:text-muted-foreground hover:bg-[#2d4a6f] dark:hover:bg-accent hover:text-white dark:hover:text-foreground",
+              isCollapsed && "justify-center"
+            )}
+          >
+            <Headphones className={cn(
+              "h-5 w-5 flex-shrink-0",
+              pathname === '/dashboard/admin/support'
+                ? "text-white"
+                : "text-white/70 dark:text-muted-foreground group-hover:text-white dark:group-hover:text-foreground"
+            )} />
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="text-sm font-medium"
+                >
+                  Support
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Link>
+        </div>
+      )}
 
       {/* User Profile */}
       <div className="p-4 border-t border-[#2d4a6f] dark:border-border">

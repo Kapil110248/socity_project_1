@@ -375,9 +375,17 @@ export default function GuardDashboardPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Phone className="h-3 w-3" />
-                        Call
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <a href={`tel:${visitor.phone}`}>
+                          <Phone className="h-3 w-3" />
+                          Visitor
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1 border-teal-200 text-teal-700 bg-teal-50" asChild>
+                        <a href={`tel:${visitor.unit?.tenant?.phone || visitor.unit?.owner?.phone || visitor.resident?.phone}`}>
+                          <Shield className="h-3 w-3" />
+                          Resident
+                        </a>
                       </Button>
                       <Button
                         size="sm"
@@ -436,9 +444,17 @@ export default function GuardDashboardPage() {
                     </div>
                     <div className="flex gap-2 items-center">
                       {getStatusBadge(visitor.status.toLowerCase())}
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Phone className="h-3 w-3" />
-                        Call
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <a href={`tel:${visitor.phone}`}>
+                          <Phone className="h-3 w-3" />
+                          Visitor
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1 border-teal-200 text-teal-700 bg-teal-50" asChild>
+                        <a href={`tel:${visitor.unit?.tenant?.phone || visitor.unit?.owner?.phone || visitor.resident?.phone}`}>
+                          <Shield className="h-3 w-3" />
+                          Resident
+                        </a>
                       </Button>
                       {visitor.status === 'PENDING' && (
                         <>
@@ -500,9 +516,17 @@ export default function GuardDashboardPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Phone className="h-3 w-3" />
-                        Call
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <a href={`tel:${visitor.phone}`}>
+                          <Phone className="h-3 w-3" />
+                          Visitor
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1 border-teal-200 text-teal-700 bg-teal-50" asChild>
+                        <a href={`tel:${visitor.unit?.tenant?.phone || visitor.unit?.owner?.phone || visitor.resident?.phone}`}>
+                          <Shield className="h-3 w-3" />
+                          Resident
+                        </a>
                       </Button>
                       <Button
                         size="sm"

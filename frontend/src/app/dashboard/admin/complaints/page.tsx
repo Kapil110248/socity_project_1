@@ -1,19 +1,19 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Plus, MessageSquare, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
+import { MessageSquare, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 import { ComplaintsTable } from '@/components/complaints/complaints-table'
-import { UserRaiseComplaintDialog } from '@/components/complaints/user-raise-complaint-dialog'
 import { useState } from 'react'
 import { ComplaintService } from '@/services/complaint.service'
+import { cn } from '@/lib/utils/cn'
 
 export default function AdminComplaintsPage() {
-    const [isCreateOpen, setIsCreateOpen] = useState(false)
+
     const [page, setPage] = useState(1)
     const [limit] = useState(10)
 
@@ -73,17 +73,10 @@ export default function AdminComplaintsPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Society Complaints</h1>
                     <p className="text-gray-500">Track and manage complaints from your society members</p>
                 </div>
-                <Button
-                    onClick={() => setIsCreateOpen(true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 shadow-lg shadow-indigo-100"
-                >
-                    <Plus className="h-4 w-4" />
-                    Raise to Super Admin
-                </Button>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, index) => {
                     const Icon = stat.icon
                     return (
@@ -93,16 +86,17 @@ export default function AdminComplaintsPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
                         >
-                            <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                                <CardContent className="p-6 flex items-center justify-between">
+                            <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 overflow-hidden relative group">
+                                <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-150", stat.color)} />
+                                <div className="flex items-center justify-between relative z-10">
                                     <div>
-                                        <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                                        <h3 className="text-2xl font-bold mt-1 text-gray-900">{stat.value}</h3>
+                                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{stat.title}</p>
+                                        <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</h3>
                                     </div>
-                                    <div className={`p-3 rounded-full ${stat.color} bg-opacity-10`}>
-                                        <Icon className={`h-6 w-6 ${stat.color.replace('bg-', 'text-')}`} />
+                                    <div className={cn("p-4 rounded-2xl", stat.color + "/10")}>
+                                        <Icon className={cn("h-6 w-6", stat.color.replace('bg-', 'text-'))} />
                                     </div>
-                                </CardContent>
+                                </div>
                             </Card>
                         </motion.div>
                     )
@@ -110,16 +104,16 @@ export default function AdminComplaintsPage() {
             </div>
 
             {/* Main Content */}
-            <Card className="border-0 shadow-sm">
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold text-gray-900">Complaints Feed</CardTitle>
+            <Card className="border-0 shadow-2xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 overflow-hidden rounded-[2rem]">
+                <CardHeader className="pb-4 border-b border-slate-100 dark:border-slate-800/50 bg-white/30 dark:bg-slate-900/20">
+                    <CardTitle className="text-xl font-bold text-[#1e3a5f] dark:text-white">Complaints Feed</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <Tabs defaultValue="all" className="w-full">
-                        <TabsList className="mb-4 grid w-full grid-cols-3 lg:w-[300px] h-11 bg-gray-100/50 p-1">
-                            <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">All</TabsTrigger>
-                            <TabsTrigger value="PENDING" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Pending</TabsTrigger>
-                            <TabsTrigger value="RESOLVED" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">Resolved</TabsTrigger>
+                        <TabsList className="mb-6 bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl h-auto flex w-fit">
+                            <TabsTrigger value="all" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">All</TabsTrigger>
+                            <TabsTrigger value="PENDING" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Pending</TabsTrigger>
+                            <TabsTrigger value="RESOLVED" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">Resolved</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="all" className="mt-0">
@@ -177,11 +171,7 @@ export default function AdminComplaintsPage() {
                 </CardContent>
             </Card>
 
-            <UserRaiseComplaintDialog
-                open={isCreateOpen}
-                onOpenChange={setIsCreateOpen}
-                escalateToSuperAdmin
-            />
+
         </div>
     )
 }

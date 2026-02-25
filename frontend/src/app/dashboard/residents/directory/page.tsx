@@ -157,7 +157,8 @@ export default function DirectoryPage() {
     unitId: '',
     familyMembers: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    securityDeposit: ''
   })
 
   const [unitFormData, setUnitFormData] = useState({
@@ -227,7 +228,8 @@ export default function DirectoryPage() {
         unitId: '',
         familyMembers: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        securityDeposit: ''
       })
     },
     onError: (error: any) => {
@@ -519,6 +521,18 @@ export default function DirectoryPage() {
                         value={formData.familyMembers}
                         onChange={(e) => setFormData({ ...formData, familyMembers: e.target.value })}
                       />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Security Deposit (Advance)</Label>
+                      <Input
+                        type="number"
+                        placeholder="₹ 0"
+                        value={formData.securityDeposit}
+                        onChange={(e) => setFormData({ ...formData, securityDeposit: e.target.value })}
+                      />
+                      <p className="text-xs text-gray-500">Amount will be recorded in unit and transactions.</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">

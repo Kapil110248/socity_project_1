@@ -684,6 +684,16 @@ export default function VisitorsPage() {
                               visitor={visitor}
                               onCheckOut={(id) => checkOutMutation.mutate(id)}
                             />
+                            <Button size="sm" variant="outline" className="h-8 w-8 p-0" asChild title="Call Visitor">
+                              <a href={`tel:${visitor.phone}`}>
+                                <Phone className="h-4 w-4" />
+                              </a>
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-8 w-8 p-0 border-teal-200 text-teal-700 bg-teal-50" asChild title="Call Resident">
+                              <a href={`tel:${visitor.unit?.tenant?.phone || visitor.unit?.owner?.phone || visitor.resident?.phone}`}>
+                                <Shield className="h-4 w-4" />
+                              </a>
+                            </Button>
                             {visitor.status === 'PENDING' && (
                               <div className="flex gap-1">
                                 <Button

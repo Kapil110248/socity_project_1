@@ -222,6 +222,31 @@ export function ResidentDashboard() {
               </Link>
             </div>
           </div>
+          
+          {/* Security Deposit Alert - Conditional */}
+          {dues?.isDepositPending && (
+            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <span className="text-xs font-medium text-red-700 dark:text-red-400">
+                  Alert: Please pay your Security Deposit {dues.pendingDepositAmount > 0 ? `of ₹${dues.pendingDepositAmount}` : ''}
+                </span>
+              </div>
+              <Link href="/dashboard/residents/dues?tab=wallet">
+                <Button variant="ghost" size="sm" className="h-7 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 p-0 px-2 font-bold uppercase">
+                  Pay Now
+                </Button>
+              </Link>
+            </div>
+          )}
+          {unit?.securityDeposit > 0 && !dues?.isDepositPending && (
+            <div className="mt-3 p-2 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg flex items-center gap-2">
+              <CheckCircle className="h-3 w-3 text-green-500" />
+              <span className="text-[10px] font-medium text-green-700 dark:text-green-400">
+                Security Deposit of Rs. {unit.securityDeposit.toLocaleString()} is recorded.
+              </span>
+            </div>
+          )}
         </div>
       </motion.div>
 

@@ -55,6 +55,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils/cn'
 
 // Mock data removed
 
@@ -72,7 +73,8 @@ export default function MoveManagementPage() {
     timeSlot: '',
     vehicleType: '',
     vehicleNumber: '',
-    notes: ''
+    notes: '',
+    depositAmount: ''
   })
   const queryClient = useQueryClient()
 
@@ -113,7 +115,8 @@ export default function MoveManagementPage() {
         timeSlot: '',
         vehicleType: '',
         vehicleNumber: '',
-        notes: ''
+        notes: '',
+        depositAmount: ''
       })
     }
   })
@@ -168,14 +171,14 @@ export default function MoveManagementPage() {
   }
 
   const stats = [
-    { label: 'Total Requests', value: statsData.total, icon: Truck, color: 'bg-blue-500' },
-    { label: 'Move-ins', value: statsData.moveIns, icon: ArrowRight, color: 'bg-green-500' },
-    { label: 'Move-outs', value: statsData.moveOuts, icon: ArrowLeft, color: 'bg-orange-500' },
-    { label: 'Pending Approval', value: statsData.pending, icon: Clock, color: 'bg-yellow-500' },
+    { label: 'Total Requests', value: statsData.total, icon: Truck, color: 'text-blue-500', bg: 'bg-blue-500' },
+    { label: 'Move-ins', value: statsData.moveIns, icon: ArrowRight, color: 'text-green-500', bg: 'bg-green-500' },
+    { label: 'Move-outs', value: statsData.moveOuts, icon: ArrowLeft, color: 'text-orange-500', bg: 'bg-orange-500' },
+    { label: 'Pending Approval', value: statsData.pending, icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500' },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-4 md:p-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -185,14 +188,14 @@ export default function MoveManagementPage() {
           </h1>
           <p className="text-gray-600 mt-1">Manage resident move-in and move-out requests</p>
         </div>
-        <div className="flex gap-2 mt-4 md:mt-0">
-          <Button variant="outline" className="gap-2">
+        <div className="flex gap-3 mt-4 md:mt-0">
+          <Button variant="outline" className="gap-2 border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur hover:bg-white dark:hover:bg-slate-900 transition-all">
             <Download className="h-4 w-4" />
             Export
           </Button>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 bg-gradient-to-r from-[#1e3a5f] to-[#2d4a6f] hover:scale-105 transition-transform shadow-lg shadow-[#1e3a5f]/20">
                 <Plus className="h-4 w-4" />
                 New Request
               </Button>
@@ -305,6 +308,18 @@ export default function MoveManagementPage() {
                   />
                 </div>
 
+                {formData.type === 'move-in' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Security Deposit Amount</label>
+                    <Input
+                      type="number"
+                      placeholder="₹ 0"
+                      value={formData.depositAmount}
+                      onChange={(e) => setFormData({ ...formData, depositAmount: e.target.value })}
+                    />
+                  </div>
+                )}
+
                 <Button className="w-full" onClick={() => createMutation.mutate(formData)}>
                   Create Request
                 </Button>
@@ -315,7 +330,7 @@ export default function MoveManagementPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -323,12 +338,17 @@ export default function MoveManagementPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className="p-4">
-              <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-2`}>
-                <stat.icon className="h-5 w-5 text-white" />
+            <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 overflow-hidden relative group">
+              <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-150", stat.bg)} />
+              <div className="flex items-start justify-between relative z-10">
+                <div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{stat.label}</p>
+                  <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</h3>
+                </div>
+                <div className={cn("p-3 rounded-2xl", stat.bg + "/10")}>
+                  <stat.icon className={cn("h-6 w-6", stat.color)} />
+                </div>
               </div>
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-sm text-gray-600">{stat.label}</p>
             </Card>
           </motion.div>
         ))}
@@ -336,11 +356,11 @@ export default function MoveManagementPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">All Requests</TabsTrigger>
-          <TabsTrigger value="move-in">Move-in</TabsTrigger>
-          <TabsTrigger value="move-out">Move-out</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
+        <TabsList className="bg-slate-100 dark:bg-slate-900/50 p-1 rounded-2xl">
+          <TabsTrigger value="all" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm">All Requests</TabsTrigger>
+          <TabsTrigger value="move-in" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm">Move-in</TabsTrigger>
+          <TabsTrigger value="move-out" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm">Move-out</TabsTrigger>
+          <TabsTrigger value="pending" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm">Pending</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
@@ -382,7 +402,7 @@ export default function MoveManagementPage() {
           </Card>
 
           {/* Requests Table */}
-          <Card className="overflow-hidden">
+          <Card className="border-0 shadow-2xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50">
