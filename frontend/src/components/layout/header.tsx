@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -45,7 +45,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import api from '@/lib/api'
+import { getSocket } from '@/lib/socket'
 import { chatService } from '@/services/chat.service'
 import { getDisplayConversations, SUPPORT_CHANNELS as SUPPORT_CHANNELS_CONFIG } from '@/lib/chat-display'
 
@@ -152,6 +154,36 @@ export function Header() {
     },
   })
 
+  // Listen for real-time notifications
+
+  React.useEffect(() => {
+    if (!user) return
+    const socket = getSocket()
+    
+    // Connect user socket if not already handled elsewhere for this user room
+    socket.emit('join-user', user.id)
+
+    const handleNewNotification = (notification: any) => {
+      // Show toast
+      toast(notification.title, {
+        icon: notification.type === 'emergency_qr' ? '🚨' : '🔔',
+        style: {
+          border: '1px solid #0d9488',
+          padding: '16px',
+          color: '#0f172a',
+        },
+        duration: 5000,
+      })
+      // Instantly increment unread count
+      refetchNotifications()
+    }
+
+    socket.on('new_notification', handleNewNotification)
+
+    return () => {
+      socket.off('new_notification', handleNewNotification)
+    }
+  }, [user, refetchNotifications])
   // Start direct conversation (New Chat with user)
   const startConversationMutation = useMutation({
     mutationFn: async (targetUserId: number) => {

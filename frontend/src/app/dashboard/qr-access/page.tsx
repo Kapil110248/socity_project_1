@@ -383,11 +383,18 @@ export default function QRAccessPage() {
                     </div>
                     <p className="text-xs text-gray-500 italic line-clamp-2">"{log.reason || 'No reason specified'}"</p>
                     <div className="mt-3 flex gap-2">
-                      <Button size="sm" className="h-8 flex-1 bg-white hover:bg-gray-50 text-teal-600 text-[10px] font-black ring-1 ring-black/5 border-0 rounded-xl gap-1">
+                      <Button 
+                        size="sm" 
+                        className="h-8 flex-1 bg-white hover:bg-gray-50 text-teal-600 text-[10px] font-black ring-1 ring-black/5 border-0 rounded-xl gap-1"
+                        onClick={() => {
+                          if (log.visitorPhone && log.visitorPhone !== 'N/A') {
+                            window.open(`tel:${log.visitorPhone}`, '_self')
+                          } else {
+                            toast.error('No phone number provided by visitor')
+                          }
+                        }}
+                      >
                         <Phone className="h-3 w-3" /> CALL
-                      </Button>
-                      <Button size="sm" className="h-8 flex-1 bg-white hover:bg-gray-50 text-blue-600 text-[10px] font-black ring-1 ring-black/5 border-0 rounded-xl gap-1">
-                        <Video className="h-3 w-3" /> VIDEO
                       </Button>
                     </div>
                   </div>

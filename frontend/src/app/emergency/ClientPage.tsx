@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Shield,
@@ -15,6 +14,7 @@ import {
   Phone,
   PhoneIncoming,
   Users,
+  Lock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,10 +23,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import toast from 'react-hot-toast'
 import { API_URL } from '@/config/api.config'
+import { useSearchParams } from 'next/navigation'
+import { useVoiceCall } from '@/components/providers/voice-call-provider'
 
 export default function ClientPage() {
-  const params = useParams()
-  const barcodeId = params.id as string
+  const searchParams = useSearchParams()
+  const barcodeId = searchParams.get('id')
 
   const [barcode, setBarcode] = useState<any>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -64,6 +66,24 @@ export default function ClientPage() {
 
     validateBarcode()
   }, [barcodeId, API_BASE])
+
+  const { startCall, callState } = useVoiceCall()
+
+  const handleVoiceCall = async () => {
+    if (!formData.name || !formData.phone) {
+      toast.error('Please enter your name and mobile number first.')
+      const formElement = document.getElementById('contact-form')
+      formElement?.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
+
+    if (!barcode?.userId) {
+      toast.error('Resident is currently unavailable for voice calls.')
+      return
+    }
+
+    await startCall(barcode.userId, formData.name, formData.phone)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -158,55 +178,65 @@ export default function ClientPage() {
                        <p className="text-sm opacity-80 mt-1">Resident: {barcode.residentName} (Unit: {barcode.unit})</p>
                      </div>
 
-                     {/* Emergency Contacts Section */}
+                     {/* Privacy Note */}
+                     <div className="bg-black/20 rounded-2xl p-4 border border-white/10">
+                        <div className="flex gap-3">
+                          <Shield className="h-5 w-5 text-teal-400 shrink-0" />
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-teal-400">Privacy Protected</p>
+                            <p className="text-xs opacity-70 mt-1 leading-tight font-bold">Family phone numbers are hidden for security. Use the calling button below to connect securely.</p>
+                          </div>
+                        </div>
+                     </div>
+
+                     {/* Contact Actions Section */}
                      <div className="space-y-3">
-                       <p className="text-xs font-black uppercase tracking-widest opacity-70 ml-1">Call for help</p>
+                       <p className="text-xs font-black uppercase tracking-widest opacity-70 ml-1">Secure Contact</p>
                        
-                       {/* Primary Resident Contact */}
-                       <a 
-                         href={`tel:${barcode.phone}`}
-                         className="flex items-center justify-between bg-white text-red-600 p-4 rounded-2xl shadow-lg hover:bg-gray-50 transition-colors group"
+                       {/* Voice Call Button (NEW PRIMARY ACTION) */}
+                       <button 
+                         onClick={handleVoiceCall}
+                         disabled={callState !== 'IDLE'}
+                         className="w-full flex items-center justify-between bg-white text-emerald-600 p-4 rounded-2xl shadow-lg hover:bg-gray-50 transition-colors group text-left border-2 border-emerald-100"
                        >
                          <div className="flex items-center gap-3">
-                           <div className="bg-red-50 p-2 rounded-xl group-hover:bg-red-100 transition-colors">
+                           <div className="bg-emerald-50 p-2 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                             <Phone className="h-5 w-5" />
+                           </div>
+                           <div>
+                             <p className="font-black text-sm">Direct Voice Call</p>
+                             <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">Connect via internet (Secure)</p>
+                           </div>
+                         </div>
+                         <div className="bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-lg font-black tracking-tighter uppercase whitespace-nowrap">
+                           {callState === 'IDLE' ? 'Call Now' : 'Calling...'}
+                         </div>
+                       </button>
+
+                       {/* Notify Button (Secondary) */}
+                       <button 
+                         onClick={() => {
+                           const formElement = document.getElementById('contact-form');
+                           formElement?.scrollIntoView({ behavior: 'smooth' });
+                         }}
+                         className="w-full flex items-center justify-between bg-gray-50 text-red-600 p-4 rounded-2xl hover:bg-gray-100 transition-all group text-left border border-gray-100"
+                       >
+                         <div className="flex items-center gap-3">
+                           <div className="bg-white p-2 rounded-xl group-hover:bg-gray-50 transition-colors">
                              <PhoneIncoming className="h-5 w-5" />
                            </div>
-                          <div>
-                            <p className="font-black text-sm">Call for Immediate Help</p>
-                            <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">{barcode.residentName} ({barcode.label || 'Contact'})</p>
-                          </div>
+                           <div>
+                             <p className="font-black text-sm">Send App Alert</p>
+                             <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">Notify via resident app</p>
+                           </div>
                          </div>
-                         <p className="font-black">{barcode.phone}</p>
-                       </a>
-
-                       {/* Additional Emergency Contacts */}
-                       {barcode.emergencyContacts && barcode.emergencyContacts.length > 0 && (
-                         <div className="grid grid-cols-1 gap-2">
-                           {barcode.emergencyContacts.map((contact: any, idx: number) => (
-                             <a 
-                               key={idx}
-                               href={`tel:${contact.phone}`}
-                               className="flex items-center justify-between bg-white/10 border border-white/20 p-4 rounded-2xl hover:bg-white/20 transition-colors group"
-                             >
-                               <div className="flex items-center gap-3">
-                                 <div className="bg-white/10 p-2 rounded-xl">
-                                   <Users className="h-4 w-4" />
-                                 </div>
-                                 <div>
-                                   <p className="font-bold text-sm">{contact.name}</p>
-                                   <p className="text-[10px] uppercase font-black opacity-60 tracking-tighter">{contact.category}</p>
-                                 </div>
-                               </div>
-                               <Phone className="h-4 w-4 opacity-70" />
-                             </a>
-                           ))}
-                         </div>
-                       )}
+                         <div className="text-gray-400"><MessageSquare className="h-4 w-4" /></div>
+                       </button>
                      </div>
                    </div>
                 </div>
 
-              <CardContent className="p-8">
+              <CardContent className="p-8" id="contact-form">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Your Name *</Label>
