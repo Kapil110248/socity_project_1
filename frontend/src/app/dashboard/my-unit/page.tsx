@@ -132,6 +132,8 @@ export default function MyUnitPage() {
   const [isAddPetOpen, setIsAddPetOpen] = useState(false)
   const [petForm, setPetForm] = useState({ name: '', type: 'Dog', breed: '', age: '' })
   const [editingItem, setEditingItem] = useState<{ type: 'member' | 'vehicle' | 'pet', id: number | string } | null>(null)
+  const [isInvoiceDetailsOpen, setIsInvoiceDetailsOpen] = useState(false)
+  const [viewingInvoice, setViewingInvoice] = useState<any>(null)
 
   const { data: unit, isLoading, error } = useQuery({
     queryKey: ['unit-data'],
@@ -323,10 +325,10 @@ export default function MyUnitPage() {
                 </Button>
                 <Button
                   onClick={() => {
-                    alert('Flat registration submitted for approval')
+                    toast.success('Flat registration submitted for approval')
                     setIsAddFlatOpen(false)
                   }}
-                  className="bg-gradient-to-r from-teal-500 to-cyan-500"
+                  className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/20"
                 >
                   Submit for Approval
                 </Button>
@@ -460,7 +462,7 @@ export default function MyUnitPage() {
                           </p>
                           <Button
                             className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/30"
-                            onClick={() => alert(`Redirecting to payment gateway...\n\nAmount: Rs. ${payment.amount.toLocaleString()}\nDescription: ${payment.description}`)}
+                            onClick={() => toast.info(`Redirecting to payment gateway for ₹${payment.amount.toLocaleString()}...`)}
                           >
                             Pay Now
                           </Button>
@@ -479,8 +481,8 @@ export default function MyUnitPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Button
               variant="outline"
-              className="h-auto py-4 flex-col gap-2 hover:bg-teal-50 hover:border-teal-300"
-              onClick={() => alert('Opening Helpdesk...')}
+              className="h-auto py-4 flex-col gap-2 hover:bg-teal-50 hover:border-teal-300 transition-all duration-300 hover:shadow-md active:scale-95"
+              onClick={() => toast.info('Navigating to Helpdesk...')}
             >
               <div className="p-2 bg-teal-100 rounded-lg">
                 <FileText className="h-5 w-5 text-teal-600" />
@@ -489,8 +491,8 @@ export default function MyUnitPage() {
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex-col gap-2 hover:bg-blue-50 hover:border-blue-300"
-              onClick={() => alert('Opening Pre-approve Visitor...')}
+              className="h-auto py-4 flex-col gap-2 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:shadow-md active:scale-95"
+              onClick={() => toast.info('Opening Pre-approve Visitor...')}
             >
               <div className="p-2 bg-blue-100 rounded-lg">
                 <UserPlus className="h-5 w-5 text-blue-600" />
@@ -499,8 +501,8 @@ export default function MyUnitPage() {
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex-col gap-2 hover:bg-purple-50 hover:border-purple-300"
-              onClick={() => alert('Opening Book Amenity...')}
+              className="h-auto py-4 flex-col gap-2 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300 hover:shadow-md active:scale-95"
+              onClick={() => toast.info('Opening Book Amenity...')}
             >
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Calendar className="h-5 w-5 text-purple-600" />
@@ -509,8 +511,8 @@ export default function MyUnitPage() {
             </Button>
             <Button
               variant="outline"
-              className="h-auto py-4 flex-col gap-2 hover:bg-orange-50 hover:border-orange-300"
-              onClick={() => alert('Opening Parcel List...')}
+              className="h-auto py-4 flex-col gap-2 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 hover:shadow-md active:scale-95"
+              onClick={() => toast.info('Opening Parcel List...')}
             >
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Package className="h-5 w-5 text-orange-600" />
@@ -524,7 +526,7 @@ export default function MyUnitPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Residents */}
           <motion.div variants={itemVariants}>
-            <Card className="p-6 border-0 shadow-lg">
+            <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-[#1e3a5f]">
@@ -704,7 +706,7 @@ export default function MyUnitPage() {
 
           {/* Vehicles */}
           <motion.div variants={itemVariants}>
-            <Card className="p-6 border-0 shadow-lg">
+            <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-[#1e3a5f]">
@@ -875,7 +877,7 @@ export default function MyUnitPage() {
         {/* Tenant Management Section */}
         {selectedUnit.tenantId && tenantInfo && (
           <motion.div variants={itemVariants}>
-            <Card className="p-6 border-0 shadow-lg">
+            <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-[#1e3a5f]">
@@ -936,10 +938,10 @@ export default function MyUnitPage() {
                         </Button>
                         <Button
                           onClick={() => {
-                            alert('Tenant information updated successfully')
+                            toast.success('Tenant information updated successfully')
                             setIsTenantDialogOpen(false)
                           }}
-                          className="bg-gradient-to-r from-teal-500 to-cyan-500"
+                          className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/20"
                         >
                           Save Changes
                         </Button>
@@ -1040,7 +1042,7 @@ export default function MyUnitPage() {
         {/* Enhanced Pets Section with Vaccination Records */}
         {!selectedUnit.tenantId && pets.length > 0 && (
           <motion.div variants={itemVariants}>
-            <Card className="p-6 border-0 shadow-lg">
+            <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-[#1e3a5f]">
@@ -1233,10 +1235,10 @@ export default function MyUnitPage() {
                               </Button>
                               <Button
                                 onClick={() => {
-                                  alert('Vaccination certificate uploaded successfully')
+                                  toast.success('Vaccination certificate uploaded successfully')
                                   setIsVaccinationDialogOpen(false)
                                 }}
-                                className="bg-gradient-to-r from-pink-500 to-purple-500"
+                                className="bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20"
                               >
                                 Upload Certificate
                               </Button>
@@ -1297,7 +1299,7 @@ export default function MyUnitPage() {
                                 size="sm"
                                 variant="ghost"
                                 className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                                onClick={() => alert(`Viewing certificate: ${vaccination.certificate}`)}
+                                onClick={() => toast.success(`Viewing certificate for ${pet.name}`)}
                               >
                                 <Download className="h-3 w-3" />
                               </Button>
@@ -1320,7 +1322,7 @@ export default function MyUnitPage() {
 
         {/* Payment History */}
         <motion.div variants={itemVariants}>
-          <Card className="p-6 border-0 shadow-lg">
+          <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-bold text-[#1e3a5f]">
@@ -1382,8 +1384,11 @@ export default function MyUnitPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
-                          onClick={() => alert(`Invoice Details:\n\nID: ${payment.id}\nDate: ${new Date(payment.date).toLocaleDateString()}\nCategory: ${payment.category}\nAmount: Rs. ${payment.amount.toLocaleString()}\nStatus: ${payment.status}`)}
+                          className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 transition-colors"
+                          onClick={() => {
+                            setViewingInvoice(payment)
+                            setIsInvoiceDetailsOpen(true)
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -1402,6 +1407,81 @@ export default function MyUnitPage() {
             </div>
           </Card>
         </motion.div>
+
+        {/* Invoice Details Dialog - MODERN REPLACEMENT FOR ALERT */}
+        <Dialog open={isInvoiceDetailsOpen} onOpenChange={setIsInvoiceDetailsOpen}>
+          <DialogContent className="sm:max-w-md bg-white dark:bg-slate-950 border-0 shadow-2xl p-0 overflow-hidden">
+            <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2d4a6f] p-6 text-white text-center">
+              <div className="mx-auto w-16 h-16 bg-white/10 backdrop-blur rounded-full flex items-center justify-center mb-4 border border-white/20">
+                <FileText className="h-8 w-8 text-teal-300" />
+              </div>
+              <DialogTitle className="text-xl font-bold">Invoice Details</DialogTitle>
+              <p className="text-white/60 text-sm mt-1">Transaction ID: #{viewingInvoice?.id}</p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Category</p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-100">
+                      {viewingInvoice?.category}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="space-y-1 text-right">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Date</p>
+                  <p className="font-semibold">{viewingInvoice ? new Date(viewingInvoice.date).toLocaleDateString() : '-'}</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-slate-500">Amount</p>
+                  <p className="text-2xl font-black text-[#1e3a5f] dark:text-teal-400">
+                    ₹{viewingInvoice?.amount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <p className="text-slate-500">Status</p>
+                  <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-0">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    {viewingInvoice?.status}
+                  </Badge>
+                </div>
+              </div>
+
+              {viewingInvoice?.description && (
+                <div className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Description</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 italic">
+                    "{viewingInvoice.description}"
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="p-6 pt-0 flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1 rounded-xl"
+                onClick={() => setIsInvoiceDetailsOpen(false)}
+              >
+                Close
+              </Button>
+              <Button 
+                className="flex-1 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+                onClick={() => {
+                  toast.success('Downloading Receipt...')
+                  setIsInvoiceDetailsOpen(false)
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Receipt
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </RoleGuard>
   )

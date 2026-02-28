@@ -26,4 +26,9 @@ export const VehicleService = {
     const response = await api.delete(API_CONFIG.VEHICLE.REMOVE(id));
     return response.data;
   },
+  
+  search: async (number: string) => {
+    const response = await api.get(`${API_CONFIG.VEHICLE.SEARCH}?number=${number}`);
+    return response.data;
+  },
 };

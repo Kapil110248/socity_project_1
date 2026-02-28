@@ -180,6 +180,12 @@ export default function SocietiesPage() {
             <h1 className="text-2xl font-bold text-gray-900">Societies Management</h1>
             <p className="text-gray-600">Manage all registered societies on the platform</p>
           </div>
+          <Button asChild className="bg-purple-600 hover:bg-purple-700">
+            <Link href="/dashboard/super-admin/societies/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Society
+            </Link>
+          </Button>
         </div>
 
         {/* Stats */}

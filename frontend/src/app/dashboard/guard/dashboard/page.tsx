@@ -184,6 +184,17 @@ export default function GuardDashboardPage() {
     }
   })
 
+  const updateStaffStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number, status: string }) => StaffService.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
+      queryClient.invalidateQueries({ queryKey: ['guard-activity'] })
+      queryClient.invalidateQueries({ queryKey: ['guard-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['residentDashboard'] }) // Also invalidate resident counts
+      toast.success('Helper status updated')
+    }
+  })
+
   const logParcelMutation = useMutation({
     mutationFn: ParcelService.create,
     onSuccess: () => {
@@ -364,9 +375,17 @@ export default function GuardDashboardPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Phone className="h-3 w-3" />
-                        Call
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <a href={`tel:${visitor.phone}`}>
+                          <Phone className="h-3 w-3" />
+                          Visitor
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1 border-teal-200 text-teal-700 bg-teal-50" asChild>
+                        <a href={`tel:${visitor.unit?.tenant?.phone || visitor.unit?.owner?.phone || visitor.resident?.phone}`}>
+                          <Shield className="h-3 w-3" />
+                          Resident
+                        </a>
                       </Button>
                       <Button
                         size="sm"
@@ -425,9 +444,17 @@ export default function GuardDashboardPage() {
                     </div>
                     <div className="flex gap-2 items-center">
                       {getStatusBadge(visitor.status.toLowerCase())}
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Phone className="h-3 w-3" />
-                        Call
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <a href={`tel:${visitor.phone}`}>
+                          <Phone className="h-3 w-3" />
+                          Visitor
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1 border-teal-200 text-teal-700 bg-teal-50" asChild>
+                        <a href={`tel:${visitor.unit?.tenant?.phone || visitor.unit?.owner?.phone || visitor.resident?.phone}`}>
+                          <Shield className="h-3 w-3" />
+                          Resident
+                        </a>
                       </Button>
                       {visitor.status === 'PENDING' && (
                         <>
@@ -489,9 +516,17 @@ export default function GuardDashboardPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="gap-1">
-                        <Phone className="h-3 w-3" />
-                        Call
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <a href={`tel:${visitor.phone}`}>
+                          <Phone className="h-3 w-3" />
+                          Visitor
+                        </a>
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1 border-teal-200 text-teal-700 bg-teal-50" asChild>
+                        <a href={`tel:${visitor.unit?.tenant?.phone || visitor.unit?.owner?.phone || visitor.resident?.phone}`}>
+                          <Shield className="h-3 w-3" />
+                          Resident
+                        </a>
                       </Button>
                       <Button
                         size="sm"
@@ -662,6 +697,27 @@ export default function GuardDashboardPage() {
                         <LogIn className="h-3 w-3 text-green-600" />
                         Check-in: {staff.checkInTime || '-'}
                       </span>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      {staff.status !== 'ON_DUTY' ? (
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 h-8"
+                          onClick={() => updateStaffStatusMutation.mutate({ id: staff.id, status: 'ON_DUTY' })}
+                        >
+                          Check In
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="flex-1 h-8"
+                          onClick={() => updateStaffStatusMutation.mutate({ id: staff.id, status: 'OFF_DUTY' })}
+                        >
+                          Check Out
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" className="h-8">Details</Button>
                     </div>
                   </div>
                 </div>

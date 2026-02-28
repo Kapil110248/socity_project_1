@@ -86,12 +86,12 @@ export default function QRAccessPage() {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data: { label: string; type: string }) => api.post('/emergency/barcodes', data),
+    mutationFn: (data: { label: string; type: string; phone?: string }) => api.post('/emergency/barcodes', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['emergency-barcodes'] })
       toast.success('New emergency barcode generated!')
       setIsCreateOpen(false)
-      setNewBarcodeData({ label: '', type: 'property' })
+      setNewBarcodeData({ label: '', type: 'property', phone: '' })
     },
     onError: (error: any) => toast.error(error.response?.data?.error || 'Failed to create barcode')
   })
@@ -127,7 +127,8 @@ export default function QRAccessPage() {
   const [isRegenerateOpen, setIsRegenerateOpen] = useState<string | null>(null)
   const [newBarcodeData, setNewBarcodeData] = useState({
     label: '',
-    type: 'property' as 'property' | 'vehicle' | 'other'
+    type: 'property' as 'property' | 'vehicle' | 'other',
+    phone: ''
   })
 
   const handleCreateBarcode = () => {
@@ -382,11 +383,18 @@ export default function QRAccessPage() {
                     </div>
                     <p className="text-xs text-gray-500 italic line-clamp-2">"{log.reason || 'No reason specified'}"</p>
                     <div className="mt-3 flex gap-2">
-                      <Button size="sm" className="h-8 flex-1 bg-white hover:bg-gray-50 text-teal-600 text-[10px] font-black ring-1 ring-black/5 border-0 rounded-xl gap-1">
+                      <Button 
+                        size="sm" 
+                        className="h-8 flex-1 bg-white hover:bg-gray-50 text-teal-600 text-[10px] font-black ring-1 ring-black/5 border-0 rounded-xl gap-1"
+                        onClick={() => {
+                          if (log.visitorPhone && log.visitorPhone !== 'N/A') {
+                            window.open(`tel:${log.visitorPhone}`, '_self')
+                          } else {
+                            toast.error('No phone number provided by visitor')
+                          }
+                        }}
+                      >
                         <Phone className="h-3 w-3" /> CALL
-                      </Button>
-                      <Button size="sm" className="h-8 flex-1 bg-white hover:bg-gray-50 text-blue-600 text-[10px] font-black ring-1 ring-black/5 border-0 rounded-xl gap-1">
-                        <Video className="h-3 w-3" /> VIDEO
                       </Button>
                     </div>
                   </div>
@@ -437,6 +445,19 @@ export default function QRAccessPage() {
                   value={newBarcodeData.label}
                   onChange={(e) => setNewBarcodeData({ ...newBarcodeData, label: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Emergency Mobile Number (Optional)</Label>
+                <div className="relative">
+                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    type="tel"
+                    placeholder="e.g. 9876543210 (Default: your number)"
+                    className="pl-12 h-14 rounded-2xl border-gray-100 bg-gray-50 focus:bg-white transition-all font-bold"
+                    value={newBarcodeData.phone}
+                    onChange={(e) => setNewBarcodeData({ ...newBarcodeData, phone: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Category</Label>

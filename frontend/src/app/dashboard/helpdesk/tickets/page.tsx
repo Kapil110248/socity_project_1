@@ -181,14 +181,15 @@ export default function HelpdeskTicketsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="p-5 border-0 shadow-sm bg-white rounded-3xl ring-1 ring-black/5">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
+              <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 overflow-hidden relative group">
+                <div className={cn("absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-10 transition-transform group-hover:scale-150", stat.color)} />
+                <div className="flex items-center justify-between relative z-10 mb-3">
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{stat.label}</p>
                   <div className={cn("h-2.5 w-2.5 rounded-full", stat.color)} />
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-gray-900">{stat.value}</span>
-                  <span className="text-[10px] font-bold text-gray-400">Tickets</span>
+                <div className="flex items-baseline gap-2 relative z-10">
+                  <span className="text-3xl font-bold text-slate-900 dark:text-white">{stat.value}</span>
+                  <span className="text-[10px] font-bold text-slate-400">Tickets</span>
                 </div>
                 <Progress value={stat.percentage} className="h-1 mt-4" />
               </Card>
@@ -197,41 +198,41 @@ export default function HelpdeskTicketsPage() {
         </div>
 
         {/* Advanced Filters */}
-        <Card className="p-5 mb-8 border-0 shadow-sm bg-white rounded-3xl ring-1 ring-black/5">
+        <Card className="p-6 mb-8 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 rounded-[2rem]">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input
                 placeholder="Filter by ID, Member Name or Subject..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-14 border-0 bg-gray-50/50 focus:bg-white rounded-2xl font-medium"
+                className="pl-12 h-14 border-0 bg-white/50 dark:bg-slate-800/50 shadow-inner focus:bg-white dark:focus:bg-slate-800 rounded-2xl font-medium"
               />
             </div>
             <div className="flex gap-3">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full md:w-48 h-14 rounded-2xl border-0 bg-gray-50/50 font-bold text-gray-600">
+                <SelectTrigger className="w-full md:w-48 h-14 rounded-2xl border-0 bg-white/50 dark:bg-slate-800/50 shadow-inner font-bold text-slate-600 dark:text-slate-300">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-0 shadow-2xl">
+                <SelectContent className="rounded-2xl border-white/20 dark:border-slate-800/50 shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-slate-900/90">
                   {categories.map((cat) => (
                     <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="h-14 w-14 p-0 rounded-2xl border-0 bg-gray-50/50 hover:bg-gray-100">
-                <Filter className="h-5 w-5 text-gray-500" />
+              <Button variant="outline" className="h-14 w-14 p-0 rounded-2xl border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800">
+                <Filter className="h-5 w-5 text-slate-500" />
               </Button>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-            <TabsList className="bg-gray-50/50 p-1 rounded-2xl h-auto flex-wrap md:flex-nowrap">
-              <TabsTrigger value="all" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">ALL TICKETS</TabsTrigger>
-              <TabsTrigger value="open" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">OPEN</TabsTrigger>
-              <TabsTrigger value="in-progress" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">IN PROGRESS</TabsTrigger>
-              <TabsTrigger value="resolved" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">RESOLVED</TabsTrigger>
-              <TabsTrigger value="closed" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white data-[state=active]:shadow-sm">CLOSED</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
+            <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-2xl h-auto flex-wrap md:flex-nowrap">
+              <TabsTrigger value="all" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">ALL TICKETS</TabsTrigger>
+              <TabsTrigger value="open" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">OPEN</TabsTrigger>
+              <TabsTrigger value="in-progress" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">IN PROGRESS</TabsTrigger>
+              <TabsTrigger value="resolved" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">RESOLVED</TabsTrigger>
+              <TabsTrigger value="closed" className="rounded-xl px-4 py-2 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm">CLOSED</TabsTrigger>
             </TabsList>
           </Tabs>
         </Card>

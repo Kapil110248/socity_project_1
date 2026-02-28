@@ -1,18 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import {
     Receipt,
     Wallet,
-    History,
     CreditCard,
     Download,
-    FileText,
     AlertCircle,
+    CheckCircle2,
+    Clock,
     ChevronRight,
-    Search,
-    Filter
+    Printer,
+    ArrowLeft,
+    Building2,
 } from "lucide-react"
 import { format } from "date-fns"
 import {
@@ -26,15 +27,11 @@ import {
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogFooter,
 } from "@/components/ui/dialog"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
     Tabs,
@@ -50,18 +47,199 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-import { societyReceiptService } from "@/services/society-receipt.service"
 import { BillingService } from "@/services/billing.service"
 import { residentService } from "@/services/resident.service"
 import { PDFService } from "@/services/pdf.service"
 import { RoleGuard } from "@/components/auth/role-guard"
+import { useAuthStore } from "@/lib/stores/auth-store"
+
+function InvoiceDialog({ invoice, sname = 'My Society' }: { invoice: any, sname?: string }) {
+    if (!invoice) return null
+
+    const isPaid = invoice.status === 'paid'
+
+    const handleDownload = () => {
+        PDFService.generateInvoicePDF(invoice, sname);
+    }
+
+    const handlePrint = () => {
+        window.print();
+    }
+
+    const formatRate = (val: any) => {
+        return parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })
+    }
+
+    const capitalize = (str: string) => {
+        if (!str) return ''
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    }
+
+    // Combine all line items for summary
+    const allItems = [
+        { name: 'Maintenance Charges', amount: invoice.maintenance },
+        { name: 'Utility Charges', amount: invoice.utilities },
+        ...(invoice.items || [])
+    ].filter(item => item.amount > 0)
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button
+                    variant="outline" size="sm"
+                    className={`gap-1.5 transition-all active:scale-[0.98] ${
+                        isPaid
+                            ? 'hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
+                            : 'hover:bg-orange-50 border-orange-200 text-orange-700'
+                    }`}
+                >
+                    {isPaid ? <Receipt className="h-3.5 w-3.5" /> : <CreditCard className="h-3.5 w-3.5" />}
+                    {isPaid ? 'Receipt' : 'View'}
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg p-0 border-0 shadow-2xl rounded-2xl dark:bg-zinc-950 max-h-[90vh] overflow-y-auto">
+                <div className="bg-white dark:bg-zinc-950 min-h-full">
+                    {/* Header */}
+                    <div className="bg-primary/5 px-6 py-10 flex flex-col items-center text-center border-b border-dashed relative">
+                        <div className="h-16 w-16 bg-white dark:bg-zinc-900 rounded-full shadow-sm flex items-center justify-center mb-4 border relative z-10">
+                            {isPaid ? <Receipt className="h-8 w-8 text-primary" /> : <CreditCard className="h-8 w-8 text-orange-500" />}
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-foreground">
+                            {isPaid ? 'Payment Receipt' : 'Invoice Details'}
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">{invoice.invoiceNo}</p>
+
+                        <div className="mt-8 flex flex-col items-center">
+                            {isPaid ? (
+                                <div className="bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 px-4 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 mb-4 border border-green-100 dark:border-green-900/30">
+                                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                                    PAID
+                                </div>
+                            ) : (
+                                <div className="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-4 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 mb-4 border border-orange-100 dark:border-orange-900/30">
+                                    <span className="h-2 w-2 rounded-full bg-orange-500" />
+                                    {invoice.status?.toUpperCase()}
+                                </div>
+                            )}
+                            <p className="text-xs font-medium text-gray-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+                                {isPaid
+                                    ? (invoice.paidDate ? format(new Date(invoice.paidDate), 'dd MMMM yyyy') : 'N/A')
+                                    : `Due: ${format(new Date(invoice.dueDate), 'dd MMMM yyyy')}`
+                                }
+                            </p>
+                            <div className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                                ₹{formatRate(invoice.amount)}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Details Section */}
+                    <div className="p-8 space-y-8">
+                        <div>
+                            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3">Description / Reference</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                                {invoice.description || `Society Maintenance - ${invoice.invoiceNo?.split('-')[1] || 'Monthly'}`}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Breakdown</p>
+                            <div className="space-y-3">
+                                {allItems.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-sm">
+                                        <span className="text-zinc-500 dark:text-zinc-400 font-medium">{capitalize(item.name)}</span>
+                                        <span className="font-bold text-gray-900 dark:text-zinc-100">₹{formatRate(item.amount)}</span>
+                                    </div>
+                                ))}
+                                
+                                {invoice.penalty > 0 && (
+                                    <div className="flex justify-between items-center text-sm pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                                        <span className="text-red-500 font-bold">Late Fee / Penalty</span>
+                                        <span className="font-bold text-red-600 tracking-tight">₹{formatRate(invoice.penalty)}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center text-base pt-3 border-t-2 border-zinc-900 dark:border-zinc-100">
+                                    <span className="font-extrabold text-zinc-900 dark:text-white uppercase tracking-tight">Total Payable</span>
+                                    <span className="font-black text-zinc-900 dark:text-white">₹{formatRate(invoice.amount)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 grid grid-cols-2 gap-6 border-t border-zinc-100 dark:border-zinc-900">
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-1.5">Unit</p>
+                                <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">
+                                    {typeof invoice.unit === 'object' ? `${invoice.unit.block}-${invoice.unit.number}` : (invoice.unit || 'N/A')}
+                                </p>
+                            </div>
+                            {isPaid && (
+                                <div>
+                                    <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-1.5">Payment Mode</p>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-zinc-100">{invoice.paymentMode || 'Online'}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="px-8 pb-8 flex flex-col gap-3">
+                        {isPaid ? (
+                            <div className="flex gap-3">
+                                <Button
+                                    className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl py-6 font-bold text-sm shadow-xl transition-all active:scale-[0.98]"
+                                    onClick={handleDownload}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 border-zinc-200 dark:border-zinc-800 rounded-xl py-6 font-bold text-sm transition-all active:scale-[0.98]"
+                                    onClick={handlePrint}
+                                >
+                                    <Printer className="h-4 w-4 mr-2" />
+                                    Print
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 pt-2">
+                                <div className="flex gap-3">
+                                    <Button
+                                        className="flex-1 bg-teal-600 hover:bg-teal-700 text-white rounded-xl py-6 font-bold text-sm shadow-xl transition-all active:scale-[0.98]"
+                                        onClick={handleDownload}
+                                    >
+                                        <Download className="h-4 w-4 mr-2" />
+                                        PDF
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 border-zinc-200 dark:border-zinc-800 rounded-xl py-6 font-bold text-sm transition-all active:scale-[0.98]"
+                                        onClick={handlePrint}
+                                    >
+                                        <Printer className="h-4 w-4 mr-2" />
+                                        Print
+                                    </Button>
+                                </div>
+                                <div className="bg-orange-50 dark:bg-orange-900/10 rounded-xl p-4 text-sm text-orange-700 dark:text-orange-400 text-center">
+                                    <Clock className="h-5 w-5 mx-auto mb-1" />
+                                    Payment pending. Pay by <strong>{format(new Date(invoice.dueDate), 'dd MMM yyyy')}</strong>.
+                                </div>
+                            </div>
+                        )}
+                        <p className="text-[10px] text-center text-zinc-400 font-medium">System generated. No signature required.</p>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function SocietyDuesPage() {
-    const [activeTab, setActiveTab] = useState("overview")
-    const [viewInvoice, setViewInvoice] = useState<any | null>(null)
-    const queryClient = useQueryClient()
+    const [activeTab, setActiveTab] = useState("invoices")
+    const { user } = useAuthStore()
 
     // Fetch Dashboard Data (for summary)
     const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
@@ -69,47 +247,27 @@ export default function SocietyDuesPage() {
         queryFn: () => residentService.getDashboardData()
     })
 
-    // Fetch Unit Data (to get unitId)
-    const { data: unitData, isLoading: unitLoading } = useQuery({
-        queryKey: ["unitData"],
-        queryFn: () => residentService.getUnitData()
+    // Fetch my invoices (resident-specific)
+    const { data: invoices = [], isLoading: invoicesLoading, error: invoicesError } = useQuery({
+        queryKey: ["myInvoices"],
+        queryFn: async () => {
+            try {
+                const result = await BillingService.getMyInvoices();
+                console.log('[MyInvoices] API result:', result);
+                return Array.isArray(result) ? result : []
+            } catch (err: any) {
+                console.error('[MyInvoices] API error:', err?.response?.data || err?.message);
+                toast.error('Failed to load invoices: ' + (err?.response?.data?.error || err?.message || 'Unknown error'));
+                throw err;
+            }
+        },
+        retry: false,
     })
 
-    // Fetch Invoices
-    const { data: invoices, isLoading: invoicesLoading } = useQuery({
-        queryKey: ["invoices"],
-        queryFn: () => BillingService.getInvoices(),
-        enabled: !!unitData
-    })
+    const paidInvoices = (invoices as any[]).filter((i: any) => i.status === 'paid')
+    const pendingInvoices = (invoices as any[]).filter((i: any) => i.status !== 'paid')
 
-    // Fetch Receipts
-    const { data: receipts, isLoading: receiptsLoading } = useQuery({
-        queryKey: ["societyReceipts"],
-        queryFn: () => societyReceiptService.listReceipts(),
-        enabled: !!unitData
-    })
-
-    // Fetch Wallet
-    const { data: wallet, isLoading: walletLoading } = useQuery({
-        queryKey: ["walletBalance", unitData?.id],
-        queryFn: () => societyReceiptService.getWalletBalance(unitData.id),
-        enabled: !!unitData
-    })
-
-    // Fetch Wallet Transactions
-    const { data: walletTransactions, isLoading: walletTxLoading } = useQuery({
-        queryKey: ["walletTransactions", unitData?.id],
-        queryFn: () => societyReceiptService.listWalletTransactions(unitData.id),
-        enabled: !!unitData
-    })
-
-    const handleDownloadReceipt = (receiptId: number) => {
-        toast.info("Downloading receipt...")
-        // Simulate download for now
-        window.open(`${process.env.NEXT_PUBLIC_API_URL}/society-dues/receipts/${receiptId}/pdf`, '_blank')
-    }
-
-    if (dashboardLoading || unitLoading) {
+    if (dashboardLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -119,300 +277,194 @@ export default function SocietyDuesPage() {
 
     return (
         <RoleGuard allowedRoles={['resident']}>
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6 max-w-4xl mx-auto">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Society Dues</h1>
-                    <p className="text-muted-foreground">Manage your maintenance payments and financial records.</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">My Dues & Receipts</h1>
+                    <p className="text-muted-foreground text-sm mt-1">View your maintenance payments and download receipts.</p>
                 </div>
 
                 {/* Summary Cards */}
-                <div className="grid gap-4 md:grid-cols-4">
-                    <Card className="bg-primary/5 border-primary/20">
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+                    <Card className="border-0 shadow-md">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Outstanding Dues</CardTitle>
-                            <CreditCard className="h-4 w-4 text-primary" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">₹{dashboardData?.dues?.amount || 0}</div>
-                            <p className="text-xs text-muted-foreground">
-                                {dashboardData?.dues?.penalty > 0 ? `Includes ₹${dashboardData.dues.penalty} penalty` : 'No penalty accrued'}
-                            </p>
-                            <Button className="w-full mt-4" size="sm">Pay Now</Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Advance Balance</CardTitle>
-                            <Wallet className="h-4 w-4 text-green-600" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">₹{wallet?.advanceBalance || 0}</div>
-                            <p className="text-xs text-muted-foreground">Available for adjustment</p>
-                            <Button variant="outline" className="w-full mt-4" size="sm">Add Advance</Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Security Deposit</CardTitle>
                             <AlertCircle className="h-4 w-4 text-orange-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">₹{wallet?.securityDepositBalance || 0}</div>
-                            <p className="text-xs text-muted-foreground">Refundable deposit</p>
+                            <div className="text-2xl font-bold text-orange-600">₹{dashboardData?.dues?.amount || 0}</div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {pendingInvoices.length} pending invoice{pendingInvoices.length !== 1 ? 's' : ''}
+                            </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="border-0 shadow-md">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Last Receipt</CardTitle>
-                            <Receipt className="h-4 w-4 text-blue-500" />
+                            <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-lg font-semibold truncate">
-                                {receipts && receipts.length > 0 ? receipts[0].receiptNo : 'No receipts'}
+                            <div className="text-2xl font-bold text-green-600">
+                                ₹{paidInvoices.reduce((sum: number, i: any) => sum + (i.amount || 0), 0).toLocaleString('en-IN')}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                                {receipts && receipts.length > 0 ? format(new Date(receipts[0].date), 'dd MMM yyyy') : '-'}
-                            </p>
-                            {receipts && receipts.length > 0 && (
-                                <Button variant="ghost" className="w-full mt-2" size="sm" onClick={() => handleDownloadReceipt(receipts[0].id)}>
-                                    <Download className="h-3 w-3 mr-2" /> Download
-                                </Button>
-                            )}
+                            <p className="text-xs text-muted-foreground mt-1">{paidInvoices.length} paid receipt{paidInvoices.length !== 1 ? 's' : ''}</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-0 shadow-md col-span-2 sm:col-span-1">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">My Unit</CardTitle>
+                            <Building2 className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-lg font-bold">
+                                {dashboardData?.unit?.unitNo || 'N/A'}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{user?.name}</p>
                         </CardContent>
                     </Card>
                 </div>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                    <TabsList>
-                        <TabsTrigger value="overview">Invoices</TabsTrigger>
-                        <TabsTrigger value="receipts">Receipts</TabsTrigger>
-                        <TabsTrigger value="wallet">Wallet History</TabsTrigger>
+                {/* Tabs */}
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="grid grid-cols-2 w-full max-w-sm">
+                        <TabsTrigger value="invoices">
+                            Invoices
+                            {pendingInvoices.length > 0 && (
+                                <Badge className="ml-2 bg-orange-500 text-white text-[10px] px-1.5 py-0 h-4">{pendingInvoices.length}</Badge>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="receipts">
+                            Receipts
+                            {paidInvoices.length > 0 && (
+                                <Badge className="ml-2 bg-green-600 text-white text-[10px] px-1.5 py-0 h-4">{paidInvoices.length}</Badge>
+                            )}
+                        </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Recent Invoices</CardTitle>
-                                <CardDescription>List of all maintenance and utility invoices.</CardDescription>
+                    {/* All Invoices */}
+                    <TabsContent value="invoices" className="mt-4">
+                        <Card className="border-0 shadow-md">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base">All Invoices</CardTitle>
+                                <CardDescription>Your maintenance and utility invoices.</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Invoice No</TableHead>
-                                            <TableHead>Issue Date</TableHead>
-                                            <TableHead>Due Date</TableHead>
-                                            <TableHead>Amount</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="text-right">Action</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {invoicesLoading ? (
-                                            <TableRow><TableCell colSpan={6} className="text-center py-10">Loading...</TableCell></TableRow>
-                                        ) : invoices?.length === 0 ? (
-                                            <TableRow><TableCell colSpan={6} className="text-center py-10">No invoices found.</TableCell></TableRow>
-                                        ) : (
-                                            invoices?.map((invoice: any) => (
+                            <CardContent className="px-0">
+                                {invoicesLoading ? (
+                                    <div className="py-10 text-center text-muted-foreground">Loading invoices...</div>
+                                ) : invoicesError ? (
+                                    <div className="py-10 text-center text-destructive text-sm">
+                                        Failed to load invoices. Please try refreshing the page.
+                                    </div>
+                                ) : invoices.length === 0 ? (
+                                    <div className="py-10 text-center text-muted-foreground">No invoices found.</div>
+                                ) : (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Invoice No</TableHead>
+                                                <TableHead>Due Date</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {(invoices as any[]).map((invoice: any) => (
                                                 <TableRow key={invoice.id}>
-                                                    <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
-                                                    <TableCell>{format(new Date(invoice.createdAt), 'dd MMM yyyy')}</TableCell>
-                                                    <TableCell>{format(new Date(invoice.dueDate), 'dd MMM yyyy')}</TableCell>
-                                                    <TableCell className="font-semibold">₹{invoice.amount}</TableCell>
+                                                    <TableCell className="font-medium text-xs sm:text-sm">{invoice.invoiceNo}</TableCell>
+                                                    <TableCell className="text-xs text-muted-foreground">{format(new Date(invoice.dueDate), 'dd MMM yyyy')}</TableCell>
+                                                    <TableCell className="font-semibold">₹{Number(invoice.amount).toLocaleString('en-IN')}</TableCell>
                                                     <TableCell>
-                                                        <Badge variant={invoice.status === 'paid' ? 'outline' : invoice.status === 'overdue' ? 'destructive' : 'secondary'} className={invoice.status === 'paid' ? 'text-green-600 border-green-200' : ''}>
+                                                        <Badge
+                                                            variant={invoice.status === 'paid' ? 'outline' : invoice.status === 'overdue' ? 'destructive' : 'secondary'}
+                                                            className={invoice.status === 'paid' ? 'text-green-600 border-green-200 bg-green-50' : ''}
+                                                        >
                                                             {invoice.status.toUpperCase()}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        {invoice.status !== 'paid' ? (
-                                                            <Button size="sm">Pay</Button>
-                                                        ) : (
-                                                            <Button variant="outline" size="sm" onClick={() => setViewInvoice(invoice)}>View</Button>
-                                                        )}
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <Button
+                                                                variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-teal-600"
+                                                                onClick={() => PDFService.generateInvoicePDF(invoice, dashboardData?.societyName)}
+                                                                title="Download PDF"
+                                                            >
+                                                                <Download className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-blue-600"
+                                                                onClick={() => window.print()}
+                                                                title="Print"
+                                                            >
+                                                                <Printer className="h-4 w-4" />
+                                                            </Button>
+                                                            <InvoiceDialog invoice={invoice} sname={dashboardData?.societyName} />
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="receipts" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Payment Receipts</CardTitle>
-                                <CardDescription>View and download your payment confirmations.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    {receiptsLoading ? (
-                                        <p>Loading receipts...</p>
-                                    ) : receipts?.map((receipt: any) => (
-                                        <Card key={receipt.id} className="overflow-hidden">
-                                            <div className="bg-primary/5 p-4 flex items-center justify-between">
-                                                <Badge variant="outline">{receipt.receiptNo}</Badge>
-                                                <span className="text-xs text-muted-foreground">{format(new Date(receipt.date), 'dd MMM yyyy')}</span>
-                                            </div>
-                                            <CardContent className="p-4">
-                                                <div className="flex justify-between items-end">
+                    {/* Paid Receipts */}
+                    <TabsContent value="receipts" className="mt-4">
+                        <div className="space-y-3">
+                            {invoicesLoading ? (
+                                <div className="py-10 text-center text-muted-foreground">Loading receipts...</div>
+                            ) : paidInvoices.length === 0 ? (
+                                <Card className="border-0 shadow-md">
+                                    <CardContent className="py-10 text-center text-muted-foreground">
+                                        No paid receipts yet.
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                paidInvoices.map((invoice: any) => (
+                                    <Card key={invoice.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                                    </div>
                                                     <div>
-                                                        <p className="text-sm text-muted-foreground">Amount Paid</p>
-                                                        <p className="text-2xl font-bold">₹{receipt.amount}</p>
-                                                    </div>
-                                                    <div className="text-right text-xs">
-                                                        <p className="text-muted-foreground">Mode</p>
-                                                        <p className="font-medium underline decoration-primary decoration-2">{receipt.paymentMethod}</p>
+                                                        <p className="font-semibold text-sm text-gray-900 dark:text-foreground">{invoice.invoiceNo}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Paid on {invoice.paidDate ? format(new Date(invoice.paidDate), 'dd MMM yyyy') : 'N/A'}
+                                                        </p>
+                                                        {invoice.paymentMode && (
+                                                            <p className="text-xs text-muted-foreground">{invoice.paymentMode}</p>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
-                                                    {receipt.breakups?.map((b: any, idx: number) => (
-                                                        <Badge key={idx} variant="secondary" className="text-[10px]">
-                                                            {b.invoice?.invoiceNo || b.description}
-                                                        </Badge>
-                                                    ))}
+                                                <div className="text-right flex flex-col items-end gap-2">
+                                                    <p className="font-bold text-gray-900 dark:text-foreground">
+                                                        ₹{Number(invoice.amount).toLocaleString('en-IN')}
+                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-teal-600"
+                                                            onClick={() => PDFService.generateInvoicePDF(invoice, dashboardData?.societyName)}
+                                                            title="Download Receipt"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </Button>
+                                                        <InvoiceDialog invoice={invoice} sname={dashboardData?.societyName} />
+                                                    </div>
                                                 </div>
-                                            </CardContent>
-                                            <CardFooter className="p-4 bg-muted/50">
-                                                <Button className="w-full" variant="outline" size="sm" onClick={() => handleDownloadReceipt(receipt.id)}>
-                                                    <Download className="h-4 w-4 mr-2" /> Download Receipt
-                                                </Button>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                                    {receipts?.length === 0 && (
-                                        <div className="col-span-full py-10 text-center text-muted-foreground">
-                                            No receipts found.
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="wallet" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Wallet Transactions</CardTitle>
-                                <CardDescription>History of your advance and security deposit transactions.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead>Type</TableHead>
-                                            <TableHead>Purpose</TableHead>
-                                            <TableHead>Description</TableHead>
-                                            <TableHead className="text-right">Amount</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {walletTxLoading ? (
-                                            <TableRow><TableCell colSpan={5} className="text-center py-10">Loading...</TableCell></TableRow>
-                                        ) : walletTransactions?.length === 0 ? (
-                                            <TableRow><TableCell colSpan={5} className="text-center py-10">No transactions found.</TableCell></TableRow>
-                                        ) : (
-                                            walletTransactions?.map((tx: any) => (
-                                                <TableRow key={tx.id}>
-                                                    <TableCell>{format(new Date(tx.date), 'dd MMM yyyy HH:mm')}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={tx.type === 'CREDIT' ? 'outline' : 'destructive'} className={tx.type === 'CREDIT' ? 'text-green-600 border-green-200' : ''}>
-                                                            {tx.type}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline">{tx.purpose.replace('_', ' ')}</Badge>
-                                                    </TableCell>
-                                                    <TableCell className="max-w-xs truncate">{tx.description}</TableCell>
-                                                    <TableCell className={`text-right font-bold ${tx.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {tx.type === 'CREDIT' ? '+' : '-'}₹{tx.amount}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            )}
+                        </div>
                     </TabsContent>
                 </Tabs>
             </div>
-
-            {/* Invoice Detail Dialog */}
-            <Dialog open={!!viewInvoice} onOpenChange={() => setViewInvoice(null)}>
-                <DialogContent className="max-w-lg">
-                    {viewInvoice && (
-                        <>
-                            <DialogHeader>
-                                <DialogTitle className="flex items-center justify-between">
-                                    <span>Invoice {viewInvoice.invoiceNo}</span>
-                                    <Badge
-                                        className={
-                                            viewInvoice.status === 'paid'
-                                                ? 'bg-green-100 text-green-700'
-                                                : viewInvoice.status === 'overdue'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : 'bg-orange-100 text-orange-700'
-                                        }
-                                    >
-                                        {viewInvoice.status}
-                                    </Badge>
-                                </DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                                <div className="space-y-0 text-sm">
-                                    <p className="font-semibold text-gray-700 mb-2 uppercase text-xs tracking-wider">Charge Breakdown</p>
-                                    {viewInvoice.items && viewInvoice.items.length > 0 ? (
-                                        viewInvoice.items.map((item: any) => (
-                                            <div key={item.id} className="flex justify-between py-2 border-b border-gray-100 last:border-0">
-                                                <span className="text-gray-600">{item.name}</span>
-                                                <span className="font-medium text-gray-900">₹{item.amount.toLocaleString()}</span>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <div className="flex justify-between py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">Maintenance Charges</span>
-                                                <span className="font-medium text-gray-900">₹{viewInvoice.maintenance?.toLocaleString() || '0'}</span>
-                                            </div>
-                                            <div className="flex justify-between py-2 border-b border-gray-100">
-                                                <span className="text-gray-600">Utility Charges</span>
-                                                <span className="font-medium text-gray-900">₹{viewInvoice.utilities?.toLocaleString() || '0'}</span>
-                                            </div>
-                                            {viewInvoice.penalty > 0 && (
-                                                <div className="flex justify-between py-2 border-b border-gray-100 text-red-600">
-                                                    <span>Late Fee / Penalty</span>
-                                                    <span className="font-medium">₹{viewInvoice.penalty?.toLocaleString() || '0'}</span>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                    <div className="flex justify-between py-4 text-lg font-bold text-primary border-t-2 border-primary/10 mt-2">
-                                        <span>Total Payable</span>
-                                        <span>₹{viewInvoice.amount?.toLocaleString() || '0'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <Button className="flex-1" variant="outline" onClick={() => {
-                                        PDFService.generateInvoicePDF(viewInvoice);
-                                        toast.success('Invoice downloaded');
-                                    }}>
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Download PDF
-                                    </Button>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
         </RoleGuard>
     )
 }

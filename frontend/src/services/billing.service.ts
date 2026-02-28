@@ -45,6 +45,11 @@ export const BillingService = {
     return response.data;
   },
 
+  getMyInvoices: async () => {
+    const response = await api.get(API_CONFIG.BILLING.MY_INVOICES);
+    return response.data;
+  },
+
   generateInvoices: async (data: {
     month: string;
     dueDate: string;
@@ -98,8 +103,23 @@ export const BillingService = {
     return response.data;
   },
 
+  applyLateFees: async () => {
+    const response = await api.post(API_CONFIG.BILLING.APPLY_LATE_FEES);
+    return response.data;
+  },
+
   finalizeSetup: async () => {
     const response = await api.post(API_CONFIG.BILLING.FINALIZE);
+    return response.data;
+  },
+
+  createPlatformInvoice: async (data: {
+    societyId: number;
+    amount: number;
+    dueDate: string;
+    invoiceNo?: string;
+  }) => {
+    const response = await api.post(API_CONFIG.BILLING.PLATFORM_INVOICES, data);
     return response.data;
   },
 };

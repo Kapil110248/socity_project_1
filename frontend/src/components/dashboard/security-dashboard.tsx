@@ -22,6 +22,7 @@ import {
   Calendar,
   TrendingUp,
   Activity,
+  Search,
   Building,
 } from 'lucide-react'
 import {
@@ -147,6 +148,7 @@ export function SecurityDashboard() {
   const { user } = useAuthStore()
   const [showSuccess, setShowSuccess] = useState<string | null>(null)
   const [activeCategory, setActiveCategory] = useState<'visitor' | 'parcel' | 'staff'>('visitor')
+  const [helperSearch, setHelperSearch] = useState('')
   const queryClient = useQueryClient()
 
   // Fetch Guard Stats
@@ -200,6 +202,20 @@ export function SecurityDashboard() {
     },
   })
 
+  const updateStaffStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number | string; status: string }) =>
+      StaffService.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] })
+      queryClient.invalidateQueries({ queryKey: ['guard-activity'] })
+      queryClient.invalidateQueries({ queryKey: ['guard-stats'] })
+      toast.success('Helper status updated')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update staff status')
+    },
+  })
+
   // Dynamic Chart Data
   const currentDayName = format(new Date(), 'EEE')
   const chartData = visitorChartData.map(d =>
@@ -218,6 +234,11 @@ export function SecurityDashboard() {
   const handleReject = (id: number | string) => {
     updateStatusMutation.mutate({ id, status: 'REJECTED' })
   }
+
+  const helperList = (staff || []).filter((h: any) =>
+    h.name.toLowerCase().includes(helperSearch.toLowerCase()) ||
+    h.role.toLowerCase().includes(helperSearch.toLowerCase())
+  )
 
   return (
     <motion.div
@@ -498,66 +519,144 @@ export function SecurityDashboard() {
           </Card>
         </motion.div >
 
-        {/* Emergency Contacts - IGATESECURITY Style */}
-        < motion.div variants={itemVariants} >
-          <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10">
+        {/* Helper Attendance Management */}
+        <motion.div variants={itemVariants}>
+          <Card className="border-0 shadow-md h-full bg-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-bold text-foreground">Emergency Contacts</CardTitle>
-                <Phone className="h-5 w-5 text-red-600 dark:text-red-400" />
+                <div>
+                  <CardTitle className="text-lg font-bold text-foreground">Helper Attendance</CardTitle>
+                  <CardDescription>Check-in/out domestic helpers</CardDescription>
+                </div>
+                <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                {contactsLoading ? (
-                  <div className="col-span-2 text-center py-4 text-muted-foreground">Loading contacts...</div>
-                ) : (contacts as any)?.length === 0 ? (
-                  <>
-                    {emergencyContacts.map((contact, index) => {
-                      const Icon = contact.icon
-                      return (
-                        <a
-                          key={index}
-                          href={`tel:${contact.number}`}
-                          className="p-4 bg-white dark:bg-card rounded-xl border border-border hover:shadow-md transition-all"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
-                              <Icon className="h-5 w-5 text-red-600 dark:text-red-400" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">{contact.name}</p>
-                              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{contact.number}</p>
-                            </div>
-                          </div>
-                        </a>
-                      )
-                    })}
-                  </>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search helpers..."
+                  className="w-full pl-10 pr-4 py-2 bg-muted/50 border-0 rounded-xl text-sm focus:ring-2 focus:ring-purple-500"
+                  value={helperSearch}
+                  onChange={(e) => setHelperSearch(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                {staffLoading ? (
+                  <div className="text-center py-4 text-muted-foreground">Loading helpers...</div>
+                ) : helperList.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground italic">No helpers found</div>
                 ) : (
-                  (contacts as any)?.map((contact: any, index: number) => (
-                    <a
-                      key={index}
-                      href={`tel:${contact.phone}`}
-                      className="p-4 bg-white dark:bg-card rounded-xl border border-border hover:shadow-md transition-all"
+                  helperList.map((item: any) => (
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-xl border border-border bg-card hover:border-purple-200 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
-                          <Phone className="h-5 w-5 text-red-600 dark:text-red-400" />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-purple-100 text-purple-700 font-bold">
+                              {item.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-sm">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">{item.role}</p>
+                          </div>
                         </div>
-                        <div className="overflow-hidden">
-                          <p className="text-sm font-medium text-foreground truncate">{contact.name}</p>
-                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400 truncate">{contact.phone}</p>
-                        </div>
+                        <Badge variant={item.status === 'ON_DUTY' ? 'default' : 'secondary'} className="text-[10px]">
+                          {item.status === 'ON_DUTY' ? 'ON DUTY' : 'OFF DUTY'}
+                        </Badge>
                       </div>
-                    </a>
+                      <div className="mt-3 flex gap-2">
+                        {item.status !== 'ON_DUTY' ? (
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-green-600 hover:bg-green-700 h-8 text-[11px]"
+                            onClick={() => updateStaffStatusMutation.mutate({ id: item.id, status: 'ON_DUTY' })}
+                          >
+                            <UserCheck className="h-3 w-3 mr-1" />
+                            Check In
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="flex-1 h-8 text-[11px]"
+                            onClick={() => updateStaffStatusMutation.mutate({ id: item.id, status: 'OFF_DUTY' })}
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Check Out
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" className="h-8 text-[11px] px-2" asChild>
+                           <a href={`tel:${item.phone}`}><Phone className="h-3 w-3" /></a>
+                        </Button>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>
             </CardContent>
           </Card>
-        </motion.div >
+        </motion.div>
       </div >
+
+
+      {/* Emergency Contacts - IGATESECURITY Style */}
+      <motion.div variants={itemVariants}>
+        <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-bold text-foreground">Emergency Contacts</CardTitle>
+              <Phone className="h-5 w-5 text-red-600 dark:text-red-400" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {(contacts as any)?.map((contact: any, index: number) => (
+                <a
+                  key={index}
+                  href={`tel:${contact.phone}`}
+                  className="p-4 bg-white dark:bg-card rounded-xl border border-border hover:shadow-md transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg shrink-0">
+                      <Phone className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className="text-[10px] font-medium text-foreground truncate">{contact.name}</p>
+                      <p className="text-xs font-bold text-blue-600 dark:text-blue-400 truncate">{contact.phone}</p>
+                    </div>
+                  </div>
+                </a>
+              ))}
+              {(!contacts || (contacts as any).length === 0) && emergencyContacts.map((contact, index) => {
+                const Icon = contact.icon
+                return (
+                  <a
+                    key={index}
+                    href={`tel:${contact.number}`}
+                    className="p-4 bg-white dark:bg-card rounded-xl border border-border hover:shadow-md transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg shrink-0">
+                        <Icon className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] font-medium text-foreground truncate">{contact.name}</p>
+                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 truncate">{contact.number}</p>
+                      </div>
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Quick Actions Row */}
       < motion.div variants={itemVariants} >
@@ -583,6 +682,14 @@ export function SecurityDashboard() {
                 <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
                 <span className="text-sm">Report Incident</span>
               </Button>
+              <VehicleSearchDialog
+                trigger={
+                  <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+                    <Search className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-sm">Search Vehicle</span>
+                  </Button>
+                }
+              />
             </div>
           </CardContent>
         </Card>
@@ -590,3 +697,5 @@ export function SecurityDashboard() {
     </motion.div >
   )
 }
+
+import { VehicleSearchDialog } from '@/components/vehicles/VehicleSearchDialog'
