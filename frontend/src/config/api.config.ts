@@ -5,15 +5,9 @@ export const PIN_CODE_LENGTH = parseInt(
 );
 
 export const API_CONFIG = {
-<<<<<<< HEAD
-  BASE_URL: "https://socity-backend-production.up.railway.app/api",
-  // BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api",
-  //  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://02x4fc84-9000.inc1.devtunnels.ms/api',
-=======
   BASE_URL: "https://socity-backend-production-8c26.up.railway.app/api",
   // BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api",
-  
->>>>>>> cd1be31fe987e9f675c51bbf6ffa8c73d8d6bda9
+
 
   // Authentication & Users
   AUTH: {
@@ -55,6 +49,7 @@ export const API_CONFIG = {
   RESIDENT: {
     LIST: "/society/members",
     DIRECTORY: "/society/members?type=directory",
+    UPDATE: (id: number | string) => `/society/members/${id}`,
     DELETE: (id: number | string) => `/society/members/${id}`,
   },
 

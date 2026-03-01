@@ -6,6 +6,11 @@ export const residentService = {
         return response.data;
     },
 
+    paySecurityDeposit: async (data: { paymentMethod: string }) => {
+        const response = await api.post('/resident/pay-deposit', data);
+        return response.data;
+    },
+
     // My Unit
     getUnitData: async () => {
         const response = await api.get('/resident/unit');
@@ -84,7 +89,7 @@ export const residentService = {
         if (data.type) formData.append('type', data.type);
         if (data.priceType) formData.append('priceType', data.priceType);
         if (data.image) formData.append('image', data.image);
-        
+
         const response = await api.post('/resident/market/items', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });

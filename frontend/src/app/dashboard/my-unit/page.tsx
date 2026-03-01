@@ -98,6 +98,7 @@ interface UnitPet {
 }
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { residentService } from '@/services/resident.service'
+import { MoveRequestService } from '@/services/moveRequestService'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -134,6 +135,8 @@ export default function MyUnitPage() {
   const [editingItem, setEditingItem] = useState<{ type: 'member' | 'vehicle' | 'pet', id: number | string } | null>(null)
   const [isInvoiceDetailsOpen, setIsInvoiceDetailsOpen] = useState(false)
   const [viewingInvoice, setViewingInvoice] = useState<any>(null)
+  const [isMoveOutDialogOpen, setIsMoveOutDialogOpen] = useState(false)
+  const [moveOutForm, setMoveOutForm] = useState({ scheduledDate: '', timeSlot: '', vehicleType: '', notes: '' })
 
   const { data: unit, isLoading, error } = useQuery({
     queryKey: ['unit-data'],
@@ -227,6 +230,16 @@ export default function MyUnitPage() {
       toast.success('Vehicle updated successfully')
     },
     onError: (err: any) => toast.error(err.message || 'Failed to update vehicle')
+  })
+
+  const moveOutMutation = useMutation({
+    mutationFn: (data: any) => MoveRequestService.create(data),
+    onSuccess: () => {
+      toast.success('Move-out request submitted! Admin will review and contact you.')
+      setIsMoveOutDialogOpen(false)
+      setMoveOutForm({ scheduledDate: '', timeSlot: '', vehicleType: '', notes: '' })
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || err.message || 'Failed to submit move-out request')
   })
 
   const updatePetMutation = useMutation({
@@ -512,15 +525,96 @@ export default function MyUnitPage() {
             <Button
               variant="outline"
               className="h-auto py-4 flex-col gap-2 hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 hover:shadow-md active:scale-95"
-              onClick={() => toast.info('Opening Parcel List...')}
+              onClick={() => setIsMoveOutDialogOpen(true)}
             >
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Package className="h-5 w-5 text-orange-600" />
               </div>
-              <span className="text-sm font-medium">My Parcels</span>
+              <span className="text-sm font-medium">Request Move-Out</span>
             </Button>
           </div>
         </motion.div>
+
+        {/* Move-Out Request Dialog */}
+        <Dialog open={isMoveOutDialogOpen} onOpenChange={setIsMoveOutDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-orange-500" />
+                Request Move-Out
+              </DialogTitle>
+              <DialogDescription>
+                Submit a move-out request for your unit. Admin will review and process security deposit refund of{' '}
+                <strong>₹{unit?.securityDeposit?.toLocaleString() || 0}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Scheduled Move-Out Date *</Label>
+                <Input
+                  type="date"
+                  value={moveOutForm.scheduledDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setMoveOutForm({ ...moveOutForm, scheduledDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Preferred Time Slot</Label>
+                <Select value={moveOutForm.timeSlot} onValueChange={(v) => setMoveOutForm({ ...moveOutForm, timeSlot: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</SelectItem>
+                    <SelectItem value="Afternoon (12 PM - 4 PM)">Afternoon (12 PM - 4 PM)</SelectItem>
+                    <SelectItem value="Evening (4 PM - 8 PM)">Evening (4 PM - 8 PM)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Vehicle Type (if any)</Label>
+                <Input
+                  placeholder="e.g. Tempo, Mini Truck"
+                  value={moveOutForm.vehicleType}
+                  onChange={(e) => setMoveOutForm({ ...moveOutForm, vehicleType: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Additional Notes</Label>
+                <Input
+                  placeholder="Any special instructions..."
+                  value={moveOutForm.notes}
+                  onChange={(e) => setMoveOutForm({ ...moveOutForm, notes: e.target.value })}
+                />
+              </div>
+              {unit?.securityDeposit > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                  ✅ Security deposit of <strong>₹{unit.securityDeposit.toLocaleString()}</strong> will be refunded after admin approval.
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsMoveOutDialogOpen(false)}>Cancel</Button>
+              <Button
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+                disabled={!moveOutForm.scheduledDate || moveOutMutation.isPending}
+                onClick={() => {
+                  moveOutMutation.mutate({
+                    type: 'move-out',
+                    unitId: unit?.id?.toString(),
+                    residentName: user?.name || '',
+                    phone: user?.phone || '',
+                    email: user?.email || '',
+                    scheduledDate: moveOutForm.scheduledDate,
+                    timeSlot: moveOutForm.timeSlot,
+                    vehicleType: moveOutForm.vehicleType,
+                    notes: moveOutForm.notes,
+                  })
+                }}
+              >
+                {moveOutMutation.isPending ? 'Submitting...' : 'Submit Move-Out Request'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Residents & Vehicles Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1418,7 +1512,7 @@ export default function MyUnitPage() {
               <DialogTitle className="text-xl font-bold">Invoice Details</DialogTitle>
               <p className="text-white/60 text-sm mt-1">Transaction ID: #{viewingInvoice?.id}</p>
             </div>
-            
+
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -1462,14 +1556,14 @@ export default function MyUnitPage() {
             </div>
 
             <DialogFooter className="p-6 pt-0 flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="flex-1 rounded-xl"
                 onClick={() => setIsInvoiceDetailsOpen(false)}
               >
                 Close
               </Button>
-              <Button 
+              <Button
                 className="flex-1 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
                 onClick={() => {
                   toast.success('Downloading Receipt...')

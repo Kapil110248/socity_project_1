@@ -111,6 +111,12 @@ export default function ClientPage() {
         throw new Error('Failed to notify resident')
       }
 
+      if (barcode?.userId) {
+        // Automatically initiate voice call
+        // DO NOT await so the UI can transition to the submitted state smoothly
+        startCall(barcode.userId, formData.name, formData.phone)
+      }
+
       setIsSubmitted(true)
       toast.success('Resident notified successfully.')
     } catch (err: any) {
@@ -142,7 +148,7 @@ export default function ClientPage() {
           <p className="text-gray-500 mb-6 font-medium">
             {error || 'This barcode is no longer active or does not exist.'}
           </p>
-          <Button 
+          <Button
             className="w-full h-12 bg-[#1e3a5f] rounded-2xl font-bold"
             onClick={() => window.location.reload()}
           >
@@ -164,77 +170,77 @@ export default function ClientPage() {
             className="max-w-lg w-full"
           >
             <Card className="border-0 shadow-2xl bg-white rounded-[40px] overflow-hidden">
-                <div className="bg-gradient-to-r from-red-600 to-orange-600 p-8 text-white relative">
-                   <div className="flex items-center gap-3 mb-6">
-                     <Shield className="h-8 w-8" />
-                     <h2 className="text-2xl font-black tracking-tight">Emergency Alert</h2>
-                   </div>
-
-                   <div className="space-y-4">
-                     {/* Property Info */}
-                     <div className="bg-white/10 rounded-2xl p-4 border border-white/20">
-                       <p className="text-sm font-bold opacity-80 uppercase tracking-wider">Property/Asset</p>
-                       <p className="text-xl font-black mt-1">{barcode.label || barcode.type}</p>
-                       <p className="text-sm opacity-80 mt-1">Resident: {barcode.residentName} (Unit: {barcode.unit})</p>
-                     </div>
-
-                     {/* Privacy Note */}
-                     <div className="bg-black/20 rounded-2xl p-4 border border-white/10">
-                        <div className="flex gap-3">
-                          <Shield className="h-5 w-5 text-teal-400 shrink-0" />
-                          <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-teal-400">Privacy Protected</p>
-                            <p className="text-xs opacity-70 mt-1 leading-tight font-bold">Family phone numbers are hidden for security. Use the calling button below to connect securely.</p>
-                          </div>
-                        </div>
-                     </div>
-
-                     {/* Contact Actions Section */}
-                     <div className="space-y-3">
-                       <p className="text-xs font-black uppercase tracking-widest opacity-70 ml-1">Secure Contact</p>
-                       
-                       {/* Voice Call Button (NEW PRIMARY ACTION) */}
-                       <button 
-                         onClick={handleVoiceCall}
-                         disabled={callState !== 'IDLE'}
-                         className="w-full flex items-center justify-between bg-white text-emerald-600 p-4 rounded-2xl shadow-lg hover:bg-gray-50 transition-colors group text-left border-2 border-emerald-100"
-                       >
-                         <div className="flex items-center gap-3">
-                           <div className="bg-emerald-50 p-2 rounded-xl group-hover:bg-emerald-100 transition-colors">
-                             <Phone className="h-5 w-5" />
-                           </div>
-                           <div>
-                             <p className="font-black text-sm">Direct Voice Call</p>
-                             <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">Connect via internet (Secure)</p>
-                           </div>
-                         </div>
-                         <div className="bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-lg font-black tracking-tighter uppercase whitespace-nowrap">
-                           {callState === 'IDLE' ? 'Call Now' : 'Calling...'}
-                         </div>
-                       </button>
-
-                       {/* Notify Button (Secondary) */}
-                       <button 
-                         onClick={() => {
-                           const formElement = document.getElementById('contact-form');
-                           formElement?.scrollIntoView({ behavior: 'smooth' });
-                         }}
-                         className="w-full flex items-center justify-between bg-gray-50 text-red-600 p-4 rounded-2xl hover:bg-gray-100 transition-all group text-left border border-gray-100"
-                       >
-                         <div className="flex items-center gap-3">
-                           <div className="bg-white p-2 rounded-xl group-hover:bg-gray-50 transition-colors">
-                             <PhoneIncoming className="h-5 w-5" />
-                           </div>
-                           <div>
-                             <p className="font-black text-sm">Send App Alert</p>
-                             <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">Notify via resident app</p>
-                           </div>
-                         </div>
-                         <div className="text-gray-400"><MessageSquare className="h-4 w-4" /></div>
-                       </button>
-                     </div>
-                   </div>
+              <div className="bg-gradient-to-r from-red-600 to-orange-600 p-8 text-white relative">
+                <div className="flex items-center gap-3 mb-6">
+                  <Shield className="h-8 w-8" />
+                  <h2 className="text-2xl font-black tracking-tight">Emergency Alert</h2>
                 </div>
+
+                <div className="space-y-4">
+                  {/* Property Info */}
+                  <div className="bg-white/10 rounded-2xl p-4 border border-white/20">
+                    <p className="text-sm font-bold opacity-80 uppercase tracking-wider">Property/Asset</p>
+                    <p className="text-xl font-black mt-1">{barcode.label || barcode.type}</p>
+                    <p className="text-sm opacity-80 mt-1">Resident: {barcode.residentName} (Unit: {barcode.unit})</p>
+                  </div>
+
+                  {/* Privacy Note */}
+                  <div className="bg-black/20 rounded-2xl p-4 border border-white/10">
+                    <div className="flex gap-3">
+                      <Shield className="h-5 w-5 text-teal-400 shrink-0" />
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-teal-400">Privacy Protected</p>
+                        <p className="text-xs opacity-70 mt-1 leading-tight font-bold">Family phone numbers are hidden for security. Use the calling button below to connect securely.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Actions Section */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70 ml-1">Secure Contact</p>
+
+                    {/* Voice Call Button (NEW PRIMARY ACTION) */}
+                    <button
+                      onClick={handleVoiceCall}
+                      disabled={callState !== 'IDLE'}
+                      className="w-full flex items-center justify-between bg-white text-emerald-600 p-4 rounded-2xl shadow-lg hover:bg-gray-50 transition-colors group text-left border-2 border-emerald-100"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-emerald-50 p-2 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                          <Phone className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-black text-sm">Direct Voice Call</p>
+                          <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">Connect via internet (Secure)</p>
+                        </div>
+                      </div>
+                      <div className="bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-lg font-black tracking-tighter uppercase whitespace-nowrap">
+                        {callState === 'IDLE' ? 'Call Now' : 'Calling...'}
+                      </div>
+                    </button>
+
+                    {/* Notify Button (Secondary) */}
+                    <button
+                      onClick={() => {
+                        const formElement = document.getElementById('contact-form');
+                        formElement?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="w-full flex items-center justify-between bg-gray-50 text-red-600 p-4 rounded-2xl hover:bg-gray-100 transition-all group text-left border border-gray-100"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white p-2 rounded-xl group-hover:bg-gray-50 transition-colors">
+                          <PhoneIncoming className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-black text-sm">Send App Alert</p>
+                          <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">Notify via resident app</p>
+                        </div>
+                      </div>
+                      <div className="text-gray-400"><MessageSquare className="h-4 w-4" /></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <CardContent className="p-8" id="contact-form">
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -286,13 +292,13 @@ export default function ClientPage() {
                     className="w-full h-14 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-red-100 transition-all"
                   >
                     {isLoading ? (
-                       <div className="flex items-center gap-2">
-                         <Loader2 className="h-5 w-5 animate-spin" />
-                         NOTIFYING...
-                       </div>
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        NOTIFYING...
+                      </div>
                     ) : 'SEND ALERT TO RESIDENT'}
                   </Button>
-                  
+
                   <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                     Your details will be shared with the resident for emergency contact only.
                   </p>
@@ -315,8 +321,8 @@ export default function ClientPage() {
               <p className="text-gray-600 mb-8 font-medium leading-relaxed">
                 The resident has been notified on their mobile app. They may contact you shortly. Thank you for your help.
               </p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full h-14 rounded-2xl font-bold text-lg border-2"
                 onClick={() => window.location.href = '/'}
               >

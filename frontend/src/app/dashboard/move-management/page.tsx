@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { MoveRequestService } from '@/services/moveRequestService'
@@ -56,6 +56,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils/cn'
+import { useAuthStore } from '@/lib/stores/auth-store'
+import { residentService } from '@/services/resident.service'
 
 // Mock data removed
 
@@ -77,6 +79,28 @@ export default function MoveManagementPage() {
     depositAmount: ''
   })
   const queryClient = useQueryClient()
+  const { user } = useAuthStore()
+  const isResident = user?.role?.toLowerCase() === 'resident'
+
+  // Fetch unit data for resident to get unit number
+  const { data: unitData } = useQuery({
+    queryKey: ['unit-data'],
+    queryFn: residentService.getUnitData,
+    enabled: isResident
+  })
+
+  // Auto-fill resident info when dialog opens
+  useEffect(() => {
+    if (isCreateDialogOpen && isResident && user) {
+      setFormData(prev => ({
+        ...prev,
+        residentName: user.name || '',
+        phone: user.phone || '',
+        email: user.email || '',
+        unitId: unitData?.id?.toString() || unitData?.number || prev.unitId
+      }))
+    }
+  }, [isCreateDialogOpen, isResident, user, unitData])
 
   // Fetch move requests from backend
   const { data: apiData, isLoading } = useQuery({
@@ -227,6 +251,8 @@ export default function MoveManagementPage() {
                       placeholder="e.g. 101"
                       value={formData.unitId}
                       onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
+                      readOnly={isResident}
+                      className={isResident ? 'bg-gray-50 text-gray-600' : ''}
                     />
                   </div>
                 </div>
@@ -236,6 +262,8 @@ export default function MoveManagementPage() {
                   <Input
                     value={formData.residentName}
                     onChange={(e) => setFormData({ ...formData, residentName: e.target.value })}
+                    readOnly={isResident}
+                    className={isResident ? 'bg-gray-50 text-gray-600' : ''}
                   />
                 </div>
 
@@ -245,6 +273,8 @@ export default function MoveManagementPage() {
                     <Input
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      readOnly={isResident}
+                      className={isResident ? 'bg-gray-50 text-gray-600' : ''}
                     />
                   </div>
                   <div className="space-y-2">
@@ -252,6 +282,8 @@ export default function MoveManagementPage() {
                     <Input
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      readOnly={isResident}
+                      className={isResident ? 'bg-gray-50 text-gray-600' : ''}
                     />
                   </div>
                 </div>
@@ -558,6 +590,36 @@ export default function MoveManagementPage() {
                               <Button className="w-full gap-2" onClick={() => handleIssueNOC(request.id)}>
                                 <FileText className="h-4 w-4" /> Issue NOC
                               </Button>
+                            )}
+                            {/* Complete Move-Out with Security Deposit Refund */}
+                            {request.type === 'move-out' && request.status === 'approved' && request.depositStatus !== 'refunded' && (
+                              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                  <p className="text-sm font-semibold text-orange-700">Security Deposit Refund Pending</p>
+                                </div>
+                                <p className="text-sm text-orange-600 mb-3">
+                                  Refund Amount: <strong>₹{request.depositAmount?.toLocaleString() || request.unit?.securityDeposit?.toLocaleString() || 0}</strong>
+                                </p>
+                                <Button
+                                  className="w-full bg-orange-500 hover:bg-orange-600 text-white gap-2"
+                                  onClick={() => {
+                                    if (confirm(`Are you sure you want to complete move-out and process security deposit refund of ₹${request.depositAmount || request.unit?.securityDeposit || 0}?`)) {
+                                      updateStatusMutation.mutate({ id: request.id, data: { status: 'COMPLETED' } })
+                                    }
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                  Complete Move-Out & Refund Deposit
+                                </Button>
+                              </div>
+                            )}
+                            {/* Show refunded status */}
+                            {request.type === 'move-out' && request.depositStatus === 'refunded' && (
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <p className="text-sm text-green-700 font-medium">Security deposit of ₹{request.depositAmount?.toLocaleString()} has been refunded.</p>
+                              </div>
                             )}
                           </div>
                         </DialogContent>

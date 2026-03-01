@@ -26,6 +26,11 @@ export const AdminResidentService = {
         status?: string;
         familyMembers?: string;
         password?: string;
+        block?: string;
+        number?: string;
+        floor?: string | number;
+        type?: string;
+        areaSqFt?: string | number;
     }) => {
         const { familyMembers, password, ...rest } = data;
         const payload: Record<string, unknown> = { ...rest };
@@ -37,6 +42,11 @@ export const AdminResidentService = {
 
     deleteResident: async (id: number | string) => {
         const response = await api.delete(API_CONFIG.RESIDENT.DELETE(id));
+        return response.data;
+    },
+
+    updateResident: async (id: number | string, data: any) => {
+        const response = await api.put(API_CONFIG.RESIDENT.UPDATE(id), data);
         return response.data;
     }
 };

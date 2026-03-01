@@ -16,6 +16,8 @@ import {
   UserX,
   Eye,
   Trash2,
+  Pencil,
+  Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -155,11 +157,31 @@ export default function DirectoryPage() {
     phone: '',
     role: 'owner',
     unitId: '',
+    block: '',
+    number: '',
+    floor: '',
+    type: '2BHK',
+    areaSqFt: '',
     familyMembers: '',
     password: '',
     confirmPassword: '',
     securityDeposit: ''
   })
+
+  // Edit State
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingResident, setEditingResident] = useState<any>(null)
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
+    status: ''
+  })
+
+  // View State
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [viewingResident, setViewingResident] = useState<any>(null)
 
   const [unitFormData, setUnitFormData] = useState({
     block: '',
@@ -226,6 +248,11 @@ export default function DirectoryPage() {
         phone: '',
         role: 'owner',
         unitId: '',
+        block: '',
+        number: '',
+        floor: '',
+        type: '2BHK',
+        areaSqFt: '',
         familyMembers: '',
         password: '',
         confirmPassword: '',
@@ -234,6 +261,18 @@ export default function DirectoryPage() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to add resident')
+    }
+  })
+
+  const updateResidentMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number | string; data: any }) => AdminResidentService.updateResident(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-residents'] })
+      setIsEditDialogOpen(false)
+      toast.success('Resident updated successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || error.message || 'Failed to update resident')
     }
   })
 
@@ -254,6 +293,34 @@ export default function DirectoryPage() {
     deleteResidentMutation.mutate(resident.id)
   }
 
+  const handleEditResident = (resident: any) => {
+    setEditingResident(resident)
+    setEditFormData({
+      name: resident.name,
+      email: resident.email,
+      phone: resident.phone || '',
+      role: resident.role || 'RESIDENT',
+      status: resident.status || 'ACTIVE'
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleViewResident = (resident: any) => {
+    setViewingResident(resident)
+    setIsViewDialogOpen(true)
+  }
+
+  const handleUpdateResident = () => {
+    if (!editFormData.name || !editFormData.email) {
+      toast.error('Name and Email are required')
+      return
+    }
+    updateResidentMutation.mutate({
+      id: editingResident.id,
+      data: editFormData
+    })
+  }
+
   const filteredResidents = (apiResidents as any[]).filter((resident) => {
     const nameMatch = resident.name.toLowerCase().includes(searchQuery.toLowerCase())
     const emailMatch = resident.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -267,10 +334,16 @@ export default function DirectoryPage() {
   })
 
   const handleAddResident = () => {
-    if (!formData.name || !formData.email || !formData.unitId) {
-      toast.error('Please fill in all required fields')
+    if (!formData.name || !formData.email) {
+      toast.error('Please fill in Name and Email')
       return
     }
+
+    if (!formData.unitId && (!formData.block || !formData.number)) {
+      toast.error('Please select an existing unit or enter details for a new one')
+      return
+    }
+
     if (formData.password) {
       if (formData.password.length < 6) {
         toast.error('Password must be at least 6 characters')
@@ -282,7 +355,10 @@ export default function DirectoryPage() {
       }
     }
     const { confirmPassword, ...payload } = formData
-    addResidentMutation.mutate(payload)
+    if (payload.unitId === 'create_new') {
+      delete (payload as any).unitId
+    }
+    addResidentMutation.mutate(payload as any)
   }
 
   const handleCreateUnit = () => {
@@ -381,6 +457,14 @@ export default function DirectoryPage() {
               <Download className="h-4 w-4" />
               <span>Export</span>
             </Button>
+            <Button
+              variant="outline"
+              className="border-teal-500 text-teal-600 hover:bg-teal-50 space-x-2"
+              onClick={() => setIsCreateUnitDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create Unit</span>
+            </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white space-x-2">
@@ -405,81 +489,102 @@ export default function DirectoryPage() {
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 col-span-2">
                       <div className="flex items-center justify-between">
-                        <Label>Unit Number *</Label>
+                        <Label>Unit Selection *</Label>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-xs"
+                          className="h-7 text-xs text-blue-600 hover:text-blue-700"
                           onClick={() => setIsCreateUnitDialogOpen(true)}
                         >
                           <Plus className="h-3 w-3 mr-1" />
                           Create Unit
                         </Button>
                       </div>
-                      <Select value={formData.unitId} onValueChange={(val) => setFormData({ ...formData, unitId: val })} disabled={unitsLoading || units.length === 0}>
+                      <Select value={formData.unitId} onValueChange={(val) => setFormData({ ...formData, unitId: val })}>
                         <SelectTrigger>
-                          <SelectValue placeholder={
-                            unitsLoading ? "Loading units..." : 
-                            units.length === 0 ? "No units - Click 'Create Unit'" : 
-                            "Select unit"
-                          } />
+                          <SelectValue placeholder="Select or Create New Unit" />
                         </SelectTrigger>
                         <SelectContent>
-                          {unitsLoading ? (
-                            <div className="p-4 text-center text-sm text-gray-500">
-                              Loading units...
-                            </div>
-                          ) : unitsError ? (
-                            <div className="p-4 text-center text-sm text-red-500">
-                              <p className="mb-2">Failed to load units</p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => queryClient.invalidateQueries({ queryKey: ['available-units'] })}
-                                className="mt-2"
-                              >
-                                Retry
-                              </Button>
-                            </div>
-                          ) : units.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-gray-500">
-                              <p className="mb-2">No units found</p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsCreateUnitDialogOpen(true)}
-                                className="mt-2"
-                              >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Create First Unit
-                              </Button>
-                            </div>
-                          ) : (
-                            (units as any[]).map((unit) => (
+                          <SelectItem value="create_new">-- Create New Unit --</SelectItem>
+                          {units.map((unit: any) => {
+                            const occupancy = unit.owner ? `Owner: ${unit.owner.name}` : (unit.tenant ? `Tenant: ${unit.tenant.name}` : 'Vacant');
+                            const isOccupied = !!(unit.owner || unit.tenant);
+                            return (
                               <SelectItem key={unit.id} value={unit.id.toString()}>
-                                {unit.block}-{unit.number}
+                                {unit.block}-{unit.number} ({unit.type}) - {occupancy}
                               </SelectItem>
-                            ))
-                          )}
+                            )
+                          })}
                         </SelectContent>
                       </Select>
-                      {units.length === 0 && !unitsLoading && !unitsError && (
-                        <p className="text-xs text-amber-600 mt-1">
-                          ⚠️ Create at least one unit before adding residents
-                        </p>
-                      )}
-                      {unitsError && (
-                        <p className="text-xs text-red-600 mt-1">
-                          ⚠️ Error loading units. Please refresh or create unit manually.
-                        </p>
-                      )}
                     </div>
                   </div>
+
+                  {formData.unitId === 'create_new' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="p-4 border rounded-lg bg-gray-50 space-y-4"
+                    >
+                      <p className="text-sm font-semibold text-blue-600">Unit Details (New Flat)</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Block *</Label>
+                          <Input
+                            placeholder="A, B, etc."
+                            value={formData.block}
+                            onChange={(e) => setFormData({ ...formData, block: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Unit Number *</Label>
+                          <Input
+                            placeholder="101, 102, etc."
+                            value={formData.number}
+                            onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Floor</Label>
+                          <Input
+                            type="number"
+                            placeholder="1"
+                            value={formData.floor}
+                            onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Unit Type</Label>
+                          <Select value={formData.type} onValueChange={(val) => setFormData({ ...formData, type: val })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="2BHK">2BHK</SelectItem>
+                              <SelectItem value="3BHK">3BHK</SelectItem>
+                              <SelectItem value="4BHK">4BHK</SelectItem>
+                              <SelectItem value="1BHK">1BHK</SelectItem>
+                              <SelectItem value="VILLA">Villa</SelectItem>
+                              <SelectItem value="SHOP">Shop</SelectItem>
+                              <SelectItem value="PENTHOUSE">Penthouse</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Area (Sq Ft)</Label>
+                          <Input
+                            type="number"
+                            placeholder="1200"
+                            value={formData.areaSqFt}
+                            onChange={(e) => setFormData({ ...formData, areaSqFt: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Email *</Label>
@@ -828,7 +933,7 @@ export default function DirectoryPage() {
                           variant="ghost"
                           size="icon"
                           title="View Details"
-                          onClick={() => alert(`Resident Details:\n\nID: ${resident.id}\nName: ${resident.name}\nUnit: ${resident.unit ? `${resident.unit.block}-${resident.unit.number}` : 'None'}\nEmail: ${resident.email}\nPhone: ${resident.phone}\nType: ${resident.role}\nJoined: ${new Date(resident.createdAt).toLocaleDateString()}`)}
+                          onClick={() => handleViewResident(resident)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -850,6 +955,15 @@ export default function DirectoryPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Edit Resident"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => handleEditResident(resident)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -858,7 +972,210 @@ export default function DirectoryPage() {
             </TableBody>
           </Table>
         </Card>
+
+        {/* Edit Resident Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Update Resident Details</DialogTitle>
+              <DialogDescription>
+                Modify profile information for {editingResident?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone Number</Label>
+                <Input
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Resident Type</Label>
+                  <Select
+                    value={editFormData.role?.toLowerCase()}
+                    onValueChange={(val) => setEditFormData({ ...editFormData, role: val })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="owner">Owner</SelectItem>
+                      <SelectItem value="tenant">Tenant</SelectItem>
+                      <SelectItem value="resident">Resident</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={editFormData.status?.toLowerCase()}
+                    onValueChange={(val) => setEditFormData({ ...editFormData, status: val })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={handleUpdateResident}
+                disabled={updateResidentMutation.isPending}
+              >
+                {updateResidentMutation.isPending ? 'Updating...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Resident Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="max-w-2xl p-0 overflow-hidden border-none bg-slate-50">
+            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 p-8 text-white relative">
+              <div className="flex items-center space-x-6">
+                <Avatar className="h-24 w-24 border-4 border-white/20 shadow-xl">
+                  <AvatarImage src={viewingResident?.profileImg} />
+                  <AvatarFallback className="bg-white/10 text-3xl font-bold">
+                    {viewingResident?.name?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-3xl font-bold">{viewingResident?.name}</h2>
+                  <p className="opacity-90 flex items-center mt-1">
+                    <Badge className="bg-white/20 hover:bg-white/30 text-white border-none mr-2">
+                      {viewingResident?.role}
+                    </Badge>
+                    UID: {viewingResident?.id}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Contact Information */}
+              <Card className="p-4 space-y-4 border-none shadow-sm">
+                <h3 className="font-semibold text-gray-900 flex items-center border-b pb-2">
+                  <Phone className="h-4 w-4 mr-2 text-teal-600" />
+                  Contact Information
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Email Address</span>
+                    <span className="text-sm font-medium">{viewingResident?.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Phone Number</span>
+                    <span className="text-sm font-medium">{viewingResident?.phone || 'Not Provided'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Member Since</span>
+                    <span className="text-sm font-medium">
+                      {viewingResident?.createdAt && new Date(viewingResident.createdAt).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Unit Details */}
+              <Card className="p-4 space-y-4 border-none shadow-sm">
+                <h3 className="font-semibold text-gray-900 flex items-center border-b pb-2">
+                  <Home className="h-4 w-4 mr-2 text-teal-600" />
+                  Unit Details
+                </h3>
+                {viewingResident?.unit ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Block & Number</span>
+                      <Badge variant="secondary" className="bg-teal-50 text-teal-700">
+                        {viewingResident.unit.block}-{viewingResident.unit.number}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Floor</span>
+                      <span className="text-sm font-medium">{viewingResident.unit.floor}th Floor</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Unit Type</span>
+                      <span className="text-sm font-medium">{viewingResident.unit.type}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Area</span>
+                      <span className="text-sm font-medium">{viewingResident.unit.areaSqFt} Sq.Ft.</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-4 text-center text-gray-400 italic text-sm">
+                    No unit assigned yet
+                  </div>
+                )}
+              </Card>
+
+              {/* Stats Card */}
+              <Card className="p-4 md:col-span-2 border-none shadow-sm bg-teal-50/50">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-semibold">Family Members</p>
+                    <p className="text-xl font-bold text-teal-700">{viewingResident?.familyMembersCount || 0}</p>
+                  </div>
+                  <div className="border-x border-teal-100">
+                    <p className="text-xs text-gray-500 uppercase font-semibold">Vehicles</p>
+                    <p className="text-xl font-bold text-teal-700">{viewingResident?.vehiclesCount || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-semibold">Status</p>
+                    <Badge className={
+                      viewingResident?.status === 'ACTIVE'
+                        ? 'bg-green-100 text-green-700 border-none'
+                        : 'bg-red-100 text-red-700 border-none'
+                    }>
+                      {viewingResident?.status || 'ACTIVE'}
+                    </Badge>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            <DialogFooter className="p-4 bg-white border-t">
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+              <Button
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+                onClick={() => {
+                  setIsViewDialogOpen(false);
+                  handleEditResident(viewingResident);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-    </RoleGuard>
+    </RoleGuard >
   )
 }

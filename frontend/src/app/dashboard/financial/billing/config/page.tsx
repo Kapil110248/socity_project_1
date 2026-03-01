@@ -360,7 +360,20 @@ function RuleModal({ rule, onSave }: { rule?: MaintenanceRule, onSave: (data: an
             }}>
                 <div className="space-y-2">
                     <Label>Unit Type</Label>
-                    <Input name="unitType" defaultValue={rule?.unitType} placeholder="e.g. 2BHK, 3BH-Villa, or ALL" required />
+                    <Select name="unitType" defaultValue={rule?.unitType || 'ALL'}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">All Units (Global)</SelectItem>
+                            <SelectItem value="2BHK">2BHK</SelectItem>
+                            <SelectItem value="3BHK">3BHK</SelectItem>
+                            <SelectItem value="4BHK">4BHK</SelectItem>
+                            <SelectItem value="1BHK">1BHK</SelectItem>
+                            <SelectItem value="VILLA">Villa</SelectItem>
+                            <SelectItem value="PENTHOUSE">Penthouse</SelectItem>
+                            <SelectItem value="SHOP">Shop</SelectItem>
+                            <SelectItem value="OFFICE">Office</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <Label>Calculation Method</Label>

@@ -57,7 +57,7 @@ export function ComplaintsTable({ complaints, showSource = true }: ComplaintsTab
     }
 
     return (
-        <div className="border-0 shadow-2xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 rounded-2xl overflow-hidden">
+        <div className="border-0 shadow-2xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30 rounded-2xl w-full max-w-[100vw] overflow-x-auto">
             <Table>
                 <TableHeader className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800/50">
                     <TableRow className="hover:bg-transparent border-0 font-bold uppercase tracking-wider text-[10px]">
@@ -155,9 +155,9 @@ export function ComplaintsTable({ complaints, showSource = true }: ComplaintsTab
                                 </TableCell>
 
                                 <TableCell className="text-right">
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
                                         className="h-10 w-10 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all group-hover:scale-110"
                                         onClick={() => {
                                             setSelectedComplaint(complaint)
@@ -171,10 +171,10 @@ export function ComplaintsTable({ complaints, showSource = true }: ComplaintsTab
                         )))}
                 </TableBody>
             </Table>
-            <ViewComplaintDialog 
-                complaint={selectedComplaint} 
-                open={viewOpen} 
-                onOpenChange={setViewOpen} 
+            <ViewComplaintDialog
+                complaint={selectedComplaint}
+                open={viewOpen}
+                onOpenChange={setViewOpen}
             />
         </div>
     )

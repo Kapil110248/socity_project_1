@@ -383,8 +383,8 @@ export default function QRAccessPage() {
                     </div>
                     <p className="text-xs text-gray-500 italic line-clamp-2">"{log.reason || 'No reason specified'}"</p>
                     <div className="mt-3 flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         className="h-8 flex-1 bg-white hover:bg-gray-50 text-teal-600 text-[10px] font-black ring-1 ring-black/5 border-0 rounded-xl gap-1"
                         onClick={() => {
                           if (log.visitorPhone && log.visitorPhone !== 'N/A') {
@@ -413,17 +413,7 @@ export default function QRAccessPage() {
               </Button>
             </Card>
 
-            <Card className="border-0 shadow-sm bg-gradient-to-br from-[#1e3a5f] to-[#2d4a6f] rounded-[32px] p-8 text-white">
-              <Smartphone className="h-8 w-8 text-teal-300 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Resident App</h3>
-              <p className="text-sm text-white/70 leading-relaxed mb-6">
-                Get instant push notifications and video call requests on your mobile device.
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-12 bg-white/10 rounded-2xl border border-white/20 flex items-center justify-center font-bold text-xs">App Store</div>
-                <div className="flex-1 h-12 bg-white/10 rounded-2xl border border-white/20 flex items-center justify-center font-bold text-xs">Play Store</div>
-              </div>
-            </Card>
+
           </div>
         </div>
 

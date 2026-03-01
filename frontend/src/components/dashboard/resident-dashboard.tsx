@@ -34,29 +34,21 @@ import { useQuery } from '@tanstack/react-query'
 import { residentService } from '@/services/resident.service'
 import { SocietyService } from '@/services/society.service'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { useState } from 'react'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
-// My Unit data - IGATESECURITY style (page 5)
-const myUnitData = {
-  unitNo: 'A - Block-1',
-  members: 7,
-  pets: 3,
-  vehicles: 2,
-}
 
-// Gate Updates - IGATESECURITY style (page 6)
-const gateUpdates = [
-  { type: 'Visitor', count: 3, label: 'Today', icon: Users, color: 'bg-purple-100 text-purple-600' },
-  { type: 'Helper', count: '3/4', label: 'In campus', icon: User, color: 'bg-pink-100 text-pink-600' },
-  { type: 'Parcel', count: 3, label: 'Yet to collect', icon: Package, color: 'bg-blue-100 text-blue-600' },
-]
 
-// My Dues - IGATESECURITY style
-const myDues = {
-  title: 'Maintenance Fee',
-  amount: 5300,
-  penalty: 100,
-  penaltyLabel: 'Overdue-Accured Penalty',
-}
 
 // Shortcuts - IGATESECURITY style (page 3)
 const shortcuts = [
@@ -71,61 +63,6 @@ const shortcuts = [
 
 import { VehicleSearchDialog } from '@/components/vehicles/VehicleSearchDialog'
 
-// Announcements - IGATESECURITY style
-const announcements = [
-  {
-    id: 1,
-    title: 'Swimming Pool Under Maintenance',
-    description: 'Dear Residents, This weekend the swimming pool will be closed for maintenance work.',
-    author: 'Sharlow Bay Committee',
-    time: '2hrs ago',
-    type: 'maintenance',
-  },
-  {
-    id: 2,
-    title: 'New Year Celebration',
-    description: 'Please join us for ring in the New Year celebration at the clubhouse.',
-    author: 'Sharlow Bay Committee',
-    time: '2hrs ago',
-    type: 'event',
-  },
-]
-
-// Community Buzz - IGATESECURITY style
-const communityBuzz = [
-  {
-    id: 1,
-    type: 'poll',
-    title: "What's your favourite restaurant around our locality?",
-    author: 'Nikita Dixit',
-    hasResult: true,
-  },
-  {
-    id: 2,
-    type: 'album',
-    title: '5 Photos to New Library Album',
-    author: 'Mathew',
-    hasResult: false,
-  },
-]
-
-// Upcoming Events
-const upcomingEvents = [
-  {
-    id: 1,
-    title: 'Diwali Celebration',
-    date: 'Dec 15, 2024',
-    time: '6:00 PM',
-    location: 'Community Hall',
-  },
-  {
-    id: 2,
-    title: 'Yoga Session',
-    date: 'Every Monday',
-    time: '7:00 AM',
-    location: 'Clubhouse',
-  },
-]
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -153,6 +90,22 @@ export function ResidentDashboard() {
   const { data: guidelines = [] } = useQuery<any[]>({
     queryKey: ['guidelines-for-me'],
     queryFn: SocietyService.getGuidelinesForMe,
+  })
+
+  const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('ONLINE')
+  const queryClient = useQueryClient()
+
+  const payDepositMutation = useMutation({
+    mutationFn: residentService.paySecurityDeposit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['residentDashboard'] })
+      setIsDepositDialogOpen(false)
+      toast.success('Security deposit paid successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || error.message || 'Payment failed')
+    }
   })
 
   if (isLoading) {
@@ -188,7 +141,7 @@ export function ResidentDashboard() {
             </Avatar>
             <div>
               <p className="text-cyan-100 text-sm">Hello {user?.name?.split(' ')[0] || 'Resident'}!!</p>
-              <h1 className="text-xl sm:text-2xl font-bold">Sharlow Bay</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">{societyName || 'My Community'}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -222,21 +175,29 @@ export function ResidentDashboard() {
               </Link>
             </div>
           </div>
-          
+
           {/* Security Deposit Alert - Conditional */}
           {dues?.isDepositPending && (
-            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg flex items-center justify-between">
+            <div className={`mt-3 p-3 rounded-lg flex items-center justify-between border ${dues.depositPaymentMethod && dues.depositPaymentMethod !== 'ONLINE' ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-900/30' : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30'}`}>
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-xs font-medium text-red-700 dark:text-red-400">
-                  Alert: Please pay your Security Deposit {dues.pendingDepositAmount > 0 ? `of ₹${dues.pendingDepositAmount}` : ''}
+                <AlertCircle className={`h-4 w-4 ${dues.depositPaymentMethod && dues.depositPaymentMethod !== 'ONLINE' ? 'text-orange-500' : 'text-red-500'}`} />
+                <span className={`text-[11px] sm:text-xs font-medium ${dues.depositPaymentMethod && dues.depositPaymentMethod !== 'ONLINE' ? 'text-orange-700 dark:text-orange-400' : 'text-red-700 dark:text-red-400'}`}>
+                  {dues.depositPaymentMethod && dues.depositPaymentMethod !== 'ONLINE'
+                    ? `Admin verification pending for Security Deposit ${dues.pendingDepositAmount > 0 ? `of ₹${dues.pendingDepositAmount}` : ''} (${dues.depositPaymentMethod})`
+                    : `Alert: Please pay your Security Deposit ${dues.pendingDepositAmount > 0 ? `of ₹${dues.pendingDepositAmount}` : ''}`}
                 </span>
               </div>
-              <Link href="/dashboard/residents/dues?tab=wallet">
-                <Button variant="ghost" size="sm" className="h-7 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 p-0 px-2 font-bold uppercase">
+
+              {(!dues.depositPaymentMethod || dues.depositPaymentMethod === 'ONLINE') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDepositDialogOpen(true)}
+                  className={`h-7 text-[10px] p-0 px-2 font-bold uppercase ${dues.depositPaymentMethod && dues.depositPaymentMethod !== 'ONLINE' ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/20' : 'text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20'}`}
+                >
                   Pay Now
                 </Button>
-              </Link>
+              )}
             </div>
           )}
           {unit?.securityDeposit > 0 && !dues?.isDepositPending && (
@@ -271,9 +232,9 @@ export function ResidentDashboard() {
 
                 if (shortcut.isSearch) {
                   return (
-                    <VehicleSearchDialog 
-                      key={index} 
-                      trigger={shortcutContent} 
+                    <VehicleSearchDialog
+                      key={index}
+                      trigger={shortcutContent}
                     />
                   )
                 }
@@ -325,11 +286,10 @@ export function ResidentDashboard() {
               </div>
             </div>
 
-            {/* Gate Updates Section */}
             <div className="mt-4 pt-4 border-t border-border">
               <h4 className="font-semibold text-foreground mb-3">Gate Updates</h4>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                {(apiGateUpdates || gateUpdates).map((item: any, index: number) => {
+                {apiGateUpdates?.map((item: any, index: number) => {
                   const Icon = item.type === 'Visitor' ? Users : item.type === 'Helper' ? User : Package
                   const colorParts = (item.color || 'bg-muted text-muted-foreground').replace('bg-purple-100', 'bg-purple-100 dark:bg-purple-900/20').replace('bg-pink-100', 'bg-pink-100 dark:bg-pink-900/20').replace('bg-blue-100', 'bg-blue-100 dark:bg-blue-900/20').split(' ')
                   return (
@@ -560,6 +520,55 @@ export function ResidentDashboard() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Security Deposit Payment Dialog */}
+      <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pay Security Deposit</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl flex items-center gap-3 border border-red-100 dark:border-red-900/30">
+              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-red-900 dark:text-red-400">Amount Due</p>
+                <p className="text-2xl font-bold text-red-700">₹{dues?.pendingDepositAmount?.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Select Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger className="h-12 border-gray-200 dark:border-gray-800">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ONLINE">Online Payment (Card/UPI/Net Banking)</SelectItem>
+                  <SelectItem value="CASH">Cash Pay to Admin</SelectItem>
+                  <SelectItem value="CHEQUE">Submit Cheque to Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {paymentMethod !== 'ONLINE' && (
+              <p className="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 p-2 rounded-md">
+                Note: Upon confirmation, your deposit request will be marked as paid. Please ensure you submit the {paymentMethod.toLowerCase()} to the society administration office today.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsDepositDialogOpen(false)}>Cancel</Button>
+            <Button
+              className="bg-teal-600 hover:bg-teal-700 text-white min-w-[140px]"
+              onClick={() => payDepositMutation.mutate({ paymentMethod })}
+              disabled={payDepositMutation.isPending}
+            >
+              {payDepositMutation.isPending ? 'Processing...' : 'Confirm Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   )
 }

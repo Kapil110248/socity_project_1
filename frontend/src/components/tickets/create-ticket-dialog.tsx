@@ -122,8 +122,8 @@ export function CreateTicketDialog({ isOpen, onClose, onSubmit }: CreateTicketDi
                                 <Label className="text-sm font-bold text-gray-900">Private Issue</Label>
                                 <p className="text-[10px] text-gray-500 font-medium leading-tight">
                                     {formData.isPrivate
-                                        ? "Visible ONLY to you and the Society Manager."
-                                        : "Visible to Society Admins and Super Admins."}
+                                        ? "Visible ONLY to you and the Main Society Admins."
+                                        : "Visible to all Society Admins and Committee members."}
                                 </p>
                             </div>
                         </div>
