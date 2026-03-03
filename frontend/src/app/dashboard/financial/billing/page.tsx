@@ -1042,30 +1042,39 @@ export default function BillingPage() {
 
                   <div className="space-y-0 text-sm">
                     <p className="font-semibold text-gray-700 mb-2 uppercase text-xs tracking-wider">Charge Breakdown</p>
-                    {viewInvoice.items && viewInvoice.items.length > 0 ? (
+
+                    {/* Maintenance Charges */}
+                    {(viewInvoice.maintenance > 0 || !viewInvoice.items?.length) && (
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Maintenance Charges</span>
+                        <span className="font-medium text-gray-900">₹{viewInvoice.maintenance.toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    {/* Utility Charges */}
+                    {viewInvoice.utilities > 0 && (
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Utility Charges</span>
+                        <span className="font-medium text-gray-900">₹{viewInvoice.utilities.toLocaleString()}</span>
+                      </div>
+                    )}
+
+                    {/* Additional Items Breakdown */}
+                    {viewInvoice.items && viewInvoice.items.length > 0 && (
                       viewInvoice.items.map((item: any) => (
-                        <div key={item.id} className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+                        <div key={item.id} className="flex justify-between py-2 border-b border-gray-100">
                           <span className="text-gray-600">{item.name}</span>
                           <span className="font-medium text-gray-900">₹{item.amount.toLocaleString()}</span>
                         </div>
                       ))
-                    ) : (
-                      <>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-600">Maintenance Charges</span>
-                          <span className="font-medium text-gray-900">₹{viewInvoice.maintenance.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-600">Utility Charges</span>
-                          <span className="font-medium text-gray-900">₹{viewInvoice.utilities.toLocaleString()}</span>
-                        </div>
-                        {viewInvoice.penalty > 0 && (
-                          <div className="flex justify-between py-2 border-b border-gray-100 text-red-600">
-                            <span>Late Fee / Penalty</span>
-                            <span className="font-medium">₹{viewInvoice.penalty.toLocaleString()}</span>
-                          </div>
-                        )}
-                      </>
+                    )}
+
+                    {/* Late Fee / Penalty */}
+                    {viewInvoice.penalty > 0 && (
+                      <div className="flex justify-between py-2 border-b border-gray-100 text-red-600">
+                        <span>Late Fee / Penalty</span>
+                        <span className="font-medium">₹{viewInvoice.penalty.toLocaleString()}</span>
+                      </div>
                     )}
                     <div className="flex justify-between py-4 text-lg font-bold text-blue-900 border-t-2 border-blue-100 mt-2">
                       <span>Total Payable</span>

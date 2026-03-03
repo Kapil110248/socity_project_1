@@ -208,6 +208,50 @@ export function ResidentDashboard() {
               </span>
             </div>
           )}
+
+          {/* Upcoming Due Alert - Logical Reminder */}
+          {dues?.upcomingDuesAlert && (
+            <div className={`mt-3 p-3 border rounded-xl flex items-center justify-between ${dues.upcomingDuesAlert.isOverdue
+                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+              }`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${dues.upcomingDuesAlert.isOverdue ? 'bg-red-100 dark:bg-red-800' : 'bg-blue-100 dark:bg-blue-800'
+                  }`}>
+                  {dues.upcomingDuesAlert.isOverdue
+                    ? <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-300" />
+                    : <Clock className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                  }
+                </div>
+                <div>
+                  <p className={`text-[11px] font-bold uppercase tracking-wider ${dues.upcomingDuesAlert.isOverdue ? 'text-red-700 dark:text-red-300' : 'text-blue-700 dark:text-blue-300'
+                    }`}>
+                    {dues.upcomingDuesAlert.isOverdue ? 'Urgent: Overdue Payment' : 'Upcoming Due'}
+                  </p>
+                  <p className={`text-xs ${dues.upcomingDuesAlert.isOverdue ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'
+                    }`}>
+                    ₹{dues.upcomingDuesAlert.amount.toLocaleString()} {
+                      dues.upcomingDuesAlert.isOverdue
+                        ? `was due ${Math.abs(dues.upcomingDuesAlert.daysLeft)} days ago`
+                        : `is due in ${dues.upcomingDuesAlert.daysLeft} days`
+                    } ({new Date(dues.upcomingDuesAlert.dueDate).toLocaleDateString()})
+                  </p>
+                </div>
+              </div>
+              <Link href="/dashboard/residents/dues">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`h-8 text-[10px] ${dues.upcomingDuesAlert.isOverdue
+                      ? 'border-red-300 text-red-700 hover:bg-red-100'
+                      : 'border-blue-300 text-blue-700 hover:bg-blue-100'
+                    }`}
+                >
+                  PAY NOW
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </motion.div>
 

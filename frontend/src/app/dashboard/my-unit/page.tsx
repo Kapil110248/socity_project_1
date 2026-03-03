@@ -33,6 +33,7 @@ import {
   UserCheck,
   CalendarClock,
   Syringe,
+  Loader2,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -66,6 +67,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 interface UnitMember {
   id: number | string
@@ -121,6 +123,7 @@ export default function MyUnitPage() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
   const [activeTab, setActiveTab] = useState('members')
+  const [visitorFilter, setVisitorFilter] = useState('all')
   const [selectedUnit, setSelectedUnit] = useState<any>(null)
   const [isAddFlatOpen, setIsAddFlatOpen] = useState(false)
   const [isTenantDialogOpen, setIsTenantDialogOpen] = useState(false)
@@ -136,6 +139,15 @@ export default function MyUnitPage() {
   const [isInvoiceDetailsOpen, setIsInvoiceDetailsOpen] = useState(false)
   const [viewingInvoice, setViewingInvoice] = useState<any>(null)
   const [isMoveOutDialogOpen, setIsMoveOutDialogOpen] = useState(false)
+
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const tab = searchParams.get('activeTab')
+    if (tab) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
   const [moveOutForm, setMoveOutForm] = useState({ scheduledDate: '', timeSlot: '', vehicleType: '', notes: '' })
 
   const { data: unit, isLoading, error } = useQuery({
@@ -146,6 +158,30 @@ export default function MyUnitPage() {
   const { data: payments } = useQuery({
     queryKey: ['payment-history'],
     queryFn: residentService.getMyPayments
+  })
+
+  // Fetch Visitors
+  const { data: visitorsData = [], isLoading: isVisitorsLoading } = useQuery({
+    queryKey: ['visitors', 'resident', visitorFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (visitorFilter && visitorFilter !== 'all') params.append('status', visitorFilter);
+      const response = await api.get(`/visitors?${params.toString()}`);
+      return response.data;
+    }
+  })
+
+  // Mutations
+  const updateVisitorStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+      const res = await api.patch(`/visitors/${id}/status`, { status })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['visitors'] })
+      toast.success('Visitor status updated')
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to update status')
   })
 
   const handleDownloadHistory = () => {
@@ -366,6 +402,10 @@ export default function MyUnitPage() {
                   {unit.unitNumber}
                 </TabsTrigger>
               ))}
+              <TabsTrigger value="visitors" className="flex items-center gap-2 text-rose-600 font-bold">
+                <UserCheck className="h-4 w-4" />
+                Visitors
+              </TabsTrigger>
             </TabsList>
 
             {allUnits.map((unit) => (
@@ -437,6 +477,111 @@ export default function MyUnitPage() {
                 </Card>
               </TabsContent>
             ))}
+
+            <TabsContent value="visitors" className="mt-6 space-y-6">
+              <Card className="p-6 border-0 shadow-xl bg-white/70 dark:bg-slate-900/40 backdrop-blur-xl border-white/20 dark:border-slate-800/30">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-[#1e3a5f] flex items-center gap-2">
+                      <Users className="h-5 w-5 text-teal-600" />
+                      Visitor Management
+                    </h3>
+                    <p className="text-sm text-gray-500">Track and approve entry for your unit</p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+                    {['all', 'pending', 'checked-in', 'history'].map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setVisitorFilter(filter)}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${visitorFilter === filter ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                      >
+                        {filter}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {isVisitorsLoading ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+                    </div>
+                  ) : visitorsData.length === 0 ? (
+                    <div className="text-center py-16 bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-100">
+                      <div className="bg-white h-16 w-16 rounded-full flex items-center justify-center mx-auto shadow-sm mb-4">
+                        <Users className="h-8 w-8 text-gray-200" />
+                      </div>
+                      <h4 className="font-bold text-gray-900">No visitors found</h4>
+                      <p className="text-sm text-gray-500 mt-1">Visitors will appear here when they reach the gate</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {visitorsData.map((visitor: any) => (
+                        <Card key={visitor.id} className="p-4 border-0 shadow-sm bg-white hover:shadow-md transition-shadow ring-1 ring-black/5 rounded-2xl group">
+                          <div className="flex items-start gap-4">
+                            <Avatar className="h-14 w-14 ring-2 ring-gray-50">
+                              <AvatarImage src={visitor.photo} />
+                              <AvatarFallback className="bg-gradient-to-br from-teal-500 to-cyan-500 text-white font-bold">
+                                {visitor.name?.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-bold text-gray-900 text-lg">{visitor.name}</h4>
+                                <Badge className={
+                                  visitor.status === 'PENDING' ? 'bg-orange-100 text-orange-700' :
+                                    visitor.status === 'CHECKED_IN' ? 'bg-green-100 text-green-700 font-black' :
+                                      visitor.status === 'APPROVED' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-gray-100 text-gray-700'
+                                }>
+                                  {visitor.status === 'CHECKED_IN' && <span className="mr-1.5 h-2 w-2 rounded-full bg-green-500 animate-pulse inline-block" />}
+                                  {visitor.status?.replace('_', ' ')}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-500">{visitor.phone}</p>
+
+                              <div className="mt-3 grid grid-cols-2 gap-2">
+                                <div className="p-2 bg-gray-50 rounded-lg">
+                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Purpose</p>
+                                  <p className="text-xs font-bold text-gray-700 truncate">{visitor.purpose}</p>
+                                </div>
+                                <div className="p-2 bg-gray-50 rounded-lg">
+                                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Time</p>
+                                  <p className="text-xs font-bold text-gray-700">
+                                    {visitor.entryTime ? new Date(visitor.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Pending'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {visitor.status === 'PENDING' && (
+                                <div className="mt-4 flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-xs font-bold text-rose-600 border-rose-100 hover:bg-rose-50 rounded-xl"
+                                    onClick={() => updateVisitorStatusMutation.mutate({ id: visitor.id, status: 'REJECTED' })}
+                                  >
+                                    Reject
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="flex-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-100 rounded-xl"
+                                    onClick={() => updateVisitorStatusMutation.mutate({ id: visitor.id, status: 'CHECKED_IN' })}
+                                  >
+                                    Approve Entry
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
           </Tabs>
         </motion.div>
 

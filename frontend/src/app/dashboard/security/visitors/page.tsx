@@ -71,6 +71,11 @@ function VisitorDetailDialog({ visitor, onCheckIn, onCheckOut }: { visitor: any,
                 {visitor.status === 'CHECKED_IN' && <span className="mr-1 h-2 w-2 rounded-full bg-green-500 animate-pulse inline-block" />}
                 {visitor.status?.replace('_', ' ')}
               </Badge>
+              {visitor.checkedInBy && (
+                <p className="text-xs text-muted-foreground mt-1 font-medium italic">
+                  Approved/Checked-in by: <span className="text-teal-600 font-bold">{visitor.checkedInBy.name}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -169,7 +174,7 @@ export default function VisitorsPage() {
     if (!user?.societyId) return
 
     const socket = getSocket()
-    
+
     // Join society room
     socket.emit('join-society', user.societyId)
 
@@ -179,14 +184,22 @@ export default function VisitorsPage() {
         duration: 5000,
         icon: '🔔'
       })
-      
-      // Play a notification sound if possible, or just invalidate queries
       queryClient.invalidateQueries({ queryKey: ['visitors'] })
       queryClient.invalidateQueries({ queryKey: ['visitorStats'] })
     })
 
+    // Listen for status updates (e.g. resident approved from home)
+    socket.on('visitor_status_updated', (data) => {
+      queryClient.invalidateQueries({ queryKey: ['visitors'] })
+      queryClient.invalidateQueries({ queryKey: ['visitorStats'] })
+      if (data.message) {
+        toast(data.message, { icon: '🔄' })
+      }
+    })
+
     return () => {
       socket.off('new_visitor_request')
+      socket.off('visitor_status_updated')
     }
   }, [user?.societyId, queryClient])
 
@@ -670,13 +683,20 @@ export default function VisitorsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={
-                            visitor.status === 'CHECKED_IN' ? 'bg-green-100 text-green-700' :
-                              visitor.status === 'CHECKED_OUT' ? 'bg-gray-100 text-gray-700' :
-                                'bg-blue-100 text-blue-700'
-                          }>
-                            {visitor.status?.replace('_', ' ')}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge className={
+                              visitor.status === 'CHECKED_IN' ? 'bg-green-100 text-green-700' :
+                                visitor.status === 'CHECKED_OUT' ? 'bg-gray-100 text-gray-700' :
+                                  'bg-blue-100 text-blue-700'
+                            }>
+                              {visitor.status?.replace('_', ' ')}
+                            </Badge>
+                            {visitor.checkedInBy && (
+                              <p className="text-[10px] text-muted-foreground font-medium">
+                                By: {visitor.checkedInBy.name}
+                              </p>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
@@ -695,24 +715,28 @@ export default function VisitorsPage() {
                               </a>
                             </Button>
                             {visitor.status === 'PENDING' && (
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 text-xs text-red-600 border-red-200"
-                                  onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'REJECTED' })}
-                                >
-                                  <UserX className="h-4 w-4 mr-1" />
-                                  Reject
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
-                                  onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'CHECKED_IN' })}
-                                >
-                                  <UserCheck className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
+                              <div className="flex flex-col gap-2">
+                                {user?.role !== 'resident' && (
+                                  <span className="text-[10px] text-orange-600 font-bold italic bg-orange-50 px-2 py-0.5 rounded border border-orange-100 text-center">
+                                    Awaiting Resident...
+                                  </span>
+                                )}
+                                <div className="flex gap-1">
+                                  <button
+                                    className="h-8 px-2 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-1"
+                                    onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'REJECTED' })}
+                                  >
+                                    <UserX className="h-3.5 w-3.5" />
+                                    Reject
+                                  </button>
+                                  <button
+                                    className="h-8 px-2 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                                    onClick={() => updateStatusMutation.mutate({ id: visitor.id, status: 'APPROVED' })}
+                                  >
+                                    <UserCheck className="h-3.5 w-3.5" />
+                                    Approve
+                                  </button>
+                                </div>
                               </div>
                             )}
                             {visitor.status === 'APPROVED' && (

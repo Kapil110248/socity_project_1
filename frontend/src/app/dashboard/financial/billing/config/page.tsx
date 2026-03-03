@@ -331,6 +331,55 @@ export default function BillingConfigPage() {
                                     </Button>
                                 </div>
                             </form>
+
+                            {/* Current Configuration Summary */}
+                            <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <Settings className="h-5 w-5 text-slate-500" />
+                                    Active Late Fee Policy
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Status</p>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`h-2 w-2 rounded-full ${config?.lateFeeConfig?.isActive ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`} />
+                                            <span className="font-bold text-slate-900 dark:text-white">
+                                                {config?.lateFeeConfig?.isActive ? 'ACTIVE' : 'DISABLED'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Calculation</p>
+                                        <span className="font-bold text-slate-900 dark:text-white">
+                                            {config?.lateFeeConfig?.feeType === 'FIXED' && 'Fixed Amount'}
+                                            {config?.lateFeeConfig?.feeType === 'PERCENTAGE' && 'Percentage (%)'}
+                                            {config?.lateFeeConfig?.feeType === 'PER_DAY' && 'Per Day Rate'}
+                                        </span>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800">
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Penalty Value</p>
+                                        <span className="font-bold text-slate-900 dark:text-white text-lg">
+                                            {config?.lateFeeConfig?.feeType === 'PERCENTAGE'
+                                                ? `${config?.lateFeeConfig?.amount}%`
+                                                : `₹${config?.lateFeeConfig?.amount?.toLocaleString()}`}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Clock className="h-5 w-5 text-blue-600" />
+                                        <p className="text-sm text-blue-800 dark:text-blue-300">
+                                            Penalties start after <span className="font-bold">{config?.lateFeeConfig?.gracePeriod || 0} days</span> of due date.
+                                        </p>
+                                    </div>
+                                    {config?.lateFeeConfig?.maxCap && (
+                                        <Badge variant="outline" className="border-blue-200 dark:border-blue-800 text-blue-700 bg-blue-100/50">
+                                            Max Cap: ₹{config?.lateFeeConfig?.maxCap?.toLocaleString()}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>

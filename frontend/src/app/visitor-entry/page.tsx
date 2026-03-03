@@ -446,8 +446,10 @@ export default function VisitorEntryPage() {
                                 value={visitingUnitId}
                                 onChange={(e) => setVisitingUnitId(e.target.value)}
                                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 appearance-none"
+                                required
                             >
-                                <option value="" className="bg-slate-800">Select flat (optional)...</option>
+                                <option value="" className="bg-slate-800">Choose the flat you are visiting (Required)...</option>
+
                                 {units.map((u: any) => (
                                     <option key={u.id} value={u.id} className="bg-slate-800">
                                         {u.block}-{u.number} {u.tenant?.name ? `(${u.tenant.name})` : u.owner?.name ? `(${u.owner.name})` : ''}

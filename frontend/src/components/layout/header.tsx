@@ -159,7 +159,7 @@ export function Header() {
   React.useEffect(() => {
     if (!user) return
     const socket = getSocket()
-    
+
     // Connect user socket if not already handled elsewhere for this user room
     socket.emit('join-user', user.id)
 
@@ -645,8 +645,30 @@ export function Header() {
                               router.push('/dashboard/financial/platform-invoices')
                             }
                           }
-                        } else if (n.type === 'visitor') {
-                          router.push('/dashboard/guard/dashboard')
+                        } else if (n.type === 'visitor' || n.type === 'visitor_approval') {
+                          if (user?.role === 'resident') {
+                            router.push('/dashboard/my-unit?activeTab=visitors')
+                          } else {
+                            router.push('/dashboard/security/visitors')
+                          }
+                        } else if (n.type === 'payment') {
+                          if (user?.role === 'resident') {
+                            router.push('/dashboard/residents/dues')
+                          } else {
+                            router.push('/dashboard/financial/invoices')
+                          }
+                        } else if (n.type === 'complaint') {
+                          if (user?.role === 'admin' || user?.role === 'super_admin') {
+                            router.push('/dashboard/admin/complaints')
+                          } else {
+                            router.push('/dashboard/helpdesk/tickets')
+                          }
+                        } else if (n.type === 'emergency' || n.type === 'sos') {
+                          if (user?.role === 'resident') {
+                            router.push('/dashboard/sos')
+                          } else {
+                            router.push('/dashboard/security/security-logs')
+                          }
                         }
                       }}
                     >

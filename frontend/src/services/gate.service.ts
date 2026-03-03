@@ -21,8 +21,9 @@ export const GateService = {
 };
 
 // Public endpoints (no auth) — used by visitor-entry page
-// const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://socity-backend-production-8c26.up.railway.app/api'
+import { API_URL } from '@/config/api.config';
+
+const API_BASE = API_URL;
 
 export const GatePublicService = {
     validate: async (gateId: string) => {

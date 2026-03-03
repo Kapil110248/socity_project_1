@@ -89,11 +89,10 @@ function InvoiceDialog({ invoice, sname = 'My Society' }: { invoice: any, sname?
             <DialogTrigger asChild>
                 <Button
                     variant="outline" size="sm"
-                    className={`gap-1.5 transition-all active:scale-[0.98] ${
-                        isPaid
-                            ? 'hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
-                            : 'hover:bg-orange-50 border-orange-200 text-orange-700'
-                    }`}
+                    className={`gap-1.5 transition-all active:scale-[0.98] ${isPaid
+                        ? 'hover:bg-zinc-50 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
+                        : 'hover:bg-orange-50 border-orange-200 text-orange-700'
+                        }`}
                 >
                     {isPaid ? <Receipt className="h-3.5 w-3.5" /> : <CreditCard className="h-3.5 w-3.5" />}
                     {isPaid ? 'Receipt' : 'View'}
@@ -153,7 +152,7 @@ function InvoiceDialog({ invoice, sname = 'My Society' }: { invoice: any, sname?
                                         <span className="font-bold text-gray-900 dark:text-zinc-100">₹{formatRate(item.amount)}</span>
                                     </div>
                                 ))}
-                                
+
                                 {invoice.penalty > 0 && (
                                     <div className="flex justify-between items-center text-sm pt-2 border-t border-zinc-100 dark:border-zinc-900">
                                         <span className="text-red-500 font-bold">Late Fee / Penalty</span>
@@ -370,9 +369,18 @@ export default function SocietyDuesPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {(invoices as any[]).map((invoice: any) => (
+                                            {pendingInvoices.map((invoice: any) => (
                                                 <TableRow key={invoice.id}>
-                                                    <TableCell className="font-medium text-xs sm:text-sm">{invoice.invoiceNo}</TableCell>
+                                                    <TableCell>
+                                                        <div className="font-medium text-xs sm:text-sm text-gray-900 dark:text-gray-100">
+                                                            {invoice.invoiceNo}
+                                                        </div>
+                                                        {invoice.description && (
+                                                            <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                                                                {invoice.description}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
                                                     <TableCell className="text-xs text-muted-foreground">{format(new Date(invoice.dueDate), 'dd MMM yyyy')}</TableCell>
                                                     <TableCell className="font-semibold">₹{Number(invoice.amount).toLocaleString('en-IN')}</TableCell>
                                                     <TableCell>
@@ -433,6 +441,9 @@ export default function SocietyDuesPage() {
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold text-sm text-gray-900 dark:text-foreground">{invoice.invoiceNo}</p>
+                                                        {invoice.description && (
+                                                            <p className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{invoice.description}</p>
+                                                        )}
                                                         <p className="text-xs text-muted-foreground">
                                                             Paid on {invoice.paidDate ? format(new Date(invoice.paidDate), 'dd MMM yyyy') : 'N/A'}
                                                         </p>
