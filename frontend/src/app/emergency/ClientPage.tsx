@@ -28,7 +28,19 @@ import { useVoiceCall } from '@/components/providers/voice-call-provider'
 
 export default function ClientPage() {
   const searchParams = useSearchParams()
-  const barcodeId = searchParams.get('id')
+  const [barcodeId, setBarcodeId] = useState<string | null>(searchParams.get('id'))
+
+  // Fallback: If no query param, try to get it from the URL path (e.g., /emergency/eb-xxx)
+  useEffect(() => {
+    if (!barcodeId && typeof window !== 'undefined') {
+      const pathParts = window.location.pathname.split('/')
+      const lastPart = pathParts[pathParts.length - 1]
+      // Support eb- and eb-reg- prefixes
+      if (lastPart && lastPart.startsWith('eb-')) {
+        setBarcodeId(lastPart)
+      }
+    }
+  }, [barcodeId])
 
   const [barcode, setBarcode] = useState<any>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)

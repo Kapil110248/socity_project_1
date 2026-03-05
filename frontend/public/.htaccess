@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 1. Rewrite legacy emergency barcode URLs directly to emergency.html with query parameter
+  # Matches URLs like: /emergency/eb-1234abcd
+  RewriteRule ^emergency/(eb-[a-zA-Z0-9-]+)/?$ /emergency.html?id=$1 [QSA,L]
+
+  # 2. Tell the Apache server to serve Next.js's custom 404 instead of Hostinger's default 404 template
+  ErrorDocument 404 /404.html
+
+  # 3. Enable HTML extensionless URLs (Optional but recommended for Next.js Static Export)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+</IfModule>
