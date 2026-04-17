@@ -212,8 +212,8 @@ export function ResidentDashboard() {
           {/* Upcoming Due Alert - Logical Reminder */}
           {dues?.upcomingDuesAlert && (
             <div className={`mt-3 p-3 border rounded-xl flex items-center justify-between ${dues.upcomingDuesAlert.isOverdue
-                ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+              ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+              : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
               }`}>
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${dues.upcomingDuesAlert.isOverdue ? 'bg-red-100 dark:bg-red-800' : 'bg-blue-100 dark:bg-blue-800'
@@ -243,8 +243,8 @@ export function ResidentDashboard() {
                   size="sm"
                   variant="outline"
                   className={`h-8 text-[10px] ${dues.upcomingDuesAlert.isOverdue
-                      ? 'border-red-300 text-red-700 hover:bg-red-100'
-                      : 'border-blue-300 text-blue-700 hover:bg-blue-100'
+                    ? 'border-red-300 text-red-700 hover:bg-red-100'
+                    : 'border-blue-300 text-blue-700 hover:bg-blue-100'
                     }`}
                 >
                   PAY NOW

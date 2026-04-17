@@ -538,12 +538,7 @@ const allMenuItems = [
     href: "/dashboard/residents/dues",
     roles: ["resident"],
   },
-  {
-    title: "My Complaints & Tickets",
-    icon: ClipboardList,
-    href: "/dashboard/helpdesk/tickets",
-    roles: ["resident"],
-  },
+
 
   // ==========================================
   // SOCIETY ADMIN - Resident Management
@@ -565,7 +560,7 @@ const allMenuItems = [
         href: "/dashboard/residents/amenities",
       },
       { title: "Events", icon: Calendar, href: "/dashboard/residents/events" },
-      // { title: 'Notices', icon: Bell, href: '/dashboard/residents/notices' },
+      { title: 'Notices', icon: Bell, href: '/dashboard/residents/notices' },
     ],
   },
   {

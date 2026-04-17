@@ -67,7 +67,7 @@ export default function HelpdeskTicketsPage() {
     return data.filter((ticket: any) => {
       // 1. Basic search filter
       const matchesSearch =
-        ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ticket.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         String(ticket.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
         (ticket.reportedBy?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -94,7 +94,7 @@ export default function HelpdeskTicketsPage() {
     const data = (tickets || []).filter((ticket: any) => {
       // 1. Basic search filter
       const matchesSearch =
-        ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ticket.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         String(ticket.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
         (ticket.reportedBy?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -120,7 +120,7 @@ export default function HelpdeskTicketsPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
-      case 'critical': return 'bg-red-600'
+      case 'urgent': return 'bg-red-600'
       case 'high': return 'bg-orange-500'
       case 'medium': return 'bg-yellow-500'
       case 'low': return 'bg-green-500'

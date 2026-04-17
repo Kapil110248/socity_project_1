@@ -95,7 +95,7 @@ export function CreateTicketDialog({ isOpen, onClose, onSubmit }: CreateTicketDi
                                     <SelectItem value="low">Low</SelectItem>
                                     <SelectItem value="medium">Medium</SelectItem>
                                     <SelectItem value="high">High</SelectItem>
-                                    <SelectItem value="critical">Critical</SelectItem>
+                                    <SelectItem value="urgent">Urgent</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

@@ -1,5 +1,5 @@
 export type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed'
-export type TicketPriority = 'low' | 'medium' | 'high' | 'critical'
+export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type TicketCategory = 'Technical' | 'Maintenance' | 'Other'
 
 export interface TicketMessage {

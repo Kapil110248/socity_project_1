@@ -69,7 +69,8 @@ export default function SuperAdminLeadsPage() {
             (v: any) =>
                 (v.name || '').toLowerCase().includes(q) ||
                 (v.serviceType || '').toLowerCase().includes(q) ||
-                (v.contact || '').toLowerCase().includes(q)
+                (v.contact || '').toLowerCase().includes(q) ||
+                (v.servicePincodes || '').toLowerCase().includes(q)
         )
     }, [vendorsByPincode, vendorSearch])
 

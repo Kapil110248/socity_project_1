@@ -1,6 +1,8 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { NoticeService } from '@/services/notice.service'
+import { toast } from 'sonner'
 import { RoleGuard } from '@/components/auth/role-guard'
 import {
   Bell,
@@ -12,18 +14,18 @@ import {
   Eye,
   Plus,
   Send,
+  Loader2
 } from 'lucide-react'
 import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
@@ -35,90 +37,10 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-
-const notices = [
-  {
-    id: '1',
-    title: 'Society Annual General Meeting',
-    content:
-      'The Annual General Meeting will be held on January 20th, 2025 at 6:00 PM in the clubhouse. All members are requested to attend.',
-    type: 'announcement',
-    priority: 'high',
-    publishedBy: 'Admin Team',
-    publishedAt: '2 hours ago',
-    expiresAt: 'Jan 20, 2025',
-    isPinned: true,
-    views: 124,
-  },
-  {
-    id: '2',
-    title: 'Water Supply Interruption Notice',
-    content:
-      'Water supply will be suspended on January 15th from 10:00 AM to 4:00 PM for tank cleaning. Please store water accordingly.',
-    type: 'maintenance',
-    priority: 'high',
-    publishedBy: 'Maintenance Team',
-    publishedAt: '1 day ago',
-    expiresAt: 'Jan 15, 2025',
-    isPinned: true,
-    views: 256,
-  },
-  {
-    id: '3',
-    title: 'Republic Day Celebration 2025',
-    content:
-      'Join us for the Republic Day celebration on January 26th at 8:00 AM in the society garden. Flag hoisting ceremony followed by cultural program.',
-    type: 'event',
-    priority: 'medium',
-    publishedBy: 'Cultural Committee',
-    publishedAt: '2 days ago',
-    expiresAt: 'Jan 26, 2025',
-    isPinned: false,
-    views: 89,
-  },
-  {
-    id: '4',
-    title: 'New Parking Rules Effective Immediately',
-    content:
-      'Parking stickers are now mandatory for all vehicles. Please collect your stickers from the security office. Vehicles without stickers will be towed.',
-    type: 'announcement',
-    priority: 'high',
-    publishedBy: 'Security Team',
-    publishedAt: '3 days ago',
-    expiresAt: null,
-    isPinned: false,
-    views: 342,
-  },
-  {
-    id: '5',
-    title: 'Gym Renovation Update',
-    content:
-      'The gym renovation is complete! New equipment has been installed. The gym will reopen on January 12th with extended hours.',
-    type: 'announcement',
-    priority: 'medium',
-    publishedBy: 'Admin Team',
-    publishedAt: '4 days ago',
-    expiresAt: null,
-    isPinned: false,
-    views: 178,
-  },
-  {
-    id: '6',
-    title: 'Important: Security Protocols',
-    content:
-      'For your safety, please do not share gate access codes with unknown persons. Always verify visitor identity before allowing entry.',
-    type: 'emergency',
-    priority: 'high',
-    publishedBy: 'Security Team',
-    publishedAt: '5 days ago',
-    expiresAt: null,
-    isPinned: false,
-    views: 421,
-  },
-]
+import { formatDistanceToNow } from 'date-fns'
 
 const getNoticeIcon = (type: string) => {
-  switch (type) {
+  switch (type?.toLowerCase()) {
     case 'announcement':
       return Megaphone
     case 'emergency':
@@ -133,7 +55,7 @@ const getNoticeIcon = (type: string) => {
 }
 
 const getNoticeColor = (type: string) => {
-  switch (type) {
+  switch (type?.toLowerCase()) {
     case 'announcement':
       return 'blue'
     case 'emergency':
@@ -148,15 +70,118 @@ const getNoticeColor = (type: string) => {
 }
 
 export default function NoticesPage() {
+  const queryClient = useQueryClient()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [sendPush, setSendPush] = useState(false)
+  const [editingNotice, setEditingNotice] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    audience: 'ALL',
+    type: 'announcement',
+    priority: 'medium',
+    status: 'PUBLISHED',
+    isPinned: false,
+    startDate: '',
+    expiresAt: ''
+  })
 
-  const pinnedNotices = notices.filter((notice) => notice.isPinned)
-  const regularNotices = notices.filter((notice) => !notice.isPinned)
+  // Fetch Notices
+  const { data: notices = [], isLoading } = useQuery({
+    queryKey: ['notices'],
+    queryFn: NoticeService.getAll
+  })
+
+  // Create/Update Notice Mutation
+  const saveMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (editingNotice) {
+        return NoticeService.update(editingNotice.id, data)
+      }
+      return NoticeService.create(data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notices'] })
+      queryClient.invalidateQueries({ queryKey: ['residentDashboard'] })
+      toast.success(editingNotice ? 'Notice updated successfully' : 'Notice published successfully')
+      handleCloseModal()
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to save notice')
+    }
+  })
+
+  // Delete Notice Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => NoticeService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notices'] })
+      queryClient.invalidateQueries({ queryKey: ['residentDashboard'] })
+      toast.success('Notice deleted successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to delete notice')
+    }
+  })
+
+  const handleEdit = (notice: any) => {
+    setEditingNotice(notice)
+    setFormData({
+      title: notice.title,
+      content: notice.content,
+      audience: notice.audience,
+      type: notice.type,
+      priority: notice.priority,
+      status: notice.status,
+      isPinned: notice.isPinned,
+      startDate: notice.startDate ? new Date(notice.startDate).toISOString().split('T')[0] : '',
+      expiresAt: notice.expiresAt ? new Date(notice.expiresAt).toISOString().split('T')[0] : ''
+    })
+    setIsModalOpen(true)
+  }
+
+  const handleDelete = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this notice?')) {
+      deleteMutation.mutate(id)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setEditingNotice(null)
+    setFormData({
+      title: '',
+      content: '',
+      audience: 'ALL',
+      type: 'announcement',
+      priority: 'medium',
+      status: 'PUBLISHED',
+      isPinned: false,
+      startDate: '',
+      expiresAt: ''
+    })
+  }
+
+  const handleSubmit = () => {
+    if (!formData.title || !formData.content) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+    saveMutation.mutate(formData)
+  }
+
+  const pinnedNotices = notices.filter((notice: any) => notice.isPinned)
+  const regularNotices = notices.filter((notice: any) => !notice.isPinned)
+
+  if (isLoading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      </div>
+    )
+  }
 
   return (
     <RoleGuard allowedRoles={['admin', 'resident']}>
-
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -177,21 +202,44 @@ export default function NoticesPage() {
           </RoleGuard>
         </div>
 
-        {/* Create Notice Modal */}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        {/* Create/Edit Notice Modal */}
+        <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Create Society Notice</DialogTitle>
+              <DialogTitle>{editingNotice ? 'Edit Society Notice' : 'Create Society Notice'}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-1">
               <div className="space-y-2">
                 <Label>Notice Title</Label>
-                <Input placeholder="Enter title..." />
+                <Input
+                  placeholder="Enter title..."
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label>Audience</Label>
+                  <Select
+                    value={formData.audience}
+                    onValueChange={(val) => setFormData({ ...formData, audience: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select audience" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Members</SelectItem>
+                      <SelectItem value="RESIDENTS">Residents Only</SelectItem>
+                      <SelectItem value="OWNERS">Owners Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label>Type</Label>
-                  <Select defaultValue="announcement">
+                  <Select
+                    value={formData.type}
+                    onValueChange={(val) => setFormData({ ...formData, type: val })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -203,9 +251,14 @@ export default function NoticesPage() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Priority</Label>
-                  <Select defaultValue="medium">
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(val) => setFormData({ ...formData, priority: val })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
@@ -216,115 +269,145 @@ export default function NoticesPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(val: any) => setFormData({ ...formData, status: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PUBLISHED">Published</SelectItem>
+                      <SelectItem value="DRAFT">Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Content</Label>
-                <Textarea placeholder="Enter notice content..." rows={5} />
+                <Textarea
+                  placeholder="Enter notice content..."
+                  rows={4}
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                />
               </div>
-              <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Date (Optional)</Label>
+                  <Input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Expiry Date (Optional)</Label>
+                  <Input
+                    type="date"
+                    value={formData.expiresAt}
+                    onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
                 <input
                   type="checkbox"
-                  id="push"
-                  checked={sendPush}
-                  onChange={(e) => setSendPush(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  id="isPinned"
+                  checked={formData.isPinned}
+                  onChange={(e) => setFormData({ ...formData, isPinned: e.target.checked })}
+                  className="h-4 w-4 text-teal-600 rounded border-gray-300"
                 />
-                <Label htmlFor="push" className="text-blue-900 flex items-center gap-2 cursor-pointer">
-                  <Send className="h-4 w-4" />
-                  Send instant push notification to all residents
-                </Label>
+                <Label htmlFor="isPinned" className="cursor-pointer">Pin to Top</Label>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={() => setIsModalOpen(false)}>Publish Notice</Button>
-            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={handleCloseModal}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={saveMutation.isPending}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                {saveMutation.isPending ? 'Saving...' : (editingNotice ? 'Update Notice' : 'Publish Notice')}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Pinned Notices */}
         {pinnedNotices.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Pin className="h-5 w-5 text-red-600" />
-              <h2 className="text-xl font-semibold text-gray-900">
-                Pinned Notices
-              </h2>
-            </div>
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <Pin className="h-5 w-5 text-red-500 rotate-45" />
+              Pinned Notices
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {pinnedNotices.map((notice, index) => {
+              {pinnedNotices.map((notice: any) => {
                 const Icon = getNoticeIcon(notice.type)
                 const color = getNoticeColor(notice.type)
 
                 return (
-                  <motion.div
-                    key={notice.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Card className="p-6 border-2 border-red-200 bg-red-50/50 hover:shadow-lg transition-shadow">
-                      <div className="flex items-start space-x-4">
-                        <div
-                          className={`p-3 rounded-xl flex-shrink-0 ${color === 'blue'
-                            ? 'bg-blue-100'
-                            : color === 'red'
-                              ? 'bg-red-100'
-                              : color === 'purple'
-                                ? 'bg-purple-100'
-                                : 'bg-orange-100'
-                            }`}
+                  <Card key={notice.id} className="p-6 border-2 border-red-200 bg-red-50/50 hover:shadow-lg transition-shadow relative">
+                    <RoleGuard allowedRoles={['admin']}>
+                      <div className="absolute top-4 right-4 flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(notice)}
+                          className="h-8 w-8 text-blue-600 hover:bg-blue-100"
                         >
-                          <Icon
-                            className={`h-6 w-6 ${color === 'blue'
-                              ? 'text-blue-600'
-                              : color === 'red'
-                                ? 'text-red-600'
-                                : color === 'purple'
-                                  ? 'text-purple-600'
-                                  : 'text-orange-600'
-                              }`}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <Pin className="h-4 w-4 text-red-600" />
-                              <Badge
-                                variant="secondary"
-                                className={`${notice.priority === 'high'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-orange-100 text-orange-700'
-                                  }`}
-                              >
-                                {notice.priority}
-                              </Badge>
-                            </div>
-                            <Badge variant="outline" className="capitalize">
-                              {notice.type}
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(notice.id)}
+                          className="h-8 w-8 text-red-600 hover:bg-red-100"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </RoleGuard>
+                    <div className="flex items-start space-x-4">
+                      <div className={`p-3 rounded-xl flex-shrink-0 bg-${color}-100`}>
+                        <Icon className={`h-6 w-6 text-${color}-600`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <Pin className="h-4 w-4 text-red-600" />
+                            <Badge variant="secondary" className="bg-red-100 text-red-700 uppercase">
+                              {notice.priority}
                             </Badge>
                           </div>
-                          <h3 className="text-lg font-bold text-gray-900 mb-2">
-                            {notice.title}
-                          </h3>
-                          <p className="text-gray-700 mb-4 line-clamp-3">
-                            {notice.content}
-                          </p>
-                          <div className="flex items-center justify-between text-sm text-gray-600">
-                            <div className="flex items-center space-x-4">
-                              <span>{notice.publishedBy}</span>
-                              <span>•</span>
-                              <span>{notice.publishedAt}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Eye className="h-4 w-4" />
-                              <span>{notice.views}</span>
-                            </div>
+                          <Badge variant="outline" className="capitalize">
+                            {notice.type}
+                          </Badge>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                          {notice.title}
+                        </h3>
+                        <p className="text-gray-700 mb-4 line-clamp-3">
+                          {notice.content}
+                        </p>
+                        <div className="flex items-center justify-between text-sm text-gray-600">
+                          <div className="flex items-center space-x-4">
+                            <span>Admin Team</span>
+                            <span>•</span>
+                            <span>{formatDistanceToNow(new Date(notice.createdAt))} ago</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{notice.views || 0}</span>
                           </div>
                         </div>
                       </div>
-                    </Card>
-                  </motion.div>
+                    </div>
+                  </Card>
                 )
               })}
             </div>
@@ -334,51 +417,46 @@ export default function NoticesPage() {
         {/* Regular Notices */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-gray-900">All Notices</h2>
-          <div className="space-y-4">
-            {regularNotices.map((notice, index) => {
-              const Icon = getNoticeIcon(notice.type)
-              const color = getNoticeColor(notice.type)
+          {regularNotices.length === 0 ? (
+            <Card className="p-12 text-center text-gray-500 border-dashed">
+              No notices published yet.
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {regularNotices.map((notice: any) => {
+                const Icon = getNoticeIcon(notice.type)
+                const color = getNoticeColor(notice.type)
 
-              return (
-                <motion.div
-                  key={notice.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card className="p-6 hover:shadow-lg transition-shadow">
+                return (
+                  <Card key={notice.id} className="p-6 hover:shadow-lg transition-shadow relative">
+                    <RoleGuard allowedRoles={['admin']}>
+                      <div className="absolute top-4 right-4 flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(notice)}
+                          className="h-8 w-8 text-blue-600 hover:bg-blue-100"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(notice.id)}
+                          className="h-8 w-8 text-red-600 hover:bg-red-100"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </RoleGuard>
                     <div className="flex items-start space-x-4">
-                      <div
-                        className={`p-3 rounded-xl flex-shrink-0 ${color === 'blue'
-                          ? 'bg-blue-100'
-                          : color === 'red'
-                            ? 'bg-red-100'
-                            : color === 'purple'
-                              ? 'bg-purple-100'
-                              : 'bg-orange-100'
-                          }`}
-                      >
-                        <Icon
-                          className={`h-6 w-6 ${color === 'blue'
-                            ? 'text-blue-600'
-                            : color === 'red'
-                              ? 'text-red-600'
-                              : color === 'purple'
-                                ? 'text-purple-600'
-                                : 'text-orange-600'
-                            }`}
-                        />
+                      <div className={`p-3 rounded-xl flex-shrink-0 bg-${color}-100`}>
+                        <Icon className={`h-6 w-6 text-${color}-600`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center space-x-2">
-                            <Badge
-                              variant="secondary"
-                              className={`${notice.priority === 'high'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-orange-100 text-orange-700'
-                                }`}
-                            >
+                            <Badge variant="secondary" className="capitalize">
                               {notice.priority}
                             </Badge>
                           </div>
@@ -394,33 +472,31 @@ export default function NoticesPage() {
                           <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2">
                               <Avatar className="h-6 w-6">
-                                <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
-                                  {notice.publishedBy.charAt(0)}
-                                </AvatarFallback>
+                                <AvatarFallback className="text-xs bg-blue-100 text-blue-600">A</AvatarFallback>
                               </Avatar>
-                              <span>{notice.publishedBy}</span>
+                              <span>Admin Team</span>
                             </div>
                             <span>•</span>
-                            <span>{notice.publishedAt}</span>
+                            <span>{formatDistanceToNow(new Date(notice.createdAt))} ago</span>
                             {notice.expiresAt && (
                               <>
                                 <span>•</span>
-                                <span>Expires: {notice.expiresAt}</span>
+                                <span className="text-red-500">Expires: {new Date(notice.expiresAt).toLocaleDateString()}</span>
                               </>
                             )}
                           </div>
                           <div className="flex items-center space-x-1">
                             <Eye className="h-4 w-4" />
-                            <span>{notice.views}</span>
+                            <span>{notice.views || 0}</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   </Card>
-                </motion.div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
     </RoleGuard>
