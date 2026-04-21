@@ -5,8 +5,8 @@ export const PIN_CODE_LENGTH = parseInt(
 );
 
 export const API_CONFIG = {
-  BASE_URL: "https://socity-backend-production-8c26.up.railway.app/api",
-  // BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api",
+  // BASE_URL: "https://socitybackend-production.up.railway.app/api",
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api",
 
 
   // Authentication & Users

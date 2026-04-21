@@ -307,7 +307,13 @@ const allMenuItems = [
     title: "Updates & Guidelines",
     icon: BookOpen,
     href: "/dashboard/guidelines/updates",
-    roles: ["resident", "admin", "individual", "vendor"],
+    roles: ["resident", "admin", "individual", "vendor", "guard"],
+  },
+  {
+    title: "Manage Guidelines",
+    icon: Settings,
+    href: "/dashboard/admin/guidelines",
+    roles: ["admin"],
   },
   {
     title: "Services",

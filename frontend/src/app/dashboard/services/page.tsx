@@ -53,7 +53,6 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RoleGuard } from "@/components/auth/role-guard";
 import { iconMap } from "@/lib/constants/icons";
-import { UserRaiseComplaintDialog } from "@/components/complaints/user-raise-complaint-dialog";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -269,17 +268,6 @@ export default function ServicesPage() {
               Book trusted service providers for your home
             </p>
           </div>
-          <UserRaiseComplaintDialog
-            trigger={
-              <Button
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-medium"
-              >
-                <AlertCircle className="h-4 w-4 mr-2" />
-                Raise Complaint
-              </Button>
-            }
-          />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

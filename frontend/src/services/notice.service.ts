@@ -31,4 +31,14 @@ export const NoticeService = {
     const response = await api.delete(API_CONFIG.NOTICE.DELETE(id));
     return response.data;
   },
+
+  trackView: async (id: number | string) => {
+    const response = await api.post(`${API_CONFIG.NOTICE.LIST}/${id}/view`);
+    return response.data;
+  },
+
+  getViewers: async (id: number | string) => {
+    const response = await api.get(`${API_CONFIG.NOTICE.LIST}/${id}/viewers`);
+    return response.data;
+  },
 };

@@ -24,7 +24,9 @@ import {
   Printer,
   Filter,
   X,
+  Megaphone,
 } from 'lucide-react'
+import { NoticeService } from '@/services/notice.service'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -129,7 +131,23 @@ export default function GuardDashboardPage() {
     queryFn: () => UnitService.getUnits()
   })
 
-  // Mutations
+  const { data: notices = [] } = useQuery({
+    queryKey: ['notices', user?.role],
+    queryFn: NoticeService.getAll
+  })
+
+  const trackViewMutation = useMutation({
+    mutationFn: (id: number) => NoticeService.trackView(id)
+  })
+
+  useEffect(() => {
+    if (notices.length > 0) {
+      notices.forEach((notice: any) => {
+        trackViewMutation.mutate(notice.id)
+      })
+    }
+  }, [notices.length])
+
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number, status: string }) => GuardService.updateVisitorStatus(id, status),
     onSuccess: () => {
@@ -605,6 +623,48 @@ export default function GuardDashboardPage() {
               <AlertTriangle className="h-6 w-6 text-red-600" />
               <span className="text-xs">Report Incident</span>
             </Button>
+          </div>
+        </Card>
+
+        {/* Community Notices */}
+        <Card className="p-4 flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-blue-600" />
+              Society Notices
+            </h2>
+            <Badge variant="outline" className="text-blue-600 border-blue-200">
+              {notices.length} Active
+            </Badge>
+          </div>
+          <div className="space-y-3 overflow-y-auto max-h-[300px] flex-1 pr-1">
+            {notices.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-500 text-sm italic">No active notices for your role</p>
+              </div>
+            ) : (
+              notices.map((notice: any) => (
+                <div 
+                  key={notice.id} 
+                  className={`p-3 rounded-lg border-l-4 hover:shadow-sm transition-shadow ${
+                    notice.type === 'emergency' ? 'bg-red-50 border-red-500' :
+                    notice.type === 'maintenance' ? 'bg-orange-50 border-orange-500' :
+                    notice.type === 'event' ? 'bg-purple-50 border-purple-500' : 
+                    'bg-blue-50 border-blue-500'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="font-bold text-sm text-gray-900 truncate pr-2">{notice.title}</p>
+                    {notice.isPinned && <Badge className="bg-red-100 text-red-700 hover:bg-red-100 text-[10px] h-4 px-1">Pinned</Badge>}
+                  </div>
+                  <p className="text-xs text-gray-700 line-clamp-2 mb-2">{notice.content}</p>
+                  <div className="flex justify-between items-center text-[10px] text-gray-500">
+                    <span className="capitalize font-medium">{notice.type}</span>
+                    <span>{new Date(notice.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </div>

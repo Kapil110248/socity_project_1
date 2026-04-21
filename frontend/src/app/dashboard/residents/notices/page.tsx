@@ -14,9 +14,12 @@ import {
   Eye,
   Plus,
   Send,
-  Loader2
+  Loader2,
+  Pencil,
+  Trash2
 } from 'lucide-react'
-import { useState } from 'react'
+import { useAuthStore } from '@/lib/stores/auth-store'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,7 +29,18 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -71,7 +85,10 @@ const getNoticeColor = (type: string) => {
 
 export default function NoticesPage() {
   const queryClient = useQueryClient()
+  const { user } = useAuthStore()
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [deleteNoticeId, setDeleteNoticeId] = useState<number | null>(null)
   const [editingNotice, setEditingNotice] = useState<any>(null)
   const [formData, setFormData] = useState({
     title: '',
@@ -85,9 +102,23 @@ export default function NoticesPage() {
     expiresAt: ''
   })
 
+  const [viewersNoticeId, setViewersNoticeId] = useState<number | null>(null)
+  const { data: viewers = [], isLoading: isLoadingViewers } = useQuery({
+    queryKey: ['notice-viewers', viewersNoticeId],
+    queryFn: () => NoticeService.getViewers(viewersNoticeId!),
+    enabled: !!viewersNoticeId
+  })
+
+  const trackViewMutation = useMutation({
+    mutationFn: (id: number) => NoticeService.trackView(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notices'] })
+    }
+  })
+
   // Fetch Notices
   const { data: notices = [], isLoading } = useQuery({
-    queryKey: ['notices'],
+    queryKey: ['notices', user?.role],
     queryFn: NoticeService.getAll
   })
 
@@ -140,9 +171,7 @@ export default function NoticesPage() {
   }
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this notice?')) {
-      deleteMutation.mutate(id)
-    }
+    setDeleteNoticeId(id)
   }
 
   const handleCloseModal = () => {
@@ -166,11 +195,29 @@ export default function NoticesPage() {
       toast.error('Please fill in all required fields')
       return
     }
-    saveMutation.mutate(formData)
+
+    // Format dates for backend to avoid Prisma validation errors
+    const submissionData = {
+      ...formData,
+      startDate: formData.startDate ? new Date(formData.startDate).toISOString() : new Date().toISOString(),
+      expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : null
+    }
+
+    saveMutation.mutate(submissionData)
   }
 
   const pinnedNotices = notices.filter((notice: any) => notice.isPinned)
   const regularNotices = notices.filter((notice: any) => !notice.isPinned)
+
+  // Track views for non-admin users (automatically)
+  useEffect(() => {
+    if (!isAdmin && notices.length > 0) {
+      notices.forEach((notice: any) => {
+        // Track each notice as viewed (simplified for now)
+        trackViewMutation.mutate(notice.id)
+      })
+    }
+  }, [notices.length, isAdmin])
 
   if (isLoading) {
     return (
@@ -181,7 +228,7 @@ export default function NoticesPage() {
   }
 
   return (
-    <RoleGuard allowedRoles={['admin', 'resident']}>
+    <RoleGuard allowedRoles={['admin', 'resident', 'guard']}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -231,6 +278,7 @@ export default function NoticesPage() {
                       <SelectItem value="ALL">All Members</SelectItem>
                       <SelectItem value="RESIDENTS">Residents Only</SelectItem>
                       <SelectItem value="OWNERS">Owners Only</SelectItem>
+                      <SelectItem value="GUARD">Guards Only</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -352,26 +400,7 @@ export default function NoticesPage() {
 
                 return (
                   <Card key={notice.id} className="p-6 border-2 border-red-200 bg-red-50/50 hover:shadow-lg transition-shadow relative">
-                    <RoleGuard allowedRoles={['admin']}>
-                      <div className="absolute top-4 right-4 flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(notice)}
-                          className="h-8 w-8 text-blue-600 hover:bg-blue-100"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(notice.id)}
-                          className="h-8 w-8 text-red-600 hover:bg-red-100"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </RoleGuard>
+
                     <div className="flex items-start space-x-4">
                       <div className={`p-3 rounded-xl flex-shrink-0 bg-${color}-100`}>
                         <Icon className={`h-6 w-6 text-${color}-600`} />
@@ -384,9 +413,31 @@ export default function NoticesPage() {
                               {notice.priority}
                             </Badge>
                           </div>
-                          <Badge variant="outline" className="capitalize">
-                            {notice.type}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="capitalize">
+                              {notice.type}
+                            </Badge>
+                            <RoleGuard allowedRoles={['admin']}>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(notice)}
+                                  className="h-8 w-8 text-blue-600 hover:bg-blue-100"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(notice.id)}
+                                  className="h-8 w-8 text-red-600 hover:bg-red-100"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </RoleGuard>
+                          </div>
                         </div>
                         <h3 className="text-lg font-bold text-gray-900 mb-2">
                           {notice.title}
@@ -400,9 +451,12 @@ export default function NoticesPage() {
                             <span>•</span>
                             <span>{formatDistanceToNow(new Date(notice.createdAt))} ago</span>
                           </div>
-                          <div className="flex items-center space-x-1">
+                          <div 
+                            className={`flex items-center space-x-1 ${isAdmin ? 'cursor-pointer hover:text-teal-600 transition-colors bg-teal-50 px-2 py-1 rounded-full' : ''}`}
+                            onClick={() => isAdmin && setViewersNoticeId(notice.id)}
+                          >
                             <Eye className="h-4 w-4" />
-                            <span>{notice.views || 0}</span>
+                            <span>{notice.viewsCount || 0}</span>
                           </div>
                         </div>
                       </div>
@@ -429,26 +483,7 @@ export default function NoticesPage() {
 
                 return (
                   <Card key={notice.id} className="p-6 hover:shadow-lg transition-shadow relative">
-                    <RoleGuard allowedRoles={['admin']}>
-                      <div className="absolute top-4 right-4 flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(notice)}
-                          className="h-8 w-8 text-blue-600 hover:bg-blue-100"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(notice.id)}
-                          className="h-8 w-8 text-red-600 hover:bg-red-100"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </RoleGuard>
+
                     <div className="flex items-start space-x-4">
                       <div className={`p-3 rounded-xl flex-shrink-0 bg-${color}-100`}>
                         <Icon className={`h-6 w-6 text-${color}-600`} />
@@ -460,9 +495,31 @@ export default function NoticesPage() {
                               {notice.priority}
                             </Badge>
                           </div>
-                          <Badge variant="outline" className="capitalize">
-                            {notice.type}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="capitalize">
+                              {notice.type}
+                            </Badge>
+                            <RoleGuard allowedRoles={['admin']}>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(notice)}
+                                  className="h-8 w-8 text-blue-600 hover:bg-blue-100"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(notice.id)}
+                                  className="h-8 w-8 text-red-600 hover:bg-red-100"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </RoleGuard>
+                          </div>
                         </div>
                         <h3 className="text-lg font-bold text-gray-900 mb-2">
                           {notice.title}
@@ -485,9 +542,12 @@ export default function NoticesPage() {
                               </>
                             )}
                           </div>
-                          <div className="flex items-center space-x-1">
+                          <div 
+                            className={`flex items-center space-x-1 ${isAdmin ? 'cursor-pointer hover:text-teal-600 transition-colors bg-teal-50 px-2 py-1 rounded-full' : ''}`}
+                            onClick={() => isAdmin && setViewersNoticeId(notice.id)}
+                          >
                             <Eye className="h-4 w-4" />
-                            <span>{notice.views || 0}</span>
+                            <span>{notice.viewsCount || 0}</span>
                           </div>
                         </div>
                       </div>
@@ -499,6 +559,83 @@ export default function NoticesPage() {
           )}
         </div>
       </div>
+
+      <AlertDialog open={deleteNoticeId !== null} onOpenChange={(open) => !open && setDeleteNoticeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the notice
+              and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteNoticeId) {
+                  deleteMutation.mutate(deleteNoticeId)
+                  setDeleteNoticeId(null)
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete Notice
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Dialog open={viewersNoticeId !== null} onOpenChange={(open) => !open && setViewersNoticeId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-teal-600" />
+              Notice Read Receipts
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <h4 className="text-sm font-semibold mb-3 text-gray-500 uppercase tracking-wider">
+              Viewed by {viewers.length} people
+            </h4>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+              {isLoadingViewers ? (
+                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-teal-500" /></div>
+              ) : viewers.length === 0 ? (
+                <p className="text-center py-6 text-gray-500 italic">No views tracked yet.</p>
+              ) : (
+                viewers.map((viewer: any) => (
+                  <div key={viewer.id} className="flex items-center justify-between group">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border border-gray-100 flex-shrink-0">
+                        <AvatarFallback className="bg-gradient-to-br from-teal-400 to-cyan-500 text-white font-bold">
+                          {viewer.name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-bold text-gray-900 group-hover:text-teal-600 transition-colors uppercase text-sm">{viewer.name}</p>
+                        <p className="text-xs text-gray-500 font-medium tracking-tight mt-0.5">{viewer.role} • Unit: {viewer.unit || 'Society Staff'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Viewed At</p>
+                      <p className="text-[11px] font-semibold text-gray-600">
+                        {new Date(viewer.viewedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <span className="mx-1 text-gray-300">|</span>
+                        {new Date(viewer.viewedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full bg-teal-600 hover:bg-teal-700" onClick={() => setViewersNoticeId(null)}>
+              Close List
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </RoleGuard>
   )
 }

@@ -88,7 +88,7 @@ export const mockTickets: SupportTicket[] = [
         title: 'Billing Error - Maintenance Dues',
         description: 'My maintenance bill shows double the amount for this month.',
         category: 'Other',
-        priority: 'critical',
+        priority: 'high',
         status: 'resolved',
         isPrivate: true,
         residentId: 'res-001',

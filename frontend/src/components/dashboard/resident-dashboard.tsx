@@ -88,8 +88,9 @@ export function ResidentDashboard() {
 
   // Fetch guidelines for residents (from Super Admin)
   const { data: guidelines = [] } = useQuery<any[]>({
-    queryKey: ['guidelines-for-me'],
+    queryKey: ['guidelines-for-me', user?.id],
     queryFn: SocietyService.getGuidelinesForMe,
+    enabled: !!user?.id,
   })
 
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false)
@@ -491,17 +492,20 @@ export function ResidentDashboard() {
                       <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex-shrink-0">
                         <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-foreground mb-1">{guideline.title}</h4>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{guideline.content}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs bg-card">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-[10px] uppercase font-bold py-0 h-4">
                             {guideline.category || 'General'}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <Badge className={guideline.society?.name ? "bg-teal-500/10 text-teal-600 hover:bg-teal-500/10 border-teal-500/20 text-[10px]" : "bg-blue-500/10 text-blue-600 hover:bg-blue-500/10 border-blue-500/20 text-[10px]"}>
+                            {guideline.society?.name || "Official Platform"}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground ml-auto">
                             {guideline.createdAt ? new Date(guideline.createdAt).toLocaleDateString() : ''}
                           </span>
                         </div>
+                        <h4 className="font-semibold text-foreground mb-1">{guideline.title}</h4>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{guideline.content}</p>
                       </div>
                     </div>
                   </div>

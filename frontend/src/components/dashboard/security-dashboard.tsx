@@ -24,6 +24,7 @@ import {
   Activity,
   Search,
   Building,
+  BookOpen,
 } from 'lucide-react'
 import {
   BarChart,
@@ -50,6 +51,7 @@ import { StaffService } from '@/services/staff.service'
 import { ComplaintService } from '@/services/complaint.service'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { SocietyService } from '@/services/society.service'
 
 // Daily visitor data for chart
 const visitorChartData = [
@@ -185,6 +187,13 @@ export function SecurityDashboard() {
   const { data: complaintStats, isLoading: complaintsLoading } = useQuery({
     queryKey: ['complaint-stats'],
     queryFn: () => ComplaintService.getStats(),
+  })
+
+  // Fetch guidelines for guards
+  const { data: guidelines = [] } = useQuery<any[]>({
+    queryKey: ['guidelines-for-me', user?.id],
+    queryFn: SocietyService.getGuidelinesForMe,
+    enabled: !!user?.id,
   })
 
   // Mutations for Approving/Rejecting
@@ -657,6 +666,58 @@ export function SecurityDashboard() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Community Guidelines - NEW Section for Guards */}
+      {guidelines.length > 0 && (
+        <motion.div variants={itemVariants}>
+          <Card className="border-0 shadow-md bg-white dark:bg-card overflow-hidden">
+            <CardHeader className="bg-teal-500/5 border-b border-teal-500/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-teal-500/10 rounded-lg">
+                    <BookOpen className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-bold text-foreground">Community Guidelines</CardTitle>
+                    <CardDescription className="text-xs">Important instructions from Management</CardDescription>
+                  </div>
+                </div>
+                <Badge variant="outline" className="bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800">
+                  {guidelines.length} {guidelines.length === 1 ? 'Guideline' : 'Guidelines'}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border">
+                {guidelines.slice(0, 3).map((guideline: any) => (
+                  <div key={guideline.id} className="p-4 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-bold text-sm text-foreground">{guideline.title}</h4>
+                      <Badge variant="secondary" className="text-[10px] uppercase font-bold py-0 h-4">
+                        {guideline.category || 'General'}
+                      </Badge>
+                      <Badge className={guideline.society?.name ? "bg-teal-500/10 text-teal-600 hover:bg-teal-500/10 border-teal-500/20 text-[10px]" : "bg-blue-500/10 text-blue-600 hover:bg-blue-500/10 border-blue-500/20 text-[10px]"}>
+                        {guideline.society?.name || "Official Platform"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{guideline.content}</p>
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] text-muted-foreground/60">{guideline.createdAt ? new Date(guideline.createdAt).toLocaleDateString() : ''}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {guidelines.length > 3 && (
+                <div className="p-3 bg-muted/20 text-center border-t border-border">
+                  <Link href="/dashboard/guidelines/updates" className="text-xs font-bold text-teal-600 hover:underline">
+                    View All {guidelines.length} Guidelines
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Quick Actions Row */}
       < motion.div variants={itemVariants} >

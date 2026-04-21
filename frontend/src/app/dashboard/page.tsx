@@ -3,6 +3,7 @@
 import { useAuthStore } from '@/lib/stores/auth-store'
 import dynamic from 'next/dynamic'
 import { AdvertisementBanner } from '@/components/dashboard/advertisement-banner'
+import { NoticeBanner } from '@/components/dashboard/notice-banner'
 
 // Loading skeleton for dashboards
 const DashboardSkeleton = () => (
@@ -49,6 +50,7 @@ export default function DashboardPage() {
   // Wrap everything in a main container with the banner
   return (
     <div className="w-full flex-1 md:p-6 space-y-6">
+      <NoticeBanner />
       <AdvertisementBanner />
 
       {/* Role-specific dashboards */}
